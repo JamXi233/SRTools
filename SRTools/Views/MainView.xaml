@@ -1,0 +1,20 @@
+﻿<Page
+    x:Class="SRTools.Views.MainView"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:SRTools.Views"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d"
+    Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
+    <Grid>
+        <Viewbox
+            Height="200px"/>
+        <InfoBar
+            IsOpen="True"
+            Severity="Warning"
+            Title="尚未完成(WIA)"
+            Message="将会在稍后完成." />
+    </Grid>
+    
+</Page>

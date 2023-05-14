@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "SRTools (Package)": {
+      "commandName": "MsixPackage"
+    },
+    "SRTools (Unpackaged)": {
+      "commandName": "Project"
+    }
+  }
+}

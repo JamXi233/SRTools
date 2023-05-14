@@ -1,0 +1,43 @@
+<!-- Copyright (c) Microsoft Corporation and Contributors. -->
+<!-- Licensed under the MIT License. -->
+
+<Window
+    x:Class="SRTools.MainWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:SRTools"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:muxc="using:Microsoft.UI.Xaml.Controls"
+    mc:Ignorable="d">
+
+    <Grid>
+        
+        <NavigationView IsBackEnabled="False" IsBackButtonVisible="Collapsed" SelectionChanged="NavView_SelectionChanged">
+            <NavigationView.Resources>
+                <Thickness x:Key="NavigationViewContentMargin">0,48,0,0</Thickness>
+            </NavigationView.Resources>
+            
+            <NavigationView.MenuItems>
+                <NavigationViewItem Content="首页" Icon="Home" Tag="home" IsSelected="True" />
+                <NavigationViewItem Content="开始游戏" Icon="Play" Tag="startgame"/>
+            </NavigationView.MenuItems>
+            
+            <Frame x:Name="MainFrame"/>
+            
+        </NavigationView>
+
+        <Border x:Name="AppTitleBar"
+                Height="48"
+                Margin="48,0,0,0"
+                VerticalAlignment="Top">
+            
+            <TextBlock VerticalAlignment="Center"
+                       Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                       Text="💖SRTools(星穹铁道工具箱)" />
+            
+        </Border>
+        
+    </Grid>
+    
+</Window>
