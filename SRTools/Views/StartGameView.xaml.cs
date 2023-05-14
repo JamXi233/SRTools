@@ -33,85 +33,134 @@ namespace SRTools.Views
         public StartGameView()
         {
             this.InitializeComponent();
-            BitmapImage image = new BitmapImage(new Uri("https://beta.jamsg.cn/starrail.png"));
+            BitmapImage image = new BitmapImage(new Uri("https://cdn.jamsg.cn/logo.svg"));
             image.ImageOpened += (sender, e) =>
             {
                 backgroundBrush.ImageSource = image;
             };
-            var folder = KnownFolders.DocumentsLibrary;
-            var srtoolsFolder = folder.GetFolderAsync("JSG-LLC\\SRTools").AsTask().GetAwaiter().GetResult();
-            var settingsFile = srtoolsFolder.GetFileAsync("GameLocation.ini").AsTask().GetAwaiter().GetResult();
-            var filePath = FileIO.ReadTextAsync(settingsFile).AsTask().GetAwaiter().GetResult();
-            if (filePath.Contains("StarRail.exe"))
+
+            string keyPath = @"Software\miHoYo\崩坏：星穹铁道";
+            string valueName = "SRTools_Config_GamePath";
+            string valueUnlockFPS = "SRTools_Config_UnlockFPS";
+            using (var key = Registry.CurrentUser.OpenSubKey(keyPath))
             {
-                UpdateUIElementsVisibility(1);
+                if (key != null)
+                {
+                    var value = key.GetValue(valueName) as string;
+                    if (!string.IsNullOrEmpty(value) && value.Contains("Null"))
+                    {
+                        UpdateUIElementsVisibility(0);
+                    }
+                    else
+                    {
+                        UpdateUIElementsVisibility(1);
+                    }
+                }
+                else
+                {
+                    UpdateUIElementsVisibility(1);
+                }
             }
-            else
+            using (var key = Registry.CurrentUser.OpenSubKey(keyPath))
             {
-                UpdateUIElementsVisibility(0);
+                if (key != null)
+                {
+                    var value = key.GetValue(valueUnlockFPS) as string;
+                    if (value == "1")
+                    {
+                        unlockFPS.IsChecked = true;
+                    }
+                    else if (value == "0")
+                    {
+                        unlockFPS.IsChecked = false;
+                    }
+                }
+                else
+                {
+                    unlockFPS.IsChecked = false;
+                }
             }
-            
+
+
         }
-        //选择游戏
         private async void SelectGame(object sender, RoutedEventArgs e)
         {
-            var window = new Microsoft.UI.Xaml.Window();
-            // 创建文件选择器
             var picker = new FileOpenPicker();
             picker.FileTypeFilter.Add(".exe");
+            var window = new Window();
             var hwnd = WinRT.Interop.WindowNative.GetWindowHandle(window);
             WinRT.Interop.InitializeWithWindow.Initialize(picker, hwnd);
-
-            // 显示文件选择器并等待用户选择文件
             var file = await picker.PickSingleFileAsync();
             if (file != null && file.Name == "StarRail.exe")
             {
-                // 将文件路径保存到 settings.ini 文件中
-                var folder = KnownFolders.DocumentsLibrary;
-                var srtoolsFolder = await folder.CreateFolderAsync("JSG-LLC\\SRTools", CreationCollisionOption.OpenIfExists);
-                var settingsFile = await srtoolsFolder.CreateFileAsync("GameLocation.ini", CreationCollisionOption.OpenIfExists);
-                await FileIO.WriteTextAsync(settingsFile, file.Path);
+                string keyPath = @"Software\miHoYo\崩坏：星穹铁道";
+                string valueGamePath = "SRTools_Config_GamePath";
+                string folderPath = @file.Path;
+                using (var key = Registry.CurrentUser.OpenSubKey(keyPath, true))
+                {
+                    key.SetValue(valueGamePath, folderPath, RegistryValueKind.String);
+                }
                 UpdateUIElementsVisibility(1);
             }
         }
-        //清除路径 
+
         private async void RMGameLocation(object sender, RoutedEventArgs e)
         {
-            // 将文件路径保存到 GameLocation.ini 文件中
-            var folder = KnownFolders.DocumentsLibrary;
-            var srtoolsFolder = await folder.CreateFolderAsync("JSG-LLC\\SRTools", CreationCollisionOption.OpenIfExists);
-            var settingsFile = await srtoolsFolder.CreateFileAsync("GameLocation.ini", CreationCollisionOption.OpenIfExists);
-            await FileIO.WriteTextAsync(settingsFile, "");
+            string keyPath = @"Software\miHoYo\崩坏：星穹铁道";
+            string valueGamePath = "SRTools_Config_GamePath";
+            string folderPath = @"Null";
+            using (var key = Registry.CurrentUser.OpenSubKey(keyPath, true))
+            {
+                key.SetValue(valueGamePath, folderPath, RegistryValueKind.String);
+            }
             UpdateUIElementsVisibility(0);
         }
         //启动游戏
         private void StartGame_Click(object sender, RoutedEventArgs e)
         {
-            //修改注册表
-            // 指定注册表键路径和值名称
-            string keyPath = @"Software\miHoYo\崩坏：星穹铁道";
-            string valueName = "GraphicsSettings_Model_h2986158309";
-            RegistryKey key = Registry.CurrentUser.OpenSubKey(keyPath, true);
-            byte[] valueBytes = (byte[])key.GetValue(valueName);
-            if (valueBytes != null) 
+            if (unlockFPS.IsChecked ?? false)
             {
-                string valueString = Encoding.UTF8.GetString(valueBytes);
-                if (valueString.Contains("FPS"))
+                string keyPath = @"Software\miHoYo\崩坏：星穹铁道";
+                string valueName = "GraphicsSettings_Model_h2986158309";
+                RegistryKey key = Registry.CurrentUser.OpenSubKey(keyPath, true);
+                byte[] valueBytes = (byte[])key.GetValue(valueName);
+                if (key == null || valueBytes == null)
                 {
-                    // 修改值
-                    string newValueString = valueString.Replace("{\"FPS\":60", "{\"FPS\":120");
-                    // 将新的字符串值转换为二进制
-                    byte[] newValueBytes = Encoding.UTF8.GetBytes(newValueString);
-                    // 写回注册表键
-                    key.SetValue(valueName, newValueBytes, RegistryValueKind.Binary);
-                    // 关闭注册表键
+                    NoGraphicsTip.IsOpen = true;
+                    return;
+                }
+                string valueString = Encoding.UTF8.GetString(valueBytes);
+                if (!valueString.Contains("\"FPS\":60"))
+                {
                     key.Close();
                     StartGame(null, null);
+                    return;
                 }
+                string newValueString = valueString.Replace("{\"FPS\":60", "{\"FPS\":120");
+                byte[] newValueBytes = Encoding.UTF8.GetBytes(newValueString);
+                key.SetValue(valueName, newValueBytes, RegistryValueKind.Binary);
+                key.Close();
+                StartGame(null, null);
+            }
+            else 
+            {
+                StartGame(null, null);
+            }
+        }
+
+        private void UnlockFPS_Click(object sender, RoutedEventArgs e) 
+        {
+            string keyPath = @"Software\miHoYo\崩坏：星穹铁道";
+            string valueUnlockFPS = "SRTools_Config_UnlockFPS";
+            RegistryKey baseKey = RegistryKey.OpenBaseKey(RegistryHive.CurrentUser, RegistryView.Registry32);
+            RegistryKey key = baseKey.OpenSubKey(keyPath, true);
+            if (unlockFPS.IsChecked ?? false) 
+            {
+                key.SetValue(valueUnlockFPS, 1, RegistryValueKind.String);
             }
             else
             {
-                NoGraphicsTip.IsOpen = true;
+                key.SetValue(valueUnlockFPS, 0, RegistryValueKind.String);
             }
         }
 

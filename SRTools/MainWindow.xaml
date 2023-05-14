@@ -12,7 +12,7 @@
     mc:Ignorable="d">
 
     <Grid>
-        
+
         <NavigationView IsBackEnabled="False" IsBackButtonVisible="Collapsed" SelectionChanged="NavView_SelectionChanged">
             <NavigationView.Resources>
                 <Thickness x:Key="NavigationViewContentMargin">0,48,0,0</Thickness>
@@ -27,17 +27,18 @@
             
         </NavigationView>
 
-        <Border x:Name="AppTitleBar"
-                Height="48"
-                Margin="48,0,0,0"
-                VerticalAlignment="Top">
-            
-            <TextBlock VerticalAlignment="Center"
-                       Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                       Text="💖SRTools(星穹铁道工具箱)" />
-            
+        <Border x:Name="AppTitleBar" Height="48" Margin="48,0,0,0" VerticalAlignment="Top">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <Image Source="Assets/myappicon.png" Width="24" Height="24" Margin="8,0"/>
+                <TextBlock Grid.Column="1" VerticalAlignment="Center" Foreground="{ThemeResource TextFillColorSecondaryBrush}" Text="💖SRTools(星穹铁道工具箱)" />
+                <TextBlock Grid.Column="1" VerticalAlignment="Center" Foreground="{ThemeResource TextFillColorSecondaryBrush}" Text="💖SRTools(星穹铁道工具箱)" />
+            </Grid>
         </Border>
-        
+
     </Grid>
     
 </Window>

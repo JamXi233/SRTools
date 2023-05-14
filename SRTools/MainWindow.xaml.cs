@@ -15,6 +15,9 @@ using WinRT.Interop;
 using Windows.System;
 using Microsoft.UI.Xaml.Controls;
 using Windows.UI.ApplicationSettings;
+using System.IO;
+using Microsoft.Win32;
+using System.Text;
 
 // To learn more about WinUI, the WinUI project structure,
 // and more about our project templates, see: http://aka.ms/winui-project-info.
@@ -36,6 +39,57 @@ namespace SRTools
         public MainWindow()
         {
             this.InitializeComponent();
+            //检查注册表项
+            string keyPath = @"Software\miHoYo\崩坏：星穹铁道";
+            string valueGamePath = "SRTools_Config_GamePath";
+            string valueUnlockFPS = "SRTools_Config_UnlockFPS";
+            string folderPath = @"Null";
+            int unlockFPSValue = 1;
+
+            // 打开注册表项
+            RegistryKey baseKey = RegistryKey.OpenBaseKey(RegistryHive.CurrentUser, RegistryView.Registry32);
+            RegistryKey key = baseKey.OpenSubKey(keyPath, true);
+
+            // 如果注册表项不存在，创建它
+            if (key == null)
+            {
+                key = baseKey.CreateSubKey(keyPath);
+                Console.WriteLine("Created registry key.");
+            }
+
+            // 如果值不存在，写入它
+            if (key.GetValue(valueGamePath) == null)
+            {
+                key.SetValue(valueGamePath, folderPath, RegistryValueKind.String);
+                Console.WriteLine("Wrote registry value for SRTools_Config_Folder.");
+            }
+
+            // 如果值不存在，写入它
+            if (key.GetValue(valueUnlockFPS) == null)
+            {
+                key.SetValue(valueUnlockFPS, unlockFPSValue, RegistryValueKind.String);
+                Console.WriteLine("Wrote registry value for SRTools_Config_UnlockFPS.");
+            }
+
+            // 关闭注册表项
+            key.Close();
+            //检查配置文件路径
+            //string folderPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "JSG-LLC\\SRTools");
+            //string filePath = Path.Combine(folderPath, "GameLocation.ini");
+            //if (!Directory.Exists(folderPath))
+            //{
+            //Directory.CreateDirectory(folderPath);
+            //Console.WriteLine($"Created folder at {folderPath}");
+            //}
+            //if (!File.Exists(filePath))
+            //{
+            //File.Create(filePath).Close();
+            //Console.WriteLine($"Created file at {filePath}");
+            //}
+            //else
+            //{
+            //Console.WriteLine($"Folder and file already exist at {folderPath}");
+            //}
 
             // 设置云母或亚克力背景
             backdrop = new SystemBackdrop(this);
@@ -47,7 +101,7 @@ namespace SRTools
             appWindow = AppWindow.GetFromWindowId(id);
 
             // 初始化窗口大小和位置
-            appWindow.MoveAndResize(new RectInt32(_X: 560, _Y: 280, _Width: 800, _Height: 500));
+            appWindow.MoveAndResize(new RectInt32(_X: 560, _Y: 280, _Width: 1024, _Height: 584));
 
             // 自定义标题栏
             if (AppWindowTitleBar.IsCustomizationSupported())

@@ -38,6 +38,7 @@
                     <ColumnDefinition Width="*" />
                 </Grid.ColumnDefinitions>
             <ScrollViewer>
+                <Grid>
                 <TextBlock Grid.Row="0" Grid.Column="0" Margin="0,12,0,0" Text="帧率FPS:" VerticalAlignment="Center" />
                 <ComboBox Grid.Row="0" Grid.Column="1" Margin="12" x:Name="FPSComboBox" />
 
@@ -67,6 +68,7 @@
 
                 <TextBlock Grid.Row="9" Grid.Column="0" Margin="0,12,0,0" Text="抗锯齿AAMode:" VerticalAlignment="Center" />
                 <ComboBox Grid.Row="9" Grid.Column="1" Margin="12" x:Name="AAModeComboBox" />
+                    </Grid>
             </ScrollViewer>
             <Grid Grid.Row="10" Grid.Column="1" Margin="12">
                     <Grid.ColumnDefinitions>

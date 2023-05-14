@@ -12,7 +12,7 @@
     <Grid HorizontalAlignment="Stretch">
         
         <Grid.Background>
-            <ImageBrush x:Name="backgroundBrush"/>
+            <ImageBrush x:Name="backgroundBrush" ImageSource="\Assets\starrail.png"/>
         </Grid.Background>
         
         <StackPanel HorizontalAlignment="Stretch">
@@ -25,9 +25,16 @@
             </Grid>
             <Button Style="{StaticResource AccentButtonStyle}" x:Name="selectGame" Content="选择游戏本体" Click="SelectGame"/>
             <Button x:Name="rmGame" Content="清除游戏路径" Click="RMGameLocation"/>
+            <ToggleButton x:Name="unlockFPS" Content="开启120帧率" Click="UnlockFPS_Click"/>
         </StackPanel>
         
-        <Button x:Name="startGame" Width="84" Height="84" VerticalAlignment="Bottom" HorizontalAlignment="Right" Margin="12" Click="StartGame_Click">
+        <Button  x:Name="startGame" Width="90" Height="84" VerticalAlignment="Bottom" HorizontalAlignment="Right" Margin="12" Click="StartGame_Click">
+            <Button.Background>
+                <AcrylicBrush BackgroundSource="Backdrop"
+                      TintColor="#FFFFFF"
+                      TintOpacity="0.6"
+                      FallbackColor="#666666" />
+            </Button.Background>
             <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
                 <SymbolIcon Symbol="Play" Width="32" Height="32"/>
                 <TextBlock Text="开始游戏" FontSize="12"/>
