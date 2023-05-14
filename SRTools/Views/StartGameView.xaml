@@ -6,41 +6,35 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d"
-    Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
+    Background="Transparent">
 
 
-    <Grid HorizontalAlignment="Stretch">
-        
-        <Grid.Background>
-            <ImageBrush x:Name="backgroundBrush" ImageSource="\Assets\starrail.png"/>
-        </Grid.Background>
-        
-        <StackPanel HorizontalAlignment="Stretch">
-            <Grid>
-                <InfoBar
-                IsOpen="False"
-                Severity="Warning"
-                Title="尚未完成(WIA)"
-                Message="将会在稍后完成." />
-            </Grid>
-            <Button Style="{StaticResource AccentButtonStyle}" x:Name="selectGame" Content="选择游戏本体" Click="SelectGame"/>
-            <Button x:Name="rmGame" Content="清除游戏路径" Click="RMGameLocation"/>
-            <ToggleButton x:Name="unlockFPS" Content="开启120帧率" Click="UnlockFPS_Click"/>
-        </StackPanel>
-        
-        <Button  x:Name="startGame" Width="90" Height="84" VerticalAlignment="Bottom" HorizontalAlignment="Right" Margin="12" Click="StartGame_Click">
-            <Button.Background>
-                <AcrylicBrush BackgroundSource="Backdrop"
-                      TintColor="#FFFFFF"
-                      TintOpacity="0.6"
-                      FallbackColor="#666666" />
-            </Button.Background>
-            <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
-                <SymbolIcon Symbol="Play" Width="32" Height="32"/>
-                <TextBlock Text="开始游戏" FontSize="12"/>
+    <Grid HorizontalAlignment="Stretch" Margin="24">
+
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="3*"/>
+            <ColumnDefinition Width="2*"/>
+        </Grid.ColumnDefinitions>
+
+        <!-- 左侧区域 -->
+        <StackPanel Grid.Column="0" HorizontalAlignment="Left">
+            <StackPanel HorizontalAlignment="Stretch">
+                <Button Style="{StaticResource AccentButtonStyle}" x:Name="selectGame" Content="选择游戏本体" Click="SelectGame"/>
+                <Button x:Name="rmGame" Content="清除游戏路径" Click="RMGameLocation"/>
+                <ToggleButton x:Name="unlockFPS" Content="开启120帧率" Click="UnlockFPS_Click"/>
             </StackPanel>
-        </Button>
-        
+        </StackPanel>
+
+        <!-- 右侧区域 -->
+        <StackPanel Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Bottom">
+            <Button  x:Name="startGame" Width="90" Height="84" VerticalAlignment="Bottom" HorizontalAlignment="Right" Margin="12" Click="StartGame_Click">
+                <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+                    <SymbolIcon Symbol="Play" Width="32" Height="32"/>
+                    <TextBlock Text="开始游戏" FontSize="12"/>
+                </StackPanel>
+            </Button>
+        </StackPanel>
+
         <TeachingTip x:Name="NoGraphicsTip"
             Target="{x:Bind startGame}"
             Title="未检测到当前画质的注册表"

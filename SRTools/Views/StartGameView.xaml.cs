@@ -33,12 +33,6 @@ namespace SRTools.Views
         public StartGameView()
         {
             this.InitializeComponent();
-            BitmapImage image = new BitmapImage(new Uri("https://cdn.jamsg.cn/logo.svg"));
-            image.ImageOpened += (sender, e) =>
-            {
-                backgroundBrush.ImageSource = image;
-            };
-
             string keyPath = @"Software\miHoYo\崩坏：星穹铁道";
             string valueName = "SRTools_Config_GamePath";
             string valueUnlockFPS = "SRTools_Config_UnlockFPS";

@@ -7,79 +7,52 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d">
 
-    <StackPanel HorizontalAlignment="Stretch">
-        <TextBlock Text="设置"/>
-        <StackPanel HorizontalAlignment="Stretch" Orientation="Vertical" Margin="0 12 500 0">
-            <StackPanel HorizontalAlignment="Stretch" Orientation="Horizontal">
-                <SymbolIcon Symbol="Volume"/>
-                <TextBlock Text=" 声音设置"/>
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <!-- 内容区域 -->
+        <Grid
+            Grid.Row="1"
+            Margin="24">
+
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="3*"/>
+                <ColumnDefinition Width="2*"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- 左侧区域 -->
+            <StackPanel Grid.Column="0" HorizontalAlignment="Left" Margin="0 0 20 0">
+                <TextBlock Text="程序设置" FontSize="32" FontWeight="Bold"/>
+                <TextBlock Text="程序设置" FontSize="16" FontWeight="Bold"/>
+                <ToggleButton Content="开启控制台" />
+                
             </StackPanel>
-            <Slider x:Name="volumeSlider" ValueChanged="SetVolume" Minimum="0" Maximum="10" StepFrequency="1"/>
-        </StackPanel>
-        
-            <Grid>
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto" />
-                    <RowDefinition Height="Auto" />
-                    <RowDefinition Height="Auto" />
-                    <RowDefinition Height="Auto" />
-                    <RowDefinition Height="Auto" />
-                    <RowDefinition Height="Auto" />
-                    <RowDefinition Height="Auto" />
-                    <RowDefinition Height="Auto" />
-                    <RowDefinition Height="Auto" />
-                    <RowDefinition Height="Auto" />
-                    <RowDefinition Height="Auto" />
-                    <RowDefinition Height="Auto" />
-                    <RowDefinition Height="*" />
-                </Grid.RowDefinitions>
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="Auto" />
-                    <ColumnDefinition Width="*" />
-                </Grid.ColumnDefinitions>
-            <ScrollViewer>
-                <Grid>
-                <TextBlock Grid.Row="0" Grid.Column="0" Margin="0,12,0,0" Text="帧率FPS:" VerticalAlignment="Center" />
-                <ComboBox Grid.Row="0" Grid.Column="1" Margin="12" x:Name="FPSComboBox" />
 
-                <TextBlock Grid.Row="1" Grid.Column="0" Margin="0,12,0,0" Text="垂直同步EnableVSync:" VerticalAlignment="Center" />
-                <ToggleSwitch Grid.Row="1" Grid.Column="1" Margin="12" x:Name="EnableVSyncToggleSwitch" />
+            <!-- 右侧区域 -->
+            <StackPanel Orientation="Vertical" Grid.Column="1" HorizontalAlignment="Left">
+                <!-- 应用程序 logo -->
+                <Border CornerRadius="24" HorizontalAlignment="Left">
+                    <Image
+                        Grid.Row="0"
+                        Source="ms-appx:///Assets/Logo_2.jpg"
+                        Width="128"
+                        Height="128"/>
+                </Border>
+                <TextBlock Text="关于" FontSize="18" FontWeight="Bold" Margin="0 12 0 0"/>
+                <TextBlock Text="SRTools (星穹铁道工具箱) 23.5.14 Preview" FontSize="12" FontWeight="Bold" Margin="0 8 0 0"/>
+                <TextBlock Text="Created by JamXi" FontSize="12" Margin="0 0 0 0"/>
+                <TextBlock Text="Copyright © JSG-LLC 2017-2023" FontSize="12" FontWeight="Bold" Margin="0 0 0 0"/>
+                <TextBlock Style="{ThemeResource BodyStrongTextBlockStyle}" Margin="0,8,0,4" HorizontalAlignment="Left">
+                    <Hyperlink NavigateUri="https://github.com/JamXi233/SRTools/issues" UnderlineStyle="None"><Run Text="报告问题"/></Hyperlink>
+                </TextBlock>
+                <TextBlock Style="{ThemeResource BodyStrongTextBlockStyle}" Margin="0,8,0,4" HorizontalAlignment="Left">
+                    <Hyperlink NavigateUri="https://github.com/JamXi233/SRTools" UnderlineStyle="None"><Run Text="贡献代码"/></Hyperlink>
+                </TextBlock>
+            </StackPanel>
 
-                <TextBlock Grid.Row="2" Grid.Column="0" Margin="0,12,0,0" Text="渲染精度RenderScale:" VerticalAlignment="Center" />
-                <ComboBox Grid.Row="2" Grid.Column="1" Margin="12" x:Name="RenderScaleComboBox" />
-
-                <TextBlock Grid.Row="3" Grid.Column="0" Margin="0,12,0,0" Text="阴影质量ShadowQuality:" VerticalAlignment="Center" />
-                <ComboBox Grid.Row="3" Grid.Column="1" Margin="12" x:Name="ShadowQualityComboBox" />
-
-                <TextBlock Grid.Row="4" Grid.Column="0" Margin="0,12,0,0" Text="光照质量LightQuality:" VerticalAlignment="Center" />
-                <ComboBox Grid.Row="4" Grid.Column="1" Margin="12" x:Name="LightQualityComboBox" />
-
-                <TextBlock Grid.Row="5" Grid.Column="0" Margin="0,12,0,0" Text="角色质量CharacterQuality:" VerticalAlignment="Center" />
-                <ComboBox Grid.Row="5" Grid.Column="1" Margin="12" x:Name="CharacterQualityComboBox" />
-
-                <TextBlock Grid.Row="6" Grid.Column="0" Margin="0,12,0,0" Text="场景细节EnvironmentQuality:" VerticalAlignment="Center" />
-                <ComboBox Grid.Row="6" Grid.Column="1" Margin="12" x:Name="EnvironmentQualityComboBox" />
-
-                <TextBlock Grid.Row="7" Grid.Column="0" Margin="0,12,0,0" Text="反射质量ReflectionQuality:" VerticalAlignment="Center" />
-                <ComboBox Grid.Row="7" Grid.Column="1" Margin="12" x:Name="ReflectionQualityComboBox" />
-
-                <TextBlock Grid.Row="8" Grid.Column="0" Margin="0,12,0,0" Text="泛光效果BloomQuality:" VerticalAlignment="Center" />
-                <ComboBox Grid.Row="8" Grid.Column="1" Margin="12" x:Name="BloomQualityComboBox" />
-
-                <TextBlock Grid.Row="9" Grid.Column="0" Margin="0,12,0,0" Text="抗锯齿AAMode:" VerticalAlignment="Center" />
-                <ComboBox Grid.Row="9" Grid.Column="1" Margin="12" x:Name="AAModeComboBox" />
-                    </Grid>
-            </ScrollViewer>
-            <Grid Grid.Row="10" Grid.Column="1" Margin="12">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="Auto" />
-                        <ColumnDefinition Width="Auto" />
-                    </Grid.ColumnDefinitions>
-
-                    <Button Grid.Column="1" Margin="12" x:Name="SaveButton" Content="保存" Click="SaveButton_Click" />
-                    <Button Grid.Column="2" Margin="12" x:Name="LoadButton" Content="加载" Click="LoadButton_Click" />
-                </Grid>
-            </Grid>
-    </StackPanel>
+        </Grid>
+    </Grid>
 </Page>
