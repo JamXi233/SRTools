@@ -23,7 +23,7 @@
                 <NavigationViewItem Content="开始游戏" Icon="Play" Tag="startgame"/>
             </NavigationView.MenuItems>
             
-            <Frame x:Name="MainFrame"/>
+            <Frame x:Name="MainFrame"/> 
             
         </NavigationView>
 
