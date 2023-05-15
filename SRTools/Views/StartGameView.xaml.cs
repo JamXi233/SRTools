@@ -21,6 +21,8 @@ using System.Text;
 using Vanara.PInvoke;
 using System.Threading;
 using Microsoft.UI.Dispatching;
+using Windows.Security.EnterpriseData;
+using Windows.Security.Authorization.AppCapabilityAccess;
 
 // To learn more about WinUI, the WinUI project structure,
 // and more about our project templates, see: http://aka.ms/winui-project-info.
@@ -34,6 +36,7 @@ namespace SRTools.Views
     {
         private Timer timer;
         private DispatcherQueueTimer dispatcherTimer;
+
         public StartGameView()
         {
             this.InitializeComponent();

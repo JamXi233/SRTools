@@ -163,6 +163,10 @@ namespace SRTools
                         // 导航到启动游戏页
                         MainFrame.Navigate(typeof(StartGameView));
                         break;
+                    case "gacha":
+                        // 导航到启动游戏页
+                        MainFrame.Navigate(typeof(GachaView));
+                        break;
                 }
             }
             if (args.IsSettingsSelected)

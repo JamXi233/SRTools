@@ -24,6 +24,7 @@
             <NavigationView.MenuItems>
                 <NavigationViewItem Content="首页" Icon="Home" Tag="home" IsSelected="True" />
                 <NavigationViewItem Content="开始游戏" Icon="Play" Tag="startgame"/>
+                <NavigationViewItem Content="抽卡记录" Icon="SolidStar" Tag="gacha"/>
             </NavigationView.MenuItems>
             
             <Frame x:Name="MainFrame"/> 
