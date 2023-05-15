@@ -197,17 +197,12 @@ namespace SRTools.Views
             string valueGamePath = "SRTools_Config_GamePath";
             RegistryKey key = Registry.CurrentUser.OpenSubKey(keyPath);
             string gamePath = (string)key.GetValue(valueGamePath);
-
-            // 处理字符串值
-            // ...
-
-            // 关闭注册表项
             key.Close();
             var processInfo = new ProcessStartInfo(gamePath);
             
             //启动程序
             processInfo.UseShellExecute = true;
-            processInfo.Verb = "runas"; // this will prompt the user for admin privileges
+            processInfo.Verb = "runas"; 
             Process.Start(processInfo);
         }
 
