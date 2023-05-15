@@ -7,12 +7,12 @@
   IgnorableNamespaces="uap rescap">
 
   <Identity
-    Name="e7d9095e-a014-451e-acec-a727f7cb58e3"
-    Publisher="CN=JamXi"
+    Name="2305cb6a-348b-48ce-906f-547149ecbd59"
+    Publisher="CN=JSG Software, O=JSG-LLC, C=CN"
     Version="1.0.0.0" />
 
   <Properties>
-    <DisplayName>SRTools</DisplayName>
+    <DisplayName>SRTools(星穹铁道工具箱)</DisplayName>
     <PublisherDisplayName>JamXi</PublisherDisplayName>
     <Logo>Assets\StoreLogo.png</Logo>
   </Properties>
@@ -31,12 +31,13 @@
       Executable="$targetnametoken$.exe"
       EntryPoint="$targetentrypoint$">
       <uap:VisualElements
-        DisplayName="SRTools"
-        Description="SRTools"
+        DisplayName="SRTools(星穹轨道工具箱)"
+        Description="星穹轨道工具箱"
         BackgroundColor="transparent"
         Square150x150Logo="Assets\Square150x150Logo.png"
         Square44x44Logo="Assets\Square44x44Logo.png">
-        <uap:DefaultTile Wide310x150Logo="Assets\Wide310x150Logo.png" />
+        <uap:DefaultTile Wide310x150Logo="Assets\Wide310x150Logo.png"  Square71x71Logo="Assets\SmallTile.png" Square310x310Logo="Assets\LargeTile.png">
+        </uap:DefaultTile >
         <uap:SplashScreen Image="Assets\SplashScreen.png" />
       </uap:VisualElements>
     </Application>

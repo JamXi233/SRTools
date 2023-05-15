@@ -19,6 +19,8 @@ using System.Diagnostics;
 using Microsoft.Win32;
 using System.Text;
 using Vanara.PInvoke;
+using System.Threading;
+using Microsoft.UI.Dispatching;
 
 // To learn more about WinUI, the WinUI project structure,
 // and more about our project templates, see: http://aka.ms/winui-project-info.
@@ -30,9 +32,19 @@ namespace SRTools.Views
     /// </summary>
     public sealed partial class StartGameView : Page
     {
+        private Timer timer;
+        private DispatcherQueueTimer dispatcherTimer;
         public StartGameView()
         {
             this.InitializeComponent();
+            // 获取UI线程的DispatcherQueue
+            var dispatcherQueue = DispatcherQueue.GetForCurrentThread();
+
+            // 创建定时器，并设置回调函数和时间间隔
+            dispatcherTimer = dispatcherQueue.CreateTimer();
+            dispatcherTimer.Interval = TimeSpan.FromSeconds(2);
+            dispatcherTimer.Tick += CheckProcess;
+            dispatcherTimer.Start();
             string keyPath = @"Software\miHoYo\崩坏：星穹铁道";
             string valueName = "SRTools_Config_GamePath";
             string valueUnlockFPS = "SRTools_Config_UnlockFPS";
@@ -135,6 +147,7 @@ namespace SRTools.Views
                 key.SetValue(valueName, newValueBytes, RegistryValueKind.Binary);
                 key.Close();
                 StartGame(null, null);
+
             }
             else 
             {
@@ -162,15 +175,19 @@ namespace SRTools.Views
         {
             if (status == 0) 
             {
+                selectGame.IsEnabled = true;
                 selectGame.Visibility = Visibility.Visible;
                 rmGame.Visibility = Visibility.Collapsed;
-                startGame.Visibility = Visibility.Collapsed;
+                rmGame.IsEnabled = false;
+                startGame.IsEnabled = false;
             }
             else
             {
+                selectGame.IsEnabled = false;
                 selectGame.Visibility = Visibility.Collapsed;
                 rmGame.Visibility = Visibility.Visible;
-                startGame.Visibility = Visibility.Visible;
+                rmGame.IsEnabled = true;
+                startGame.IsEnabled = true;
             }
         }
 
@@ -186,6 +203,31 @@ namespace SRTools.Views
             processInfo.Verb = "runas"; // this will prompt the user for admin privileges
             Process.Start(processInfo);
         }
+
+        // 定时器回调函数，检查进程是否正在运行
+        private void CheckProcess(DispatcherQueueTimer timer, object e)
+        {
+            if (Process.GetProcessesByName("StarRail").Length > 0)
+            {
+                // 进程正在运行
+                startGame.Visibility = Visibility.Collapsed;
+                gameRunning.Visibility = Visibility.Visible;
+            }
+            else
+            {
+                // 进程未运行
+                startGame.Visibility = Visibility.Visible;
+                gameRunning.Visibility = Visibility.Collapsed;
+            }
+        }
+
+        // 在窗口关闭时停止定时器
+        private void Window_Closed(object sender, EventArgs e)
+        {
+            dispatcherTimer.Stop();
+            dispatcherTimer.Tick -= CheckProcess;
+        }
+
 
     }
 }

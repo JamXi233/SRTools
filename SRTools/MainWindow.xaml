@@ -13,7 +13,7 @@
 
     <Grid>
         <Grid.Background>
-            <ImageBrush ImageSource="Assets/starrail.png"/>
+            <ImageBrush ImageSource="Assets/starrail.png" />
         </Grid.Background>
 
         <NavigationView IsBackEnabled="False" IsBackButtonVisible="Collapsed" IsPaneOpen="False" SelectionChanged="NavView_SelectionChanged" Background="{ThemeResource SystemControlAcrylicElementMediumHighBrush}">
@@ -39,7 +39,7 @@
                 <Border CornerRadius="24" Margin="0 0 8 0">
                     <Image
                         Grid.Row="0"
-                        Source="ms-appx:///Assets/Logo_2.jpg"
+                        Source="ms-appx:///Assets/Logo_Background.png"
                         Width="24"
                         Height="24"/>
                 </Border>

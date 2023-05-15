@@ -25,20 +25,9 @@
 
             <!-- 左侧区域 -->
             <StackPanel Grid.Column="0" HorizontalAlignment="Left" Margin="0 0 20 0">
-                <TextBlock Text="程序设置" FontSize="32" FontWeight="Bold"/>
-                <TextBlock Text="程序设置" FontSize="16" FontWeight="Bold"/>
-                <ToggleButton Content="开启控制台" />
-                <ListBox>
-                    <ListBox.ItemTemplate>
-                        <DataTemplate>
-                            <TextBlock Text="{Binding}" Margin="10"/>
-                        </DataTemplate>
-                    </ListBox.ItemTemplate>
-                    <x:String>第一个元素</x:String>
-                    <x:String>第二个元素</x:String>
-                    <x:String>第三个元素</x:String>
-                </ListBox>
-
+                <TextBlock Text="程序设置" FontSize="32" FontWeight="Bold" Margin="0 0 0 10"/>
+                <TextBlock Text="程序设置" FontSize="16" FontWeight="Bold" Margin="0 0 0 10"/>
+                <ToggleButton x:Name="consoleToggle" Click="Console_Toggle" Content="开启控制台" Margin="0 0 0 10"/>
             </StackPanel>
 
             <!-- 右侧区域 -->

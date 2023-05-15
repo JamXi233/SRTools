@@ -1,6 +1,5 @@
-// Copyright (c) Microsoft Corporation and Contributors.
-// Licensed under the MIT License.
-
+// 版权信息
+// 使用 MIT 许可证。
 using SRTools.Views;
 using Microsoft.UI;
 using Microsoft.UI.Windowing;
@@ -19,9 +18,8 @@ using Microsoft.Win32;
 namespace SRTools
 {
     /// <summary>
-    /// An empty window that can be used on its own or navigated to within a Frame.
+    /// 空窗口，可以作为单独使用的窗口或在 Frame 中导航到该窗口。
     /// </summary>
-
     public partial class MainWindow : Window
     {
         private IntPtr hwnd;
@@ -31,8 +29,10 @@ namespace SRTools
 
         public MainWindow()
         {
+            // 设置窗口标题
             this.Title = "JSG-LLC_SRTools";
             this.InitializeComponent();
+
             //检查注册表项
             string keyPath = @"Software\miHoYo\崩坏：星穹铁道";
             string valueGamePath = "SRTools_Config_GamePath";
@@ -70,9 +70,9 @@ namespace SRTools
 
             // 设置云母或亚克力背景
             backdrop = new SystemBackdrop(this);
-            backdrop.TrySetMica(fallbackToAcrylic:true);
+            backdrop.TrySetMica(fallbackToAcrylic: true);
 
-            // 窗口句柄
+            // 获取窗口句柄和 appWindow
             hwnd = WindowNative.GetWindowHandle(this);
             WindowId id = Win32Interop.GetWindowIdFromWindow(hwnd);
             appWindow = AppWindow.GetFromWindowId(id);
@@ -97,7 +97,9 @@ namespace SRTools
             }
             else
             {
+                // 扩展内容到标题栏
                 ExtendsContentIntoTitleBar = true;
+                // 设置标题栏
                 SetTitleBar(AppTitleBar);
             }
         }
@@ -142,29 +144,30 @@ namespace SRTools
                 return new RectInt32(X, Y, Width, Height);
             }
         }
+
         private void NavView_SelectionChanged(NavigationView sender, NavigationViewSelectionChangedEventArgs args)
         {
             if (args.IsSettingsSelected)
             {
-                // Handle settings menu item click
+                // 处理设置菜单项单击事件
             }
             else if (args.SelectedItemContainer != null)
             {
                 switch (args.SelectedItemContainer.Tag.ToString())
                 {
                     case "home":
-                        // Navigate to Home page
+                        // 导航到主页
                         MainFrame.Navigate(typeof(MainView));
                         break;
                     case "startgame":
-                        // Navigate to Start Game page
+                        // 导航到启动游戏页
                         MainFrame.Navigate(typeof(StartGameView));
                         break;
                 }
             }
             if (args.IsSettingsSelected)
             {
-                // 打开默认的设置页面
+                // 导航到默认设置页面
                 MainFrame.Navigate(typeof(AboutView));
             }
         }

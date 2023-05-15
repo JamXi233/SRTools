@@ -19,9 +19,9 @@
         <!-- 左侧区域 -->
         <StackPanel Grid.Column="0" HorizontalAlignment="Left">
             <StackPanel HorizontalAlignment="Stretch">
-                <Button Style="{StaticResource AccentButtonStyle}" x:Name="selectGame" Content="选择游戏本体" Click="SelectGame"/>
-                <Button x:Name="rmGame" Content="清除游戏路径" Click="RMGameLocation"/>
-                <ToggleButton x:Name="unlockFPS" Content="开启120帧率" Click="UnlockFPS_Click"/>
+                <Button Style="{StaticResource AccentButtonStyle}" x:Name="selectGame" Content="选择游戏本体" Click="SelectGame"  Margin="0 0 0 8"/>
+                <Button x:Name="rmGame" Content="清除游戏路径" Click="RMGameLocation"  Margin="0 0 0 8"/>
+                <ToggleButton x:Name="unlockFPS" Content="开启120帧率" Click="UnlockFPS_Click" Margin="0 0 0 8"/>
             </StackPanel>
         </StackPanel>
 
@@ -31,6 +31,12 @@
                 <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
                     <SymbolIcon Symbol="Play" Width="32" Height="32"/>
                     <TextBlock Text="开始游戏" FontSize="12"/>
+                </StackPanel>
+            </Button>
+            <Button  x:Name="gameRunning" Width="90" Height="84" VerticalAlignment="Bottom" HorizontalAlignment="Right" Margin="12" IsEnabled="False" Visibility="Collapsed">
+                <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+                    <SymbolIcon Symbol="Play" Width="32" Height="32"/>
+                    <TextBlock Text="游戏运行中" FontSize="12"/>
                 </StackPanel>
             </Button>
         </StackPanel>

@@ -23,10 +23,33 @@ namespace SRTools.Views
 {
     public sealed partial class AboutView : Page
     {
+        // 导入 AllocConsole 和 FreeConsole 函数
+        [DllImport("kernel32.dll", SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        private static extern bool AllocConsole();
+
+        [DllImport("kernel32.dll", SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        private static extern bool FreeConsole();
+
         public AboutView()
         {
             InitializeComponent();
-            
+        }
+
+        private void Console_Toggle(object sender, RoutedEventArgs e)
+        {
+            // 判断是否需要打开控制台
+            if (consoleToggle.IsChecked ?? false)
+            {
+                // 调用 AllocConsole 函数以打开控制台
+                AllocConsole();
+            }
+            else
+            {
+                // 调用 FreeConsole 函数以关闭控制台
+                FreeConsole();
+            }
         }
     }
 }
