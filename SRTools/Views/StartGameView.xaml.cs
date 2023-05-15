@@ -193,11 +193,18 @@ namespace SRTools.Views
 
         private void StartGame(TeachingTip sender, object args)
         {
-            var folder = KnownFolders.DocumentsLibrary;
-            var srtoolsFolder = folder.GetFolderAsync("JSG-LLC\\SRTools").AsTask().GetAwaiter().GetResult();
-            var settingsFile = srtoolsFolder.GetFileAsync("GameLocation.ini").AsTask().GetAwaiter().GetResult();
-            var filePath = FileIO.ReadTextAsync(settingsFile).AsTask().GetAwaiter().GetResult();
-            var processInfo = new ProcessStartInfo(filePath);
+            string keyPath = @"Software\miHoYo\崩坏：星穹铁道";
+            string valueGamePath = "SRTools_Config_GamePath";
+            RegistryKey key = Registry.CurrentUser.OpenSubKey(keyPath);
+            string gamePath = (string)key.GetValue(valueGamePath);
+
+            // 处理字符串值
+            // ...
+
+            // 关闭注册表项
+            key.Close();
+            var processInfo = new ProcessStartInfo(gamePath);
+            
             //启动程序
             processInfo.UseShellExecute = true;
             processInfo.Verb = "runas"; // this will prompt the user for admin privileges
