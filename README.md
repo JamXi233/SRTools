@@ -10,11 +10,13 @@
 Ⓜ️等等未实现的功能...
 
 # 使用方法
-下载本工具箱的最新版本。
+下载本工具箱的最新[Release](https://github.com/JamXi233/SRTools/releases/)。
 
 解压缩下载的文件。
 
 右键install.ps1，用Powershell运行，按照提示操作即可。
+
+**如出现闪退状况，尝试以管理员运行Powershell后运行**set-executionpolicy remotesigned**后再试**
 
 # 注意事项
 本工具箱仅适用于PC版星穹铁道。
