@@ -1,25 +1,13 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-using System.Runtime.InteropServices.WindowsRuntime;
-using Windows.Foundation;
-using Windows.Foundation.Collections;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
-using Microsoft.UI.Xaml.Controls.Primitives;
-using Microsoft.UI.Xaml.Data;
-using Microsoft.UI.Xaml.Input;
-using Microsoft.UI.Xaml.Media;
-using Microsoft.UI.Xaml.Navigation;
-using Titanium.Web.Proxy;
-using Titanium.Web.Proxy.EventArguments;
-using Titanium.Web.Proxy.Models;
 using System.Threading.Tasks;
-using Windows.UI.Core;
-using System.Net.Http;
-using System.Net;
-using Microsoft.Win32;
+using Fiddler;
+using Microsoft.UI.Dispatching;
+using System.Threading;
+using Windows.ApplicationModel.DataTransfer;
+using static System.Net.Mime.MediaTypeNames;
 
 // To learn more about WinUI, the WinUI project structure,
 // and more about our project templates, see: http://aka.ms/winui-project-info.
@@ -31,33 +19,92 @@ namespace SRTools.Views
     /// </summary>
     public sealed partial class GachaView : Page
     {
-        private ProxyServer proxyServer;
-        private bool isProxyRunning = false;
+        public bool isProxyRunning;
+        public String GachaLink_String;
+        BCCertMaker.BCCertMaker certProvider = new BCCertMaker.BCCertMaker();
+        private Timer timer;
+        private DispatcherQueueTimer dispatcherTimer;
+
         public GachaView()
         {
+            var dispatcherQueue = DispatcherQueue.GetForCurrentThread();
+
+            // 创建定时器，并设置回调函数和时间间隔
+            dispatcherTimer = dispatcherQueue.CreateTimer();
+            dispatcherTimer.Interval = TimeSpan.FromSeconds(2);
+            dispatcherTimer.Tick += CheckProcess;
             this.InitializeComponent();
         }
 
-        private void StartProxyButton_Click(object sender, RoutedEventArgs e)
-        {
-            if (isProxyRunning)
-            {
-                // 代理服务器已经在运行中
-                return;
-            }
-            proxyServer = new ProxyServer();
-            proxyServer.AddEndPoint(new ExplicitProxyEndPoint(System.Net.IPAddress.Any, 8888));
-            proxyServer.BeforeRequest += OnBeforeRequest;
 
+        private FiddlerCoreStartupSettings startupSettings;
+        private Proxy oProxy;
+
+
+        public async Task StartAsync()
+        {
+            await Task.Run(() =>
+            {
+                startupSettings = new FiddlerCoreStartupSettingsBuilder()
+                    .ListenOnPort(8888)
+                    .RegisterAsSystemProxy()
+                    .DecryptSSL()
+                    .Build();
+
+                FiddlerApplication.BeforeRequest += OnBeforeRequest;
+                FiddlerApplication.Startup(startupSettings);
+                oProxy = FiddlerApplication.CreateProxyEndpoint(8888, true, "127.0.0.1");
+            });
+        }
+
+        public void Stop()
+        {
+            FiddlerApplication.Shutdown();
+            if (oProxy != null)
+            {
+                oProxy.Dispose();
+            }
+        }
+
+
+        private async void OnBeforeRequest(Session session)
+        {
+            await Task.Run(() =>
+            {
+                if (session.fullUrl.Contains("getGachaLog"))
+                {
+                    GachaLink_String = session.fullUrl;
+                }
+            });
+        }
+
+        private async void StartProxyButton_Click(object sender, RoutedEventArgs e)
+        {
             try
             {
-                // 启动代理服务器
-                proxyServer.Start();
-                SetSystemProxy("127.0.0.1:8888",1);
-                // 更新UI状态
+                CertMaker.oCertProvider = certProvider;
+                string folderPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "JSG-LLC\\SRTools");
+                string filePath = Path.Combine(folderPath, "RootCertificate.p12");
+                string rootCertificatePassword = "S0m3T0pS3cr3tP4ssw0rd";
+                if (!Directory.Exists(folderPath)) 
+                { 
+                    Directory.CreateDirectory(folderPath);
+                }
+                if (!File.Exists(filePath))
+                {
+                    certProvider.CreateRootCertificate();
+                    certProvider.WriteRootCertificateAndPrivateKeyToPkcs12File(filePath, rootCertificatePassword);
+                }
+                certProvider.ReadRootCertificateAndPrivateKeyFromPkcs12File(filePath, rootCertificatePassword);
+                if (!CertMaker.rootCertIsTrusted())
+                {
+                    CertMaker.trustRootCert();
+                }
+                isProxyRunning = true;
+                await StartAsync();
                 StartProxyButton.IsEnabled = false;
                 StopProxyButton.IsEnabled = true;
-                isProxyRunning = true;
+                dispatcherTimer.Start();
             }
             catch (Exception ex)
             {
@@ -68,54 +115,50 @@ namespace SRTools.Views
 
         private void StopProxyButton_Click(object sender, RoutedEventArgs e)
         {
-            if (!isProxyRunning)
+            if (isProxyRunning)
             {
-                // 代理服务器已经停止
-                return;
-            }
-
-            // 停止代理服务器
-            proxyServer.Stop();
-            SetSystemProxy("127.0.0.1:8888", 0);
-
-            // 更新UI状态
-            StartProxyButton.IsEnabled = true;
-            StopProxyButton.IsEnabled = false;
-            isProxyRunning = false;
-        }
-
-        private async Task OnBeforeRequest(object sender, SessionEventArgs e)
-        {
-            // 监视所有请求，如果检测到指定的URL，就停止代理服务器并在UI线程上显示URL
-            if (e.WebSession.Request.RequestUri.ToString().Contains("getGachaLog"))
-            {
-                proxyServer.Stop();
-                var dispatcher = Windows.ApplicationModel.Core.CoreApplication.GetCurrentView().CoreWindow.Dispatcher;
-                await dispatcher.RunAsync(CoreDispatcherPriority.Normal, () =>
-                {
-                    StopProxyButton_Click(null, null);
-                    GachaLink.Subtitle = "已检测到指定URL：" + e.WebSession.Request.RequestUri.ToString();
-                    GachaLink.IsOpen = true;
-                    SetSystemProxy("127.0.0.1:8888",0);
-                });
-            }
-        }
-
-        public void SetSystemProxy(string proxyServer, int Enable)
-        {
-            try
-            {
-                RegistryKey registry = Registry.CurrentUser.OpenSubKey("Software\\Policies\\Microsoft\\Windows\\CurrentVersion\\Internet Settings", true);
-                registry.SetValue("ProxyEnable", Enable);
-                registry.SetValue("ProxyServer", proxyServer);
-                registry.Close();
-            }
-            catch (Exception ex)
-            {
-                GachaLink.Title = "错误";
-                GachaLink.Subtitle = ex.Message;
+                isProxyRunning = false;
+                GachaLink.Subtitle = "代理服务器已关闭";
                 GachaLink.IsOpen = true;
+                Stop();
+                StartProxyButton.IsEnabled = true;
+                StopProxyButton.IsEnabled = false;
             }
+        }
+        // 定时器回调函数，检查进程是否正在运行
+        private void CheckProcess(DispatcherQueueTimer timer, object e)
+        {
+            if (isProxyRunning)
+            {
+                StartProxyButton.IsEnabled = false;
+                StopProxyButton.IsEnabled = true;
+                // 进程正在运行
+                if (GachaLink_String != null && GachaLink_String.Contains("getGachaLog"))
+                {
+                    GachaLink_Box.Text = GachaLink_String;
+                    GachaLink.Title = "获取到抽卡记录地址";
+                    GachaLink.Subtitle = "已复制到剪贴板";
+                    GachaLink.IsOpen = true;
+                    Stop();
+                    StartProxyButton.IsEnabled = true;
+                    StopProxyButton.IsEnabled = false;
+                    DataPackage dataPackage = new DataPackage();
+                    dataPackage.SetText(GachaLink_String);
+                    Clipboard.SetContent(dataPackage);
+                    dispatcherTimer.Stop();
+                }
+            }
+            else
+            {
+                StartProxyButton.IsEnabled = true;
+                StopProxyButton.IsEnabled = false;
+            }
+        }
+
+        private void Window_Closed(object sender, EventArgs e)
+        {
+            dispatcherTimer.Stop();
+            dispatcherTimer.Tick -= CheckProcess;
         }
     }
 }

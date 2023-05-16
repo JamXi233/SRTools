@@ -16,35 +16,47 @@
             <ImageBrush ImageSource="Assets/starrail.png" />
         </Grid.Background>
 
-        <NavigationView IsBackEnabled="False" IsBackButtonVisible="Collapsed" IsPaneOpen="False" SelectionChanged="NavView_SelectionChanged" Background="{ThemeResource SystemControlAcrylicElementMediumHighBrush}">
+        <NavigationView x:Name="MainNavView" IsBackEnabled="False" IsBackButtonVisible="Collapsed" IsPaneOpen="False" SelectionChanged="NavView_SelectionChanged" Background="{ThemeResource SystemControlAcrylicElementMediumHighBrush}">
+            
             <NavigationView.Resources>
                 <Thickness x:Key="NavigationViewContentMargin">0,48,0,0</Thickness>
             </NavigationView.Resources>
-            
+
             <NavigationView.MenuItems>
-                <NavigationViewItem Content="首页" Icon="Home" Tag="home" IsSelected="True" />
-                <NavigationViewItem Content="开始游戏" Icon="Play" Tag="startgame"/>
-                <NavigationViewItem Content="抽卡记录" Icon="SolidStar" Tag="gacha"/>
+                <NavigationViewItem x:Name="Nav_Home" Content="首页" Icon="Home" Tag="home" IsSelected="True" />
+                <NavigationViewItem x:Name="Nav_StartGame" Content="开始游戏" Icon="Play" Tag="startgame"/>
+                <NavigationViewItem x:Name="Nav_Gacha" Content="抽卡记录" Icon="SolidStar" Tag="gacha"/>
             </NavigationView.MenuItems>
             
             <Frame x:Name="MainFrame"/> 
             
         </NavigationView>
 
-        <Border x:Name="AppTitleBar" Height="48" Margin="48,0,0,0" VerticalAlignment="Top">
+        <Border x:Name="AppTitleBar" Height="48" Margin="48,0,0,0" VerticalAlignment="Top" Background="{ThemeResource SystemControlAcrylicElementMediumHighBrush}">
             <Grid>
                 <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="*"/>
                 </Grid.ColumnDefinitions>
                 <Border CornerRadius="24" Margin="0 0 8 0">
                     <Image
-                        Grid.Row="0"
-                        Source="ms-appx:///Assets/Logo_Background.png"
-                        Width="24"
-                        Height="24"/>
+                Grid.Row="0"
+                Source="ms-appx:///Assets/Logo_Background.png"
+                Width="24"
+                Height="24"/>
                 </Border>
                 <TextBlock Grid.Column="1" VerticalAlignment="Center" Foreground="{ThemeResource TextFillColorSecondaryBrush}" Text="SRTools(星穹铁道工具箱)" />
+
+                <!-- Add a ComboBox in the middle of the AppBar -->
+                <ComboBox Grid.Column="2"
+                  VerticalAlignment="Center"
+                  Margin="8,0,0,0"
+                  MaxWidth="200">
+                    <ComboBoxItem>Option 1</ComboBoxItem>
+                    <ComboBoxItem>Option 2</ComboBoxItem>
+                    <ComboBoxItem>Option 3</ComboBoxItem>
+                </ComboBox>
             </Grid>
         </Border>
 

@@ -41,6 +41,17 @@
             </Button>
         </StackPanel>
 
+        <TeachingTip x:Name="WrongGameFile"
+            Target="{x:Bind selectGame}"
+            Title="错误的游戏本体"
+            Subtitle="请选择正确的StarRail.exe文件
+                     通常在[游戏安装目录\Game\StarRail.exe]"
+	        CloseButtonContent="关闭">
+            <TeachingTip.IconSource>
+                <SymbolIconSource Symbol="Help" />
+            </TeachingTip.IconSource>
+        </TeachingTip>
+
         <TeachingTip x:Name="NoGraphicsTip"
             Target="{x:Bind startGame}"
             Title="未检测到当前画质的注册表"
@@ -49,7 +60,7 @@
 	        ActionButtonContent="启动游戏"
 	        CloseButtonContent="关闭">
             <TeachingTip.IconSource>
-                <SymbolIconSource Symbol="Stop" />
+                <SymbolIconSource Symbol="SaveLocal" />
             </TeachingTip.IconSource>
         </TeachingTip>
         

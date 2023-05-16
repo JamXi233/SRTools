@@ -12,6 +12,9 @@ using Windows.Graphics;
 using WinRT.Interop;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.Win32;
+using Fiddler;
+using WinRT;
+using SRTools.Depend;
 
 // To learn more about WinUI, the WinUI project structure,
 // and more about our project templates, see: http://aka.ms/winui-project-info.
@@ -26,47 +29,20 @@ namespace SRTools
         private AppWindow appWindow;
         private AppWindowTitleBar titleBar;
         private SystemBackdrop backdrop;
+        private SReg sReg;
 
         public MainWindow()
         {
             // 设置窗口标题
             this.Title = "JSG-LLC_SRTools";
             this.InitializeComponent();
-
-            //检查注册表项
-            string keyPath = @"Software\miHoYo\崩坏：星穹铁道";
-            string valueGamePath = "SRTools_Config_GamePath";
-            string valueUnlockFPS = "SRTools_Config_UnlockFPS";
-            string folderPath = @"Null";
-            int unlockFPSValue = 1;
-
-            // 打开注册表项
-            RegistryKey baseKey = RegistryKey.OpenBaseKey(RegistryHive.CurrentUser, RegistryView.Registry32);
-            RegistryKey key = baseKey.OpenSubKey(keyPath, true);
+            this.Activated += OnWindowActivated;
 
             // 如果注册表项不存在，创建它
-            if (key == null)
-            {
-                key = baseKey.CreateSubKey(keyPath);
-                Console.WriteLine("Created registry key.");
-            }
-
-            // 如果值不存在，写入它
-            if (key.GetValue(valueGamePath) == null)
-            {
-                key.SetValue(valueGamePath, folderPath, RegistryValueKind.String);
-                Console.WriteLine("Wrote registry value for SRTools_Config_Folder.");
-            }
-
-            // 如果值不存在，写入它
-            if (key.GetValue(valueUnlockFPS) == null)
-            {
-                key.SetValue(valueUnlockFPS, unlockFPSValue, RegistryValueKind.String);
-                Console.WriteLine("Wrote registry value for SRTools_Config_UnlockFPS.");
-            }
-
-            // 关闭注册表项
-            key.Close();
+            sReg = new SReg();
+            sReg.CheckMainReg();
+            sReg.CheckReg("SRTools_Config_GamePath", "", true);
+            sReg.CheckReg("SRTools_Config_UnlockFPS", "1", true);
 
             // 设置云母或亚克力背景
             backdrop = new SystemBackdrop(this);
@@ -78,7 +54,7 @@ namespace SRTools
             appWindow = AppWindow.GetFromWindowId(id);
 
             // 初始化窗口大小和位置
-            appWindow.MoveAndResize(new RectInt32(_X: 560, _Y: 280, _Width: 800, _Height: 500));
+            appWindow.MoveAndResize(new RectInt32(_X: 560, _Y: 280, _Width: 1024, _Height: 584));
 
             // 自定义标题栏
             if (AppWindowTitleBar.IsCustomizationSupported())
@@ -147,6 +123,7 @@ namespace SRTools
 
         private void NavView_SelectionChanged(NavigationView sender, NavigationViewSelectionChangedEventArgs args)
         {
+            FiddlerApplication.Shutdown();
             if (args.IsSettingsSelected)
             {
                 // 处理设置菜单项单击事件
@@ -174,6 +151,21 @@ namespace SRTools
                 // 导航到默认设置页面
                 MainFrame.Navigate(typeof(AboutView));
             }
+        }
+
+        private void OnWindowActivated(object sender, WindowActivatedEventArgs e)
+        {
+            User32.WindowLongFlags GWL_STYLE = User32.WindowLongFlags.GWL_STYLE;
+            int WS_THICKFRAME = 0x40000;
+
+            IntPtr hWnd = hwnd;
+            int windowStyle = User32.GetWindowLong(hWnd, GWL_STYLE);
+            User32.SetWindowLong(hWnd, GWL_STYLE, windowStyle & ~WS_THICKFRAME);
+        }
+
+        public void NavDisable() 
+        {
+            Nav_Home.IsEnabled = false;
         }
 
     }
