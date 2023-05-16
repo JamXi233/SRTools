@@ -18,6 +18,9 @@
 
 **如出现闪退状况，尝试以管理员运行Powershell后运行**set-executionpolicy remotesigned**后再试**
 
+**需要.NET Desktop Runtime 7.0**[下载](https://aka.ms/dotnet-core-applaunch?missing_runtime=true&arch=x64&rid=win10-x64&apphost_version=7.0.5&gui=true)
+
+如未安装在进入程序时也会提示安装
 # 注意事项
 本工具箱仅适用于PC版星穹铁道。
 
