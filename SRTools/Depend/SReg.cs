@@ -8,16 +8,12 @@ namespace SRTools.Depend
 {
     class SReg
     {
+        string hoyoPath = @"Software\miHoYo";
         string mainPath = @"Software\miHoYo\崩坏：星穹铁道";
         public int CheckMainReg()
         {
-            RegistryKey baseKey = RegistryKey.OpenBaseKey(RegistryHive.CurrentUser, RegistryView.Registry64);
-            RegistryKey key = baseKey.OpenSubKey(mainPath, true);
-            if (key == null)
-            {
-                key = baseKey.CreateSubKey(mainPath);
-            }
-            key.Close();
+            CreateRegistryKeyIfNotExists(hoyoPath);
+            CreateRegistryKeyIfNotExists(mainPath);
             return 0;
         }
 
@@ -75,6 +71,25 @@ namespace SRTools.Depend
             }
 
             key.Close();
+        }
+        public RegistryKey CreateRegistryKeyIfNotExists(string keyPath)
+        {
+            try
+            {
+                RegistryKey key = Registry.CurrentUser.OpenSubKey(keyPath, true);
+
+                if (key == null)
+                {
+                    key = Registry.CurrentUser.CreateSubKey(keyPath);
+                }
+
+                return key;
+            }
+            catch (Exception ex)
+            {
+                // 在此处理异常
+                return null;
+            }
         }
     }
 }

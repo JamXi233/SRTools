@@ -20,7 +20,7 @@ namespace SRTools.Views
         private void LoadAdvertisementData()
         {
             // 从API获取的数据
-            string backgroundUrl = "https://webstatic.mihoyo.com/upload/operation_location/2023/05/13/3a4fc6a540fc834588cb354c9144c739_1612107511066373383.png";
+            string backgroundUrl = "https://webstatic.mihoyo.com/upload/operation_location/2023/05/13/3a4fc6a540fc834588cb354c9144c739_1612107511066373383.pn";
             string iconUrl = "https://webstatic.mihoyo.com/upload/operation_location/2023/05/13/e955531778044b0cbce4ea084c3389b3_1753505874027884451.png";
             _url = "https://www.miyoushe.com/sr/article/39392377";
 

@@ -1,5 +1,3 @@
-// 版权信息
-// 使用 MIT 许可证。
 using SRTools.Views;
 using Microsoft.UI;
 using Microsoft.UI.Windowing;
@@ -16,13 +14,9 @@ using Fiddler;
 using WinRT;
 using SRTools.Depend;
 
-// To learn more about WinUI, the WinUI project structure,
-// and more about our project templates, see: http://aka.ms/winui-project-info.
 namespace SRTools
 {
-    /// <summary>
-    /// 空窗口，可以作为单独使用的窗口或在 Frame 中导航到该窗口。
-    /// </summary>
+
     public partial class MainWindow : Window
     {
         private IntPtr hwnd;
@@ -53,8 +47,16 @@ namespace SRTools
             WindowId id = Win32Interop.GetWindowIdFromWindow(hwnd);
             appWindow = AppWindow.GetFromWindowId(id);
 
-            // 初始化窗口大小和位置
-            appWindow.MoveAndResize(new RectInt32(_X: 560, _Y: 280, _Width: 1024, _Height: 584));
+            // 获取系统缩放率
+            float scale = (float)User32.GetDpiForWindow(hwnd) / 96;
+
+            // 使用缩放率调整窗口位置和大小
+            int windowX = (int)(560 * scale);
+            int windowY = (int)(280 * scale);
+            int windowWidth = (int)(1024 * scale);
+            int windowHeight = (int)(584 * scale);
+
+            appWindow.MoveAndResize(new RectInt32(windowX, windowY, windowWidth, windowHeight));
 
             // 自定义标题栏
             if (AppWindowTitleBar.IsCustomizationSupported())
@@ -66,8 +68,7 @@ namespace SRTools
                 titleBar.ButtonBackgroundColor = Colors.Transparent;
                 titleBar.ButtonInactiveBackgroundColor = Colors.Transparent;
                 titleBar.ButtonForegroundColor = Colors.White;
-                // 获取系统缩放率
-                var scale = (float)User32.GetDpiForWindow(hwnd) / 96;
+
                 // 48 这个值是应用标题栏的高度，不是唯一的，根据自己的 UI 设计而定
                 titleBar.SetDragRectangles(new RectInt32[] { new RectInt32((int)(48 * scale), 0, 10000, (int)(48 * scale)) });
             }
@@ -161,11 +162,6 @@ namespace SRTools
             IntPtr hWnd = hwnd;
             int windowStyle = User32.GetWindowLong(hWnd, GWL_STYLE);
             User32.SetWindowLong(hWnd, GWL_STYLE, windowStyle & ~WS_THICKFRAME);
-        }
-
-        public void NavDisable() 
-        {
-            Nav_Home.IsEnabled = false;
         }
 
     }

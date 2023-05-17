@@ -1,6 +1,3 @@
-<!-- Copyright (c) Microsoft Corporation and Contributors. -->
-<!-- Licensed under the MIT License. -->
-
 <Window
     x:Class="SRTools.MainWindow"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
@@ -33,31 +30,23 @@
         </NavigationView>
 
         <Border x:Name="AppTitleBar" Height="48" Margin="48,0,0,0" VerticalAlignment="Top" Background="{ThemeResource SystemControlAcrylicElementMediumHighBrush}">
+            
             <Grid>
+                
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="*"/>
                 </Grid.ColumnDefinitions>
-                <Border CornerRadius="24" Margin="0 0 8 0">
-                    <Image
-                Grid.Row="0"
-                Source="ms-appx:///Assets/Logo_Background.png"
-                Width="24"
-                Height="24"/>
-                </Border>
-                <TextBlock Grid.Column="1" VerticalAlignment="Center" Foreground="{ThemeResource TextFillColorSecondaryBrush}" Text="SRTools(星穹铁道工具箱)" />
 
-                <!-- Add a ComboBox in the middle of the AppBar -->
-                <ComboBox Grid.Column="2"
-                  VerticalAlignment="Center"
-                  Margin="8,0,0,0"
-                  MaxWidth="200">
-                    <ComboBoxItem>Option 1</ComboBoxItem>
-                    <ComboBoxItem>Option 2</ComboBoxItem>
-                    <ComboBoxItem>Option 3</ComboBoxItem>
-                </ComboBox>
+                <Border CornerRadius="24" Margin="0 0 8 0">
+                    <Image Grid.Row="0" Source="ms-appx:///Assets/Logo_Background.png" Width="24" Height="24"/>
+                </Border>
+                
+                <TextBlock Grid.Column="1" VerticalAlignment="Center" Foreground="{ThemeResource TextFillColorSecondaryBrush}" Text="SRTools(星穹铁道工具箱)" />
+                
             </Grid>
+            
         </Border>
 
     </Grid>
