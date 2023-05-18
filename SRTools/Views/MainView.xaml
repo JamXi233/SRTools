@@ -8,7 +8,7 @@
     mc:Ignorable="d">
 
     <Grid>
-        <Image x:Name="BackgroundImage" Stretch="UniformToFill" Opacity="1" ImageOpened="BackgroundImage_ImageOpened" Margin="0 0 0 0"/>
+        <Image x:Name="BackgroundImage" Stretch="UniformToFill" Opacity="0" ImageOpened="BackgroundImage_ImageOpened" Margin="0 0 0 0"/>
         <Grid HorizontalAlignment="Stretch" Margin="24">
 
             <Grid.ColumnDefinitions>
@@ -25,7 +25,7 @@
 
             <!-- 右侧区域 -->
             <StackPanel Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Bottom">
-                <Button x:Name="OpenUrlButton" Click="OpenUrlButton_Click" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="70" Height="40" Width="136" BorderBrush="Transparent">
+                <Button x:Name="OpenUrlButton" Click="OpenUrlButton_Click" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="70" Height="40" Width="136">
                     <Button.Background>
                         <ImageBrush x:Name="IconImageBrush"/>
                     </Button.Background>
