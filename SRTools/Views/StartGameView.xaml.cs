@@ -23,8 +23,6 @@ using System.Threading;
 using Microsoft.UI.Dispatching;
 using Windows.Security.EnterpriseData;
 using Windows.Security.Authorization.AppCapabilityAccess;
-using SRTools.Depend;
-using System.Windows.Input;
 
 // To learn more about WinUI, the WinUI project structure,
 // and more about our project templates, see: http://aka.ms/winui-project-info.
@@ -36,11 +34,11 @@ namespace SRTools.Views
     /// </summary>
     public sealed partial class StartGameView : Page
     {
+        private Timer timer;
         private DispatcherQueueTimer dispatcherTimer;
-        private SReg sReg;
+
         public StartGameView()
         {
-            Console.WriteLine("Toggle to StartGameView");
             this.InitializeComponent();
             // 获取UI线程的DispatcherQueue
             var dispatcherQueue = DispatcherQueue.GetForCurrentThread();
@@ -50,16 +48,49 @@ namespace SRTools.Views
             dispatcherTimer.Interval = TimeSpan.FromSeconds(2);
             dispatcherTimer.Tick += CheckProcess;
             dispatcherTimer.Start();
-            sReg = new SReg();
-            String GamePathValue = sReg.ReadReg("SRTools_Config_GamePath");
-            String UnlockFPSValue = sReg.ReadReg("SRTools_Config_UnlockFPS");
-            if (string.IsNullOrEmpty(GamePathValue) && GamePathValue.Contains("Null"))
-                UpdateUIElementsVisibility(0);
-            else 
-                UpdateUIElementsVisibility(1);
-            if (UnlockFPSValue == "1") unlockFPS.IsChecked = true;
+            string keyPath = @"Software\miHoYo\崩坏：星穹铁道";
+            string valueName = "SRTools_Config_GamePath";
+            string valueUnlockFPS = "SRTools_Config_UnlockFPS";
+            using (var key = Registry.CurrentUser.OpenSubKey(keyPath))
+            {
+                if (key != null)
+                {
+                    var value = key.GetValue(valueName) as string;
+                    if (!string.IsNullOrEmpty(value) && value.Contains("Null"))
+                    {
+                        UpdateUIElementsVisibility(0);
+                    }
+                    else
+                    {
+                        UpdateUIElementsVisibility(1);
+                    }
+                }
+                else
+                {
+                    UpdateUIElementsVisibility(1);
+                }
+            }
+            using (var key = Registry.CurrentUser.OpenSubKey(keyPath))
+            {
+                if (key != null)
+                {
+                    var value = key.GetValue(valueUnlockFPS) as string;
+                    if (value == "1")
+                    {
+                        unlockFPS.IsChecked = true;
+                    }
+                    else if (value == "0")
+                    {
+                        unlockFPS.IsChecked = false;
+                    }
+                }
+                else
+                {
+                    unlockFPS.IsChecked = false;
+                }
+            }
 
-            else unlockFPS.IsChecked = false;
+
         }
         private async void SelectGame(object sender, RoutedEventArgs e)
         {
@@ -78,16 +109,11 @@ namespace SRTools.Views
                 {
                     key.SetValue(valueGamePath, folderPath, RegistryValueKind.String);
                 }
-                WrongGameFile.IsOpen = false;
                 UpdateUIElementsVisibility(1);
-            }
-            else
-            {
-                WrongGameFile.IsOpen = true;
             }
         }
 
-        private void RMGameLocation(object sender, RoutedEventArgs e)
+        private async void RMGameLocation(object sender, RoutedEventArgs e)
         {
             string keyPath = @"Software\miHoYo\崩坏：星穹铁道";
             string valueGamePath = "SRTools_Config_GamePath";
@@ -124,6 +150,7 @@ namespace SRTools.Views
                 key.SetValue(valueName, newValueBytes, RegistryValueKind.Binary);
                 key.Close();
                 StartGame(null, null);
+
             }
             else 
             {
@@ -156,7 +183,6 @@ namespace SRTools.Views
                 rmGame.Visibility = Visibility.Collapsed;
                 rmGame.IsEnabled = false;
                 startGame.IsEnabled = false;
-                unlockFPS.IsEnabled = false;
             }
             else
             {
@@ -165,7 +191,6 @@ namespace SRTools.Views
                 rmGame.Visibility = Visibility.Visible;
                 rmGame.IsEnabled = true;
                 startGame.IsEnabled = true;
-                unlockFPS.IsEnabled = true;
             }
         }
 

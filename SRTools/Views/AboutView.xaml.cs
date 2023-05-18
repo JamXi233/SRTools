@@ -34,7 +34,6 @@ namespace SRTools.Views
 
         public AboutView()
         {
-            Console.WriteLine("123",true);
             InitializeComponent();
         }
 

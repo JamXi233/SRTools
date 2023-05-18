@@ -6,7 +6,7 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d"
-    Background="Transparent">
+    Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
 
     <Grid HorizontalAlignment="Stretch" Margin="24">
 
@@ -18,14 +18,14 @@
         <!-- 左侧区域 -->
         <StackPanel Grid.Column="0" HorizontalAlignment="Left" Orientation="Horizontal">
             <StackPanel HorizontalAlignment="Stretch">
-                <Button x:Name="StartProxyButton" Content="开启代理" Click="StartProxyButton_Click" Margin="0 0 0 8"/>
-                <Button x:Name="StopProxyButton" Content="关闭代理" Click="StopProxyButton_Click" Margin="0 0 0 8"/>
+                <ToggleButton x:Name="StartProxyButton" Content="开启代理" Click="StartProxyButton_Click" Margin="0 0 0 8"/>
+                <ToggleButton x:Name="StopProxyButton" Content="关闭代理" Click="StopProxyButton_Click" Margin="0 0 0 8"/>
             </StackPanel>
         </StackPanel>
 
         <!-- 右侧区域 -->
-        <StackPanel Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Top">
-            <TextBlock x:Name="GachaLink_Box" Text="正在等待" TextWrapping="Wrap" Width="auto"/>
+        <StackPanel Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Bottom">
+            
         </StackPanel>
 
         <TeachingTip x:Name="GachaLink"
@@ -37,5 +37,6 @@
                 <SymbolIconSource Symbol="Stop" />
             </TeachingTip.IconSource>
         </TeachingTip>
+
     </Grid>
 </Page>
