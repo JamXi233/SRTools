@@ -23,6 +23,9 @@ using System.Threading;
 using Microsoft.UI.Dispatching;
 using Windows.Security.EnterpriseData;
 using Windows.Security.Authorization.AppCapabilityAccess;
+using Windows.ApplicationModel;
+using Windows.Foundation.Metadata;
+using SRTools.Depend;
 
 // To learn more about WinUI, the WinUI project structure,
 // and more about our project templates, see: http://aka.ms/winui-project-info.
@@ -36,6 +39,8 @@ namespace SRTools.Views
     {
         private Timer timer;
         private DispatcherQueueTimer dispatcherTimer;
+        ApplicationDataContainer localSettings = ApplicationData.Current.LocalSettings;
+        string userDocumentsFolderPath = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
 
         public StartGameView()
         {
@@ -48,46 +53,38 @@ namespace SRTools.Views
             dispatcherTimer.Interval = TimeSpan.FromSeconds(2);
             dispatcherTimer.Tick += CheckProcess;
             dispatcherTimer.Start();
-            string keyPath = @"Software\miHoYo\崩坏：星穹铁道";
-            string valueName = "SRTools_Config_GamePath";
-            string valueUnlockFPS = "SRTools_Config_UnlockFPS";
-            using (var key = Registry.CurrentUser.OpenSubKey(keyPath))
+            if (localSettings.Values.ContainsKey("SRTools_Config_GamePath"))
             {
-                if (key != null)
+                var value = localSettings.Values["SRTools_Config_GamePath"] as string;
+                if (!string.IsNullOrEmpty(value) && value.Contains("Null"))
                 {
-                    var value = key.GetValue(valueName) as string;
-                    if (!string.IsNullOrEmpty(value) && value.Contains("Null"))
-                    {
-                        UpdateUIElementsVisibility(0);
-                    }
-                    else
-                    {
-                        UpdateUIElementsVisibility(1);
-                    }
+                    UpdateUIElementsVisibility(0);
                 }
                 else
                 {
                     UpdateUIElementsVisibility(1);
                 }
             }
-            using (var key = Registry.CurrentUser.OpenSubKey(keyPath))
+            else
             {
-                if (key != null)
+                UpdateUIElementsVisibility(1);
+            }
+
+            if (localSettings.Values.ContainsKey("SRTools_Config_UnlockFPS"))
+            {
+                var value = localSettings.Values["SRTools_Config_UnlockFPS"] as string;
+                if (value == "1")
                 {
-                    var value = key.GetValue(valueUnlockFPS) as string;
-                    if (value == "1")
-                    {
-                        unlockFPS.IsChecked = true;
-                    }
-                    else if (value == "0")
-                    {
-                        unlockFPS.IsChecked = false;
-                    }
+                    unlockFPS.IsChecked = true;
                 }
-                else
+                else if (value == "0")
                 {
                     unlockFPS.IsChecked = false;
                 }
+            }
+            else
+            {
+                unlockFPS.IsChecked = false;
             }
 
 
@@ -102,75 +99,45 @@ namespace SRTools.Views
             var file = await picker.PickSingleFileAsync();
             if (file != null && file.Name == "StarRail.exe")
             {
-                string keyPath = @"Software\miHoYo\崩坏：星穹铁道";
-                string valueGamePath = "SRTools_Config_GamePath";
-                string folderPath = @file.Path;
-                using (var key = Registry.CurrentUser.OpenSubKey(keyPath, true))
-                {
-                    key.SetValue(valueGamePath, folderPath, RegistryValueKind.String);
-                }
+                localSettings.Values["SRTools_Config_GamePath"] = @file.Path;
                 UpdateUIElementsVisibility(1);
+            }
+            else
+            {
+                ValidGameFile.Subtitle = "选择正确的StarRail.exe\n通常位于[游戏根目录\\Game\\StarRail.exe]";
+                ValidGameFile.IsOpen = true;
             }
         }
 
         private async void RMGameLocation(object sender, RoutedEventArgs e)
         {
-            string keyPath = @"Software\miHoYo\崩坏：星穹铁道";
-            string valueGamePath = "SRTools_Config_GamePath";
-            string folderPath = @"Null";
-            using (var key = Registry.CurrentUser.OpenSubKey(keyPath, true))
-            {
-                key.SetValue(valueGamePath, folderPath, RegistryValueKind.String);
-            }
+            localSettings.Values["SRTools_Config_GamePath"] = @"Null";
             UpdateUIElementsVisibility(0);
         }
         //启动游戏
-        private void StartGame_Click(object sender, RoutedEventArgs e)
+        private async void StartGame_Click(object sender, RoutedEventArgs e)
         {
             if (unlockFPS.IsChecked ?? false)
             {
-                string keyPath = @"Software\miHoYo\崩坏：星穹铁道";
-                string valueName = "GraphicsSettings_Model_h2986158309";
-                RegistryKey key = Registry.CurrentUser.OpenSubKey(keyPath, true);
-                byte[] valueBytes = (byte[])key.GetValue(valueName);
-                if (key == null || valueBytes == null)
-                {
-                    NoGraphicsTip.IsOpen = true;
-                    return;
-                }
-                string valueString = Encoding.UTF8.GetString(valueBytes);
-                if (!valueString.Contains("\"FPS\":60"))
-                {
-                    key.Close();
-                    StartGame(null, null);
-                    return;
-                }
-                string newValueString = valueString.Replace("{\"FPS\":60", "{\"FPS\":120");
-                byte[] newValueBytes = Encoding.UTF8.GetBytes(newValueString);
-                key.SetValue(valueName, newValueBytes, RegistryValueKind.Binary);
-                key.Close();
+                ProcessRun.RunProcess_Message(userDocumentsFolderPath + "\\JSG-LLC\\SRTools\\Depends\\SRToolsHelper.zip\\SRToolsHelper.exe","/FPS 120");
                 StartGame(null, null);
-
             }
             else 
             {
+                ProcessRun.RunProcess_Message(userDocumentsFolderPath + "\\JSG-LLC\\SRTools\\Depends\\SRToolsHelper.zip\\SRToolsHelper.exe", "/FPS 60");
                 StartGame(null, null);
             }
         }
 
         private void UnlockFPS_Click(object sender, RoutedEventArgs e) 
         {
-            string keyPath = @"Software\miHoYo\崩坏：星穹铁道";
-            string valueUnlockFPS = "SRTools_Config_UnlockFPS";
-            RegistryKey baseKey = RegistryKey.OpenBaseKey(RegistryHive.CurrentUser, RegistryView.Registry32);
-            RegistryKey key = baseKey.OpenSubKey(keyPath, true);
-            if (unlockFPS.IsChecked ?? false) 
+            if (unlockFPS.IsChecked ?? false)
             {
-                key.SetValue(valueUnlockFPS, 1, RegistryValueKind.String);
+                localSettings.Values["SRTools_Config_UnlockFPS"] = "1";
             }
             else
             {
-                key.SetValue(valueUnlockFPS, 0, RegistryValueKind.String);
+                localSettings.Values["SRTools_Config_UnlockFPS"] = "0";
             }
         }
 
@@ -196,11 +163,7 @@ namespace SRTools.Views
 
         private void StartGame(TeachingTip sender, object args)
         {
-            string keyPath = @"Software\miHoYo\崩坏：星穹铁道";
-            string valueGamePath = "SRTools_Config_GamePath";
-            RegistryKey key = Registry.CurrentUser.OpenSubKey(keyPath);
-            string gamePath = (string)key.GetValue(valueGamePath);
-            key.Close();
+            string gamePath = localSettings.Values["SRTools_Config_GamePath"] as string;
             var processInfo = new ProcessStartInfo(gamePath);
             
             //启动程序

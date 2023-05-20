@@ -4,15 +4,24 @@
     <TargetFramework>net7.0-windows10.0.22621.0</TargetFramework>
     <TargetPlatformMinVersion>10.0.17763.0</TargetPlatformMinVersion>
     <RootNamespace>SRTools</RootNamespace>
-    <Platforms>x86;x64;ARM64</Platforms>
+    <Platforms>x64</Platforms>
     <RuntimeIdentifiers>win10-x86;win10-x64;win10-arm64</RuntimeIdentifiers>
     <PublishProfile>win10-$(Platform).pubxml</PublishProfile>
     <UseWinUI>true</UseWinUI>
     <EnableMsixTooling>true</EnableMsixTooling>
+	<EnablePreviewMsixTooling>true</EnablePreviewMsixTooling>
+	<SatelliteResourceLanguages>en</SatelliteResourceLanguages>
+	<BuiltInComInteropSupport>true</BuiltInComInteropSupport>
+	<TieredCompilation>true</TieredCompilation>
+	<TieredCompilationQuickJit>true</TieredCompilationQuickJit>
+	<TieredCompilationQuickJitForLoops>true</TieredCompilationQuickJitForLoops>
+	<TieredPGO>true</TieredPGO>
+	<DebugType>portable</DebugType>
+	<WindowsAppSDKSelfContained>true</WindowsAppSDKSelfContained>
 
 	<ApplicationIcon>Assets\Logo.ico</ApplicationIcon>
 
-	<PackageCertificateThumbprint>DD9553AB696124370956C73A2B69BEBF019F7656</PackageCertificateThumbprint>
+	<PackageCertificateThumbprint>3830130E50D59313928BE67F3E76CB1D8DB2DBDA</PackageCertificateThumbprint>
 
 	<AppxPackageSigningEnabled>True</AppxPackageSigningEnabled>
 
@@ -28,13 +37,19 @@
 
 	<AppxBundle>Always</AppxBundle>
 
-	<AppxBundlePlatforms>x64|arm64</AppxBundlePlatforms>
+	<AppxBundlePlatforms>x64</AppxBundlePlatforms>
 
 	<HoursBetweenUpdateChecks>0</HoursBetweenUpdateChecks>
 
 	<DefaultLanguage>zh-CN</DefaultLanguage>
 
 	<ApplicationManifest>app.manifest</ApplicationManifest>
+
+	<UseWindowsForms>False</UseWindowsForms>
+
+	<UseWPF>False</UseWPF>
+
+	<PlatformTarget>x64</PlatformTarget>
   </PropertyGroup>
   <ItemGroup>
     <Compile Remove="Views\Dialog.xaml.cs" />

@@ -6,7 +6,7 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d"
-    Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
+    Background="Transparent">
 
     <Grid HorizontalAlignment="Stretch" Margin="24">
 
@@ -18,8 +18,7 @@
         <!-- 左侧区域 -->
         <StackPanel Grid.Column="0" HorizontalAlignment="Left" Orientation="Horizontal">
             <StackPanel HorizontalAlignment="Stretch">
-                <ToggleButton x:Name="StartProxyButton" Content="开启代理" Click="StartProxyButton_Click" Margin="0 0 0 8"/>
-                <ToggleButton x:Name="StopProxyButton" Content="关闭代理" Click="StopProxyButton_Click" Margin="0 0 0 8"/>
+                <ToggleButton x:Name="ProxyButton" Content="开启代理" Click="StartProxyButton_Click" Margin="0 0 0 8"/>
             </StackPanel>
         </StackPanel>
 
@@ -29,7 +28,7 @@
         </StackPanel>
 
         <TeachingTip x:Name="GachaLink"
-            Target="{x:Bind StartProxyButton}"
+            Target="{x:Bind ProxyButton}"
             Title="代理"
             Subtitle="SubTitle"
 	        CloseButtonContent="关闭">

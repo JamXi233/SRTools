@@ -8,8 +8,8 @@
 
   <Identity
     Name="2305cb6a-348b-48ce-906f-547149ecbd59"
-    Publisher="CN=JSG Software, O=JSG-LLC, C=CN"
-    Version="1.0.1.0" />
+    Publisher="CN=JamXi"
+    Version="1.0.2.0" />
 
   <Properties>
     <DisplayName>SRTools(星轨工具箱)</DisplayName>

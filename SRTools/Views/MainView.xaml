@@ -5,16 +5,32 @@
     xmlns:local="using:SRTools.Views"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-    mc:Ignorable="d"
-    Background="Transparent">
+    mc:Ignorable="d">
+
     <Grid>
-        <Viewbox
-            Height="200px"/>
-        <InfoBar
-            IsOpen="True"
-            Severity="Warning"
-            Title="尚未完成(WIA)"
-            Message="将会在稍后完成." />
+        <Image x:Name="BackgroundImage" Stretch="UniformToFill" Opacity="1" ImageOpened="BackgroundImage_ImageOpened" Margin="0 0 8 0"/>
+        <Grid HorizontalAlignment="Stretch" Margin="24">
+
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="3*"/>
+                <ColumnDefinition Width="2*"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- 左侧区域 -->
+            <StackPanel Grid.Column="0" HorizontalAlignment="Left">
+                <StackPanel HorizontalAlignment="Stretch">
+                    
+                </StackPanel>
+            </StackPanel>
+
+            <!-- 右侧区域 -->
+            <StackPanel Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Bottom">
+                <Button x:Name="OpenUrlButton" Click="OpenUrlButton_Click" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="70" Height="40" Width="136" BorderBrush="Transparent">
+                    <Button.Background>
+                        <ImageBrush x:Name="IconImageBrush"/>
+                    </Button.Background>
+                </Button>
+            </StackPanel>
+        </Grid>
     </Grid>
-    
 </Page>

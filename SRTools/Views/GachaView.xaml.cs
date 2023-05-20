@@ -40,49 +40,50 @@ namespace SRTools.Views
 
         private void StartProxyButton_Click(object sender, RoutedEventArgs e)
         {
-            if (isProxyRunning)
+            if (ProxyButton.IsEnabled) 
             {
-                // 代理服务器已经在运行中
-                return;
-            }
-            proxyServer = new ProxyServer();
-            proxyServer.AddEndPoint(new ExplicitProxyEndPoint(System.Net.IPAddress.Any, 8888));
-            proxyServer.BeforeRequest += OnBeforeRequest;
+                if (isProxyRunning)
+                {
+                    // 代理服务器已经在运行中
+                    return;
+                }
+                proxyServer = new ProxyServer();
+                proxyServer.AddEndPoint(new ExplicitProxyEndPoint(System.Net.IPAddress.Any, 8888));
+                proxyServer.BeforeRequest += OnBeforeRequest;
 
-            try
+                try
+                {
+                    // 启动代理服务器
+                    proxyServer.Start();
+                    SetSystemProxy("127.0.0.1:8888", 1);
+                    // 更新UI状态
+                    isProxyRunning = true;
+                    ProxyButton.Content = "关闭代理";
+                }
+                catch (Exception ex)
+                {
+                    GachaLink.Subtitle = ex.Message;
+                    GachaLink.IsOpen = true;
+                }
+            }
+            else 
             {
-                // 启动代理服务器
-                proxyServer.Start();
-                SetSystemProxy("127.0.0.1:8888",1);
+                if (!isProxyRunning)
+                {
+                    // 代理服务器已经停止
+                    return;
+                }
+
+                // 停止代理服务器
+                proxyServer.Stop();
+                SetSystemProxy("127.0.0.1:8888", 0);
+
                 // 更新UI状态
-                StartProxyButton.IsEnabled = false;
-                StopProxyButton.IsEnabled = true;
-                isProxyRunning = true;
-            }
-            catch (Exception ex)
-            {
-                GachaLink.Subtitle = ex.Message;
-                GachaLink.IsOpen = true;
+                isProxyRunning = false;
+                ProxyButton.Content = "开启代理";
             }
         }
 
-        private void StopProxyButton_Click(object sender, RoutedEventArgs e)
-        {
-            if (!isProxyRunning)
-            {
-                // 代理服务器已经停止
-                return;
-            }
-
-            // 停止代理服务器
-            proxyServer.Stop();
-            SetSystemProxy("127.0.0.1:8888", 0);
-
-            // 更新UI状态
-            StartProxyButton.IsEnabled = true;
-            StopProxyButton.IsEnabled = false;
-            isProxyRunning = false;
-        }
 
         private async Task OnBeforeRequest(object sender, SessionEventArgs e)
         {
@@ -93,7 +94,8 @@ namespace SRTools.Views
                 var dispatcher = Windows.ApplicationModel.Core.CoreApplication.GetCurrentView().CoreWindow.Dispatcher;
                 await dispatcher.RunAsync(CoreDispatcherPriority.Normal, () =>
                 {
-                    StopProxyButton_Click(null, null);
+                    ProxyButton.IsEnabled = false;
+                    StartProxyButton_Click(null, null);
                     GachaLink.Subtitle = "已检测到指定URL：" + e.WebSession.Request.RequestUri.ToString();
                     GachaLink.IsOpen = true;
                     SetSystemProxy("127.0.0.1:8888",0);

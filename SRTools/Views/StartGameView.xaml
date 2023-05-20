@@ -52,7 +52,17 @@
                 <SymbolIconSource Symbol="Stop" />
             </TeachingTip.IconSource>
         </TeachingTip>
-        
+
+        <TeachingTip x:Name="ValidGameFile"
+            Target="{x:Bind selectGame}"
+            Title="错误的游戏本体"
+            Subtitle="选择正确的StarRail.exe\n通常位于[游戏根目录\Game\StarRail.exe]"
+	        CloseButtonContent="关闭">
+            <TeachingTip.IconSource>
+                <SymbolIconSource Symbol="Help" />
+            </TeachingTip.IconSource>
+        </TeachingTip>
+
     </Grid>
     
 </Page>
