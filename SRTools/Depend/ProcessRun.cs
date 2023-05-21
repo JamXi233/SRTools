@@ -45,8 +45,6 @@ namespace SRTools.Depend
 
                     return null;
                 }
-
-                process.WaitForExit();
             }
         }
     }
