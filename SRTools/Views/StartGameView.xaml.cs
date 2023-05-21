@@ -119,12 +119,12 @@ namespace SRTools.Views
         {
             if (unlockFPS.IsChecked ?? false)
             {
-                ProcessRun.RunProcess_Message(userDocumentsFolderPath + "\\JSG-LLC\\SRTools\\Depends\\SRToolsHelper.zip\\SRToolsHelper.exe","/FPS 120");
+                ProcessRun.RunProcess_Message(userDocumentsFolderPath + "\\JSG-LLC\\SRTools\\Depends\\SRToolsHelper\\SRToolsHelper.exe","/FPS 120");
                 StartGame(null, null);
             }
             else 
             {
-                ProcessRun.RunProcess_Message(userDocumentsFolderPath + "\\JSG-LLC\\SRTools\\Depends\\SRToolsHelper.zip\\SRToolsHelper.exe", "/FPS 60");
+                ProcessRun.RunProcess_Message(userDocumentsFolderPath + "\\JSG-LLC\\SRTools\\Depends\\SRToolsHelper\\SRToolsHelper.exe", "/FPS 60");
                 StartGame(null, null);
             }
         }

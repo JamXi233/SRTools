@@ -56,7 +56,7 @@
         </Grid>
 
         <Grid x:Name="FirstRun" Visibility="Visible"  Background="{ThemeResource SystemControlAcrylicElementMediumHighBrush}">
-<Grid.ColumnDefinitions>
+            <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="3*"/>
                 <ColumnDefinition Width="2*"/>
             </Grid.ColumnDefinitions>
@@ -66,22 +66,22 @@
                 <StackPanel HorizontalAlignment="Stretch" Margin="38">
                     <TextBlock Text="首次运行" FontSize="24" FontWeight="Bold"/>
                     <TextBlock Text="首席运行需要先下载依赖文件" Margin="0 12 0 0"/>
-                    <TextBlock Text="注意事项" Margin="0 12 0 0"/>
+                    <TextBlock x:Name="depend_Latest_Version" Text="注意事项" Margin="0 12 0 0"/>
                 </StackPanel>
             </StackPanel>
 
             <!-- 右侧区域 -->
             <StackPanel Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Bottom">
-                <TextBlock x:Name="dependupdate_Info"/>
-                <Button  x:Name="dependDownload" Width="90" Height="84" VerticalAlignment="Bottom" HorizontalAlignment="Right" Margin="12" Click="DependDownload_Click">
+                <TextBlock x:Name="depend_Info"/>
+                <Button  x:Name="depend_Download" Width="90" Height="84" VerticalAlignment="Bottom" HorizontalAlignment="Right" Margin="12" Click="DependDownload_Click" IsEnabled="False">
                     <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
-                        <StackPanel x:Name="dependupdate_Grid">
-                            <SymbolIcon x:Name="dependupdate_Btn_Icon" Symbol="Download" Width="32" Height="32"/>
-                            <TextBlock x:Name="dependupdate_Btn_Text" Text="立即下载" FontSize="12"/>
+                        <StackPanel x:Name="depend_Grid">
+                            <SymbolIcon x:Name="depend_Btn_Icon" Symbol="Download" Width="32" Height="32"/>
+                            <TextBlock x:Name="depend_Btn_Text" Text="立即下载" FontSize="12"/>
                         </StackPanel>
-                        <StackPanel x:Name="dependupdate_Progress_Grid" Visibility="Collapsed">
-                            <ProgressRing x:Name="dependupdate_Btn_Ring" Margin="0 0 0 18"/>
-                            <ProgressBar x:Name="dependupdate_Btn_Bar" Width="130" IsIndeterminate="False" ShowPaused="False" ShowError="False" />
+                        <StackPanel x:Name="depend_Progress_Grid"  Visibility="Collapsed">
+                            <ProgressRing x:Name="depend_Btn_Ring" Margin="0 0 0 18"/>
+                            <ProgressBar x:Name="depend_Btn_Bar" Width="130" IsIndeterminate="False" ShowPaused="False" ShowError="False" />
                         </StackPanel>
                     </StackPanel>
                 </Button>
@@ -109,11 +109,11 @@
                 <TextBlock x:Name="update_Info"/>
                 <Button  x:Name="UpdateDownload" Width="90" Height="84" VerticalAlignment="Bottom" HorizontalAlignment="Right" Margin="12" Click="DependDownload_Click">
                     <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
-                        <StackPanel x:Name="update_Grid">
+                        <StackPanel x:Name="update_Grid" Visibility="Collapsed">
                             <SymbolIcon x:Name="update_Btn_Icon" Symbol="Up" Width="32" Height="32"/>
                             <TextBlock x:Name="update_Btn_Text" Text="立即更新" FontSize="12"/>
                         </StackPanel>
-                        <StackPanel x:Name="update_Progress_Grid" Visibility="Collapsed">
+                        <StackPanel x:Name="update_Progress_Grid" >
                             <ProgressRing x:Name="update_Btn_Ring" Margin="0 0 0 18"/>
                             <ProgressBar x:Name="update_Btn_Bar" Width="130" IsIndeterminate="False" ShowPaused="False" ShowError="False" />
                         </StackPanel>

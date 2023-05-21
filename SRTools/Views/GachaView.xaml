@@ -23,8 +23,31 @@
         </StackPanel>
 
         <!-- 右侧区域 -->
-        <StackPanel Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Bottom">
-            
+        <StackPanel Grid.Column="1">
+            <StackPanel HorizontalAlignment="Right" VerticalAlignment="Bottom">
+                <TextBlock x:Name="GachaLink_Box"/>
+                <StackPanel x:Name="MyStackPanel" />
+                <ListView x:Name="MyListView" Height="200" CanBeScrollAnchor="True" Margin="0 12 0 0">
+                    <ListView.HeaderTemplate>
+                        <DataTemplate>
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="名称" Width="100" />
+                                <TextBlock Text="星级" Width="100" />
+                                <TextBlock Text="日期" Width="100" />
+                            </StackPanel>
+                        </DataTemplate>
+                    </ListView.HeaderTemplate>
+                    <ListView.ItemTemplate>
+                        <DataTemplate>
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="{Binding Name}" Width="85" />
+                                <TextBlock Text="{Binding RankType}" Width="85" />
+                                <TextBlock Text="{Binding Time}" Width="150" />
+                            </StackPanel>
+                        </DataTemplate>
+                    </ListView.ItemTemplate>
+                </ListView>
+            </StackPanel>
         </StackPanel>
 
         <TeachingTip x:Name="GachaLink"
@@ -33,7 +56,7 @@
             Subtitle="SubTitle"
 	        CloseButtonContent="关闭">
             <TeachingTip.IconSource>
-                <SymbolIconSource Symbol="Stop" />
+                <SymbolIconSource Symbol="Admin" />
             </TeachingTip.IconSource>
         </TeachingTip>
 
