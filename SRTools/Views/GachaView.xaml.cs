@@ -5,12 +5,9 @@ using Microsoft.UI.Xaml.Controls;
 using System.Threading.Tasks;
 using Fiddler;
 using Microsoft.UI.Dispatching;
-using System.Threading;
 using Windows.ApplicationModel.DataTransfer;
-using static System.Net.Mime.MediaTypeNames;
 using SRTools.Depend;
 using System.Linq;
-using System.Security.Policy;
 using Windows.Storage;
 using Newtonsoft.Json;
 

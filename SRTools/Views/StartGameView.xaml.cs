@@ -56,6 +56,7 @@ namespace SRTools.Views
             if (localSettings.Values.ContainsKey("SRTools_Config_GamePath"))
             {
                 var value = localSettings.Values["SRTools_Config_GamePath"] as string;
+                Trace.WriteLine(value);
                 if (!string.IsNullOrEmpty(value) && value.Contains("Null"))
                 {
                     UpdateUIElementsVisibility(0);

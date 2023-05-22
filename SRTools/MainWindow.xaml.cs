@@ -40,7 +40,7 @@ namespace SRTools
         private const string ValueGamePath = "Config_Folder";
         private const string ValueUnlockFPS = "Config_UnlockFPS";
 
-        private record LocalSettingsData(string FirstRun, string FolderPath, string UnlockFPSValue);
+        private record LocalSettingsData(string FirstRun, string UnlockFPSValue);
 
         public MainWindow()
         {
@@ -50,7 +50,7 @@ namespace SRTools
             _getNetData = new GetNetData();
             ApplicationDataContainer keyContainer = GetOrCreateContainer(KeyPath);
 
-            LocalSettingsData defaultValues = new LocalSettingsData("1", "Null", "Null");
+            LocalSettingsData defaultValues = new LocalSettingsData("1", "Null");
             LocalSettingsData currentValues = GetCurrentValues(keyContainer, defaultValues);
 
             if (currentValues.FirstRun == "1")
@@ -112,7 +112,6 @@ namespace SRTools
         {
             return new LocalSettingsData(
                 GetValueOrDefault(keyContainer, ValueFirstRun, defaultValues.FirstRun),
-                GetValueOrDefault(keyContainer, ValueGamePath, defaultValues.FolderPath),
                 GetValueOrDefault(keyContainer, ValueUnlockFPS, defaultValues.UnlockFPSValue)
             );
         }
@@ -129,9 +128,14 @@ namespace SRTools
         private async void DependDownload_Click(object sender, RoutedEventArgs e)
         {
             string userDocumentsFolderPath = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
-            string localFilePath = Path.Combine(userDocumentsFolderPath, FileFolder, ZipFileName);
+            string localFilePath = Path.Combine(userDocumentsFolderPath + FileFolder, ZipFileName);
             Trace.WriteLine(fileUrl);
-            ToggleUpdateGridVisibility(false);
+
+            // 获取UI线程的DispatcherQueue
+            var dispatcher = Microsoft.UI.Dispatching.DispatcherQueue.GetForCurrentThread();
+
+            // 使用Dispatcher在UI线程上执行ToggleUpdateGridVisibility函数
+            dispatcher.TryEnqueue(() => ToggleUpdateGridVisibility(false));
 
             var progress = new Progress<double>(ReportProgress);
             try
@@ -144,18 +148,20 @@ namespace SRTools
                     ApplicationDataContainer keyContainer = localSettings.Containers[keyPath];
                     string valueFirstRun = "Config_FirstRun";
                     Trace.WriteLine(userDocumentsFolderPath);
-                    string extractionPath = Path.Combine(userDocumentsFolderPath+FileFolder, ExtractedFolder);
+                    string extractionPath = Path.Combine(userDocumentsFolderPath + FileFolder, ExtractedFolder);
                     Trace.WriteLine(extractionPath);
                     ZipFile.ExtractToDirectory(localFilePath, extractionPath);
-                    ToggleUpdateGridVisibility(true, true);
                     Update.Visibility = Visibility.Collapsed;
                     FirstRun.Visibility = Visibility.Collapsed;
                     MainAPP.Visibility = Visibility.Visible;
                     keyContainer.Values[valueFirstRun] = "0";
+                    // 使用Dispatcher在UI线程上执行ToggleUpdateGridVisibility函数
+                    dispatcher.TryEnqueue(() => ToggleUpdateGridVisibility(true, true));
                 }
                 else
                 {
-                    ToggleUpdateGridVisibility(true, false);
+                    // 使用Dispatcher在UI线程上执行ToggleUpdateGridVisibility函数
+                    dispatcher.TryEnqueue(() => ToggleUpdateGridVisibility(true, false));
                 }
             }
             catch (Exception ex)
@@ -175,31 +181,27 @@ namespace SRTools
 
         private async void OnGetLatestReleaseInfo()
         {
+            var dispatcher = Microsoft.UI.Dispatching.DispatcherQueue.GetForCurrentThread();
             try
             {
                 var latestReleaseInfo = await _getGithubLatest.GetLatestReleaseInfoAsync("JSG-JamXi", "SRToolsHelper");
-                depend_Latest_Version.Text = $"版本号: {latestReleaseInfo.Version}";
                 fileUrl = latestReleaseInfo.DownloadUrl;
-                update_Grid.Visibility = Visibility.Visible;
-                update_Progress_Grid.Visibility = Visibility.Collapsed;
-                var dispatcher = Microsoft.UI.Dispatching.DispatcherQueue.GetForCurrentThread();
                 dispatcher.TryEnqueue(() =>
                 {
                     depend_Latest_Version.Text = $"版本号: {latestReleaseInfo.Version}";
-                    
+                    depend_Download.IsEnabled = true;
+                    update_Grid.Visibility = Visibility.Visible;
+                    update_Progress_Grid.Visibility = Visibility.Collapsed;
                 });
-                depend_Download.IsEnabled = true;
-                update_Grid.Visibility = Visibility.Visible;
-                update_Progress_Grid.Visibility = Visibility.Collapsed;
             }
             catch (Exception ex)
             {
-                var dispatcher = Windows.ApplicationModel.Core.CoreApplication.GetCurrentView().CoreWindow.Dispatcher;
-                await dispatcher.RunAsync(CoreDispatcherPriority.Normal, () =>
+                dispatcher.TryEnqueue(() =>
                 {
                     update_Grid.Visibility = Visibility.Visible;
                     update_Progress_Grid.Visibility = Visibility.Collapsed;
                     update_Btn_Text.Text = "获取失败";
+                    depend_Latest_Version.Text = ex.Message;
                     update_Btn_Bar.Visibility = Visibility.Collapsed;
                     update_Btn_Icon.Symbol = Symbol.Stop;
                 });

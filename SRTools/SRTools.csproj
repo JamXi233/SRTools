@@ -57,6 +57,7 @@
   <ItemGroup>
     <None Remove="Views\BlankPage1.xaml" />
     <None Remove="Views\Dialog.xaml" />
+    <None Remove="Views\GachaView.xaml.cs.bak" />
   </ItemGroup>
   <ItemGroup>
     <Page Remove="Views\Dialog.xaml" />
