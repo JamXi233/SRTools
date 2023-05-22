@@ -180,7 +180,6 @@ namespace SRTools.Views
                 GachaLink.Subtitle = "请等待更新";
                 GachaLink.IsOpen = true;
             }
-            
         }
 
         private async void LoadData()
