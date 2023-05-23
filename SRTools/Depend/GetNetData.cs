@@ -35,6 +35,7 @@ namespace SRTools.Depend
                                 bytesDownloaded += bytesRead;
                                 double progressPercentage = (double)bytesDownloaded / totalBytes * 100;
                                 progress.Report(progressPercentage);
+                                
                             }
                         }
                     }

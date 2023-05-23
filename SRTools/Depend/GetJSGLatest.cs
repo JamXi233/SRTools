@@ -1,18 +1,18 @@
-﻿// GetGiteeLatest.cs
+﻿// GetJSGLatest.cs
 
 using System;
 using System.Net.Http;
 using System.Threading.Tasks;
 using Newtonsoft.Json.Linq;
 
-public class GetGiteeLatest
+public class GetJSGLatest
 {
     private static readonly HttpClient httpClient = new HttpClient();
 
-    public async Task<(string Name, string Version, string DownloadUrl)> GetLatestReleaseInfoAsync(string owner, string repo)
+    public async Task<(string Name, string Version, string DownloadUrl)> GetLatestReleaseInfoAsync(string package)
     {
-        string apiUrl = $"https://gitee.com/api/v5/repos/{owner}/{repo}/releases/latest";
-        httpClient.DefaultRequestHeaders.Add("User-Agent", "C# Gitee API Client");
+        string apiUrl = $"https://api.jamsg.cn/release/getversion.php?package={package}";
+        httpClient.DefaultRequestHeaders.Add("User-Agent", "JSG-Official-Update-Client");
 
         var response = await httpClient.GetAsync(apiUrl);
         response.EnsureSuccessStatusCode();
@@ -21,8 +21,8 @@ public class GetGiteeLatest
         JObject jsonObj = JObject.Parse(content);
 
         var name = jsonObj["name"].ToString();
-        var version = jsonObj["tag_name"].ToString();
-        var downloadUrl = jsonObj["assets"][0]["browser_download_url"].ToString();
+        var version = jsonObj["version"].ToString();
+        var downloadUrl = jsonObj["link"].ToString();
 
         return (name, version, downloadUrl);
     }

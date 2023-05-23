@@ -10,33 +10,36 @@
 
     <Grid HorizontalAlignment="Stretch" Margin="24">
 
-        <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="3*"/>
-            <ColumnDefinition Width="2*"/>
-        </Grid.ColumnDefinitions>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="1*"/>
+            <RowDefinition Height="6*"/>
+        </Grid.RowDefinitions>
 
-        <!-- 左侧区域 -->
-        <StackPanel Grid.Column="0" HorizontalAlignment="Left" Orientation="Horizontal">
+        <StackPanel Grid.Row="0" HorizontalAlignment="Left" >
             <StackPanel HorizontalAlignment="Stretch">
-                <ToggleButton x:Name="ProxyButton" Content="开启代理" Click="StartProxyButton_Click" Margin="0 0 0 8"/>
+                <ToggleButton x:Name="ProxyButton" Content="开启代理" Click="ProxyButton_Click" Margin="0 0 0 8"/>
+            </StackPanel>
+            <StackPanel HorizontalAlignment="Stretch" Orientation="Horizontal">
+                <TextBlock Text="状态:" />
+                <TextBlock x:Name="gacha_status" Text="等待操作" Width="150" />
             </StackPanel>
         </StackPanel>
 
-        <!-- 右侧区域 -->
-        <StackPanel Grid.Column="1">
-            <StackPanel HorizontalAlignment="Right" VerticalAlignment="Bottom">
-                <TextBlock x:Name="GachaLink_Box"/>
+        <Grid Grid.Row="1" HorizontalAlignment="Stretch">
+
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="2*"/>
+                <ColumnDefinition Width="3*"/>
+            </Grid.ColumnDefinitions>
+
+            <StackPanel Grid.Column="0">
                 <StackPanel x:Name="MyStackPanel" />
+                <StackPanel Orientation="Horizontal" Margin="15 20 0 0">
+                    <TextBlock Text="名称" Width="85" />
+                    <TextBlock Text="星级" Width="85" />
+                    <TextBlock Text="日期" Width="150" />
+                </StackPanel>
                 <ListView x:Name="MyListView" Height="200" CanBeScrollAnchor="True" Margin="0 12 0 0">
-                    <ListView.HeaderTemplate>
-                        <DataTemplate>
-                            <StackPanel Orientation="Horizontal">
-                                <TextBlock Text="名称" Width="100" />
-                                <TextBlock Text="星级" Width="100" />
-                                <TextBlock Text="日期" Width="100" />
-                            </StackPanel>
-                        </DataTemplate>
-                    </ListView.HeaderTemplate>
                     <ListView.ItemTemplate>
                         <DataTemplate>
                             <StackPanel Orientation="Horizontal">
@@ -48,7 +51,12 @@
                     </ListView.ItemTemplate>
                 </ListView>
             </StackPanel>
-        </StackPanel>
+
+            <StackPanel Grid.Column="1">
+                <StackPanel x:Name="MyStackPanel2" Margin="10 0 0 0"/>
+            </StackPanel>
+
+        </Grid>
 
         <TeachingTip x:Name="GachaLink"
             Target="{x:Bind ProxyButton}"

@@ -1,5 +1,3 @@
-// 版权信息
-// 使用 MIT 许可证。
 using SRTools.Views;
 using Microsoft.UI;
 using Microsoft.UI.Windowing;
@@ -20,56 +18,78 @@ using System.Threading.Tasks;
 using System.IO;
 using Windows.UI.Core;
 using System.Diagnostics;
+using Windows.ApplicationModel;
+using Windows.Storage.Pickers;
+using Windows.System;
 
-// To learn more about WinUI, the WinUI project structure,
-// and more about our project templates, see: http://aka.ms/winui-project-info.
 namespace SRTools
 {
     public partial class MainWindow : Window
     {
         private GetNetData _getNetData;
-        private readonly GetGiteeLatest _getGithubLatest = new GetGiteeLatest();
-        string fileUrl;
+        private readonly GetGiteeLatest _getGiteeLatest = new GetGiteeLatest();
+        private readonly GetJSGLatest _getJSGLatest = new GetJSGLatest();
         private IntPtr hwnd;
+        string fileUrl;
         private AppWindow appWindow;
         private AppWindowTitleBar titleBar;
         private SystemBackdrop backdrop;
 
         private const string KeyPath = "SRTools";
         private const string ValueFirstRun = "Config_FirstRun";
-        private const string ValueGamePath = "Config_Folder";
+        private const string ValueGamePath = "Config_GamePath";
         private const string ValueUnlockFPS = "Config_UnlockFPS";
+        private const string ValueUpdateService = "Config_UpdateService";
+        // 导入 AllocConsole 和 FreeConsole 函数
+        [DllImport("kernel32.dll", SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        private static extern bool AllocConsole();
 
-        private record LocalSettingsData(string FirstRun, string UnlockFPSValue);
+        [DllImport("kernel32.dll", SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        private static extern bool FreeConsole();
+
+        private record LocalSettingsData(string FirstRun, string GamePath, string UnlockFPSValue, string UpdateService);
 
         public MainWindow()
         {
-            this.Title = "星轨工具箱";
-            this.InitializeComponent();
+            Title = "星轨工具箱";
+            InitializeComponent();
+            InitializeAppData();
+            InitializeMicaBackground();
+            InitializeWindowProperties();
 
             _getNetData = new GetNetData();
+        }
+
+        private void InitializeAppData()
+        {
+            //应用数据检查开始
             ApplicationDataContainer keyContainer = GetOrCreateContainer(KeyPath);
-
-            LocalSettingsData defaultValues = new LocalSettingsData("1", "Null");
+            LocalSettingsData defaultValues = new LocalSettingsData("1", "Null", "Null", "Null");
             LocalSettingsData currentValues = GetCurrentValues(keyContainer, defaultValues);
-
             if (currentValues.FirstRun == "1")
             {
-                Update.Visibility = Visibility.Collapsed;
                 FirstRun.Visibility = Visibility.Visible;
                 MainAPP.Visibility = Visibility.Collapsed;
-                OnGetLatestReleaseInfo();
             }
             else if (currentValues.FirstRun == "0")
             {
-                Update.Visibility = Visibility.Collapsed;
                 FirstRun.Visibility = Visibility.Collapsed;
                 MainAPP.Visibility = Visibility.Visible;
             }
+        }
 
+        private void InitializeMicaBackground()
+        {
+            //设置背景Mica开始
             backdrop = new SystemBackdrop(this);
             backdrop.TrySetMica(fallbackToAcrylic: true);
+        }
 
+        private void InitializeWindowProperties()
+        {
+            //设置窗口大小等开始
             hwnd = WindowNative.GetWindowHandle(this);
             WindowId id = Win32Interop.GetWindowIdFromWindow(hwnd);
             appWindow = AppWindow.GetFromWindowId(id);
@@ -81,6 +101,7 @@ namespace SRTools
             int windowWidth = (int)(1024 * scale);
             int windowHeight = (int)(584 * scale);
 
+            Logging.Write("MoveAndResize to "+windowWidth+"*"+windowHeight,0);
             appWindow.MoveAndResize(new RectInt32(windowX, windowY, windowWidth, windowHeight));
 
             if (AppWindowTitleBar.IsCustomizationSupported())
@@ -92,6 +113,7 @@ namespace SRTools
                 titleBar.ButtonForegroundColor = Colors.White;
 
                 titleBar.SetDragRectangles(new RectInt32[] { new RectInt32((int)(48 * scale), 0, 10000, (int)(48 * scale)) });
+                Logging.Write("SetDragRectangles to "+48 * scale+"*"+ 48 * scale, 0);
             }
             else
             {
@@ -100,26 +122,88 @@ namespace SRTools
             }
         }
 
+        //应用数据检查开始
         private ApplicationDataContainer GetOrCreateContainer(string keyPath)
         {
             ApplicationDataContainer localSettings = ApplicationData.Current.LocalSettings;
-            return localSettings.Containers.ContainsKey(keyPath)
-                ? localSettings.Containers[keyPath]
-                : localSettings.CreateContainer(keyPath, ApplicationDataCreateDisposition.Always);
+            switch (localSettings.Values["Config_TerminalMode"])
+            {
+                case 0:
+                    FreeConsole();
+                    break;
+                case 1:
+                    AllocConsole();
+                    break;
+                default:
+                    FreeConsole();
+                    break;
+            }
+            if (localSettings.Containers.ContainsKey(keyPath))
+            {
+                return localSettings.Containers[keyPath];
+            }
+            else
+            {
+                return localSettings.CreateContainer(keyPath, ApplicationDataCreateDisposition.Always);
+            }
         }
 
+        // 获取当前设置值或默认值
         private LocalSettingsData GetCurrentValues(ApplicationDataContainer keyContainer, LocalSettingsData defaultValues)
         {
-            return new LocalSettingsData(
-                GetValueOrDefault(keyContainer, ValueFirstRun, defaultValues.FirstRun),
-                GetValueOrDefault(keyContainer, ValueUnlockFPS, defaultValues.UnlockFPSValue)
-            );
+            string firstRunValue = GetValueOrDefault(keyContainer, ValueFirstRun, defaultValues.FirstRun);
+            string gamePathValue = GetValueOrDefault(keyContainer, ValueGamePath, defaultValues.GamePath);
+            string unlockFPSValue = GetValueOrDefault(keyContainer, ValueUnlockFPS, defaultValues.UnlockFPSValue);
+            string updateService = GetValueOrDefault(keyContainer, ValueUpdateService, defaultValues.UpdateService);
+
+            return new LocalSettingsData(firstRunValue, gamePathValue, unlockFPSValue, updateService);
         }
 
+        // 获取键值对应的值，如果不存在则使用默认值
         private string GetValueOrDefault(ApplicationDataContainer keyContainer, string key, string defaultValue)
         {
-            return keyContainer.Values.ContainsKey(key) ? (string)keyContainer.Values[key] : defaultValue;
+            if (keyContainer.Values.ContainsKey(key))
+            {
+                return (string)keyContainer.Values[key];
+            }
+            else
+            {
+                return defaultValue;
+            }
         }
+
+        //选择下载渠道开始
+        private void DSerivceChoose_Click(object sender, RoutedEventArgs e)
+        {
+            dservice_panel_left.Visibility = Visibility.Collapsed;
+            dservice_panel_right.Visibility = Visibility.Collapsed;
+            depend_panel_left.Visibility = Visibility.Visible;
+            depend_panel_right.Visibility = Visibility.Visible;
+            OnGetDependLatestReleaseInfo();
+        }
+
+        private void DService_Github_Choose(object sender, RoutedEventArgs e)
+        {
+            ApplicationDataContainer localSettings = ApplicationData.Current.LocalSettings;
+            localSettings.Values["Config_UpdateService"] = 0;
+            dserivce_finish.IsEnabled = true;
+        }
+
+        private void DService_Gitee_Choose(object sender, RoutedEventArgs e)
+        {
+            ApplicationDataContainer localSettings = ApplicationData.Current.LocalSettings;
+            localSettings.Values["Config_UpdateService"] = 1;
+            dserivce_finish.IsEnabled = true;
+        }
+
+        private void DService_JSG_Choose(object sender, RoutedEventArgs e)
+        {
+            ApplicationDataContainer localSettings = ApplicationData.Current.LocalSettings;
+            localSettings.Values["Config_UpdateService"] = 2;
+            dserivce_finish.IsEnabled = true;
+        }
+
+        //依赖下载开始
 
         private const string FileFolder = "\\JSG-LLC\\SRTools\\Depends";
         private const string ZipFileName = "SRToolsHelper.zip";
@@ -130,88 +214,99 @@ namespace SRTools
             string userDocumentsFolderPath = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
             string localFilePath = Path.Combine(userDocumentsFolderPath + FileFolder, ZipFileName);
             Trace.WriteLine(fileUrl);
-
-            // 获取UI线程的DispatcherQueue
-            var dispatcher = Microsoft.UI.Dispatching.DispatcherQueue.GetForCurrentThread();
-
-            // 使用Dispatcher在UI线程上执行ToggleUpdateGridVisibility函数
-            dispatcher.TryEnqueue(() => ToggleUpdateGridVisibility(false));
-
-            var progress = new Progress<double>(ReportProgress);
+            ToggleDependGridVisibility(false);
+            depend_Download.IsEnabled = false;
+            var progress = new Progress<double>(DependReportProgress);
+            bool downloadResult = false;
             try
             {
-                bool downloadResult = await _getNetData.DownloadFileWithProgressAsync(fileUrl, localFilePath, progress);
-                if (downloadResult)
-                {
-                    string keyPath = "SRTools";
-                    ApplicationDataContainer localSettings = ApplicationData.Current.LocalSettings;
-                    ApplicationDataContainer keyContainer = localSettings.Containers[keyPath];
-                    string valueFirstRun = "Config_FirstRun";
-                    Trace.WriteLine(userDocumentsFolderPath);
-                    string extractionPath = Path.Combine(userDocumentsFolderPath + FileFolder, ExtractedFolder);
-                    Trace.WriteLine(extractionPath);
-                    ZipFile.ExtractToDirectory(localFilePath, extractionPath);
-                    Update.Visibility = Visibility.Collapsed;
-                    FirstRun.Visibility = Visibility.Collapsed;
-                    MainAPP.Visibility = Visibility.Visible;
-                    keyContainer.Values[valueFirstRun] = "0";
-                    // 使用Dispatcher在UI线程上执行ToggleUpdateGridVisibility函数
-                    dispatcher.TryEnqueue(() => ToggleUpdateGridVisibility(true, true));
-                }
-                else
-                {
-                    // 使用Dispatcher在UI线程上执行ToggleUpdateGridVisibility函数
-                    dispatcher.TryEnqueue(() => ToggleUpdateGridVisibility(true, false));
-                }
+                downloadResult = await _getNetData.DownloadFileWithProgressAsync(fileUrl, localFilePath, progress);
             }
             catch (Exception ex)
             {
-                update_Info.Text = ex.Message;
+                depend_Info.Text = ex.Message;
+            }
+
+            if (downloadResult)
+            {
+                string keyPath = "SRTools";
+                ApplicationDataContainer localSettings = ApplicationData.Current.LocalSettings;
+                ApplicationDataContainer keyContainer = localSettings.Containers[keyPath];
+                string valueFirstRun = "Config_FirstRun";
+                Trace.WriteLine(userDocumentsFolderPath);
+                string extractionPath = Path.Combine(userDocumentsFolderPath + FileFolder, ExtractedFolder);
+                Trace.WriteLine(extractionPath);
+                ZipFile.ExtractToDirectory(localFilePath, extractionPath);
+                FirstRun.Visibility = Visibility.Collapsed;
+                MainAPP.Visibility = Visibility.Visible;
+                keyContainer.Values[valueFirstRun] = "0";
+            }
+            else
+            {
+                // 使用Dispatcher在UI线程上执行ToggleUpdateGridVisibility函数
+                ToggleDependGridVisibility(true, false);
             }
         }
 
-        private void ToggleUpdateGridVisibility(bool updateGridVisible, bool downloadSuccess = false)
+        private void ToggleDependGridVisibility(bool updateGridVisible, bool downloadSuccess = false)
         {
-            update_Grid.Visibility = updateGridVisible ? Visibility.Visible : Visibility.Collapsed;
-            update_Progress_Grid.Visibility = updateGridVisible ? Visibility.Collapsed : Visibility.Visible;
-            update_Btn_Text.Text = downloadSuccess ? "下载完成" : "下载失败";
-            update_Btn_Bar.Visibility = Visibility.Collapsed;
-            update_Btn_Icon.Symbol = downloadSuccess ? Symbol.Accept : Symbol.Stop;
+            depend_Grid.Visibility = updateGridVisible ? Visibility.Visible : Visibility.Collapsed;
+            depend_Progress_Grid.Visibility = updateGridVisible ? Visibility.Collapsed : Visibility.Visible;
+            depend_Btn_Text.Text = downloadSuccess ? "下载完成" : "下载失败";
+            depend_Btn_Icon.Glyph = downloadSuccess ? "&#xe73a;" : "&#xe8bb;";
         }
 
-        private async void OnGetLatestReleaseInfo()
+        private async void OnGetDependLatestReleaseInfo()
         {
+            depend_Grid.Visibility = Visibility.Collapsed;
+            depend_Progress_Grid.Visibility = Visibility.Visible;
             var dispatcher = Microsoft.UI.Dispatching.DispatcherQueue.GetForCurrentThread();
             try
             {
-                var latestReleaseInfo = await _getGithubLatest.GetLatestReleaseInfoAsync("JSG-JamXi", "SRToolsHelper");
+                ApplicationDataContainer localSettings = ApplicationData.Current.LocalSettings;
+                var latestReleaseInfo = await _getJSGLatest.GetLatestReleaseInfoAsync("cn.jamsg.srtoolshelper");
+                switch (localSettings.Values["Config_UpdateService"])
+                {
+                    case 0:
+                        //latestReleaseInfo = await _getGithubLatest.GetLatestReleaseInfoAsync("JamXi233", "SRToolsHelper");
+                        break;
+                    case 1:
+                        latestReleaseInfo = await _getGiteeLatest.GetLatestReleaseInfoAsync("JSG-JamXi", "SRToolsHelper");
+                        break;
+                    case 2:
+                        latestReleaseInfo = await _getJSGLatest.GetLatestReleaseInfoAsync("cn.jamsg.srtoolshelper");
+                        break;
+                    default:
+                        throw new InvalidOperationException($"Invalid update service value: {localSettings.Values["Config_UpdateService"]}");
+                }
+
                 fileUrl = latestReleaseInfo.DownloadUrl;
                 dispatcher.TryEnqueue(() =>
                 {
+                    depend_Latest_Name.Text = $"依赖项: {latestReleaseInfo.Name}";
                     depend_Latest_Version.Text = $"版本号: {latestReleaseInfo.Version}";
                     depend_Download.IsEnabled = true;
-                    update_Grid.Visibility = Visibility.Visible;
-                    update_Progress_Grid.Visibility = Visibility.Collapsed;
+                    depend_Grid.Visibility = Visibility.Visible;
+                    depend_Progress_Grid.Visibility = Visibility.Collapsed;
                 });
             }
             catch (Exception ex)
             {
                 dispatcher.TryEnqueue(() =>
                 {
-                    update_Grid.Visibility = Visibility.Visible;
-                    update_Progress_Grid.Visibility = Visibility.Collapsed;
-                    update_Btn_Text.Text = "获取失败";
+                    depend_Grid.Visibility = Visibility.Visible;
+                    depend_Progress_Grid.Visibility = Visibility.Collapsed;
+                    depend_Btn_Text.Text = "获取失败";
                     depend_Latest_Version.Text = ex.Message;
-                    update_Btn_Bar.Visibility = Visibility.Collapsed;
-                    update_Btn_Icon.Symbol = Symbol.Stop;
+                    depend_Btn_Bar.Visibility = Visibility.Collapsed;
+                    depend_Btn_Icon.Glyph = "&#xe8bb" ;
                 });
             }
         }
 
-        private void ReportProgress(double progressPercentage)
+        private void DependReportProgress(double progressPercentage)
         {
-            // 更新进度条
-            update_Btn_Bar.Value = progressPercentage;
+            depend_Btn_Bar.Value = progressPercentage;
         }
 
         private void NavView_SelectionChanged(NavigationView sender, NavigationViewSelectionChangedEventArgs args)

@@ -5,6 +5,7 @@ using Microsoft.UI.Xaml.Media.Imaging;
 using System.Diagnostics;
 using Microsoft.UI.Xaml.Media.Animation;
 using Microsoft.Win32;
+using SRTools.Depend;
 
 namespace SRTools.Views
 {
@@ -15,6 +16,7 @@ namespace SRTools.Views
         public MainView()
         {
             this.InitializeComponent();
+            Logging.Write("Switch to MainView", 0);
             LoadAdvertisementData();
         }
 
@@ -26,10 +28,12 @@ namespace SRTools.Views
             _url = "https://www.miyoushe.com/sr/article/39392377";
 
             // 设置背景图片
+            Logging.Write("Getting Background: "+ backgroundUrl, 0);
             BitmapImage backgroundImage = new BitmapImage(new Uri(backgroundUrl));
             BackgroundImage.Source = backgroundImage;
 
             // 设置按钮图标
+            Logging.Write("Getting Button Image: "+iconUrl, 0);
             BitmapImage iconImage = new BitmapImage(new Uri(iconUrl));
             IconImageBrush.ImageSource = iconImage;
         }
@@ -37,6 +41,7 @@ namespace SRTools.Views
         private void OpenUrlButton_Click(object sender, RoutedEventArgs e)
         {
             // 打开浏览器访问指定URL
+            Logging.Write("Open Browser URL["+_url+"]", 0);
             Process.Start(new ProcessStartInfo(_url) { UseShellExecute = true });
         }
         private void BackgroundImage_ImageOpened(object sender, RoutedEventArgs e)

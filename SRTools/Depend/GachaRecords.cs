@@ -6,6 +6,10 @@ using System.Text.Json;
 using System.Threading.Tasks;
 using System.Net.Http;
 using System.Diagnostics;
+using System.Xml.Linq;
+using Newtonsoft.Json.Linq;
+using static Vanara.PInvoke.User32.RAWINPUT;
+using Newtonsoft.Json;
 
 namespace SRTools.Depend
 {
@@ -23,44 +27,93 @@ namespace SRTools.Depend
         public string RankType { get; set; }
         public string Id { get; set; }
 
-        public async Task<List<GachaRecords>> GetAllGachaRecordsAsync(String url)
+        public async Task<List<GachaRecords>> GetAllGachaRecordsAsync(String url, String localData = null)
         {
             var records = new List<GachaRecords>();
-            var page = 1;
-            var endId = "0";
-            int urlindex = url.IndexOf("end_id=");
-
-            while (true)
-            {
-                var client = new HttpClient();
-                await Task.Delay(TimeSpan.FromSeconds(0.1));
-                var response = await client.GetAsync(url.Substring(0,urlindex)+"end_id="+endId);
-                if (!response.IsSuccessStatusCode) break;
-                var json = await response.Content.ReadAsStringAsync();
-                var data = JsonSerializer.Deserialize<JsonElement>(json).GetProperty("data");
-                Trace.WriteLine(url.Substring(0, urlindex) + "end_id=" + endId);
-                if (data.GetProperty("list").GetArrayLength() == 0) break;
-                foreach (var item in data.GetProperty("list").EnumerateArray())
+            if (localData == null){
+                var page = 1;
+                var endId = "0";
+                int urlindex = url.IndexOf("end_id=");
+                while (true)
                 {
-                    records.Add(new GachaRecords
+                    try
                     {
-                        Uid = item.GetProperty("uid").GetString(),
-                        GachaId = item.GetProperty("gacha_id").GetString(),
-                        GachaType = item.GetProperty("gacha_type").GetString(),
-                        ItemId = item.GetProperty("item_id").GetString(),
-                        Count = item.GetProperty("count").GetString(),
-                        Time = item.GetProperty("time").GetString(),
-                        Name = item.GetProperty("name").GetString(),
-                        Lang = item.GetProperty("lang").GetString(),
-                        ItemType = item.GetProperty("item_type").GetString(),
-                        RankType = item.GetProperty("rank_type").GetString(),
-                        Id = item.GetProperty("id").GetString()
-                    });
-                    Trace.WriteLine(item.GetProperty("uid").GetString()+"|"+item.GetProperty("time").GetString() + "|" + item.GetProperty("gacha_id").GetString() + "|" + item.GetProperty("name").GetString() + "|" + item.GetProperty("id").GetString());
+                        var client = new HttpClient();
+                        await Task.Delay(TimeSpan.FromSeconds(0.1));
+                        Logging.Write("Wait Timeout...", 0);
+                        var response = await client.GetAsync(url.Substring(0, urlindex) + "end_id=" + endId);
+                        if (!response.IsSuccessStatusCode) break;
+                        var json = await response.Content.ReadAsStringAsync();
+                        var data = System.Text.Json.JsonSerializer.Deserialize<JsonElement>(json).GetProperty("data");
+                        Logging.Write(url.Substring(0, urlindex) + "end_id=" + endId,0);
+                        JObject jsonObj = JObject.Parse(json);
+                        if (jsonObj["message"].ToString() == "authkey timeout")
+                        {
+                            records.Add(new GachaRecords
+                            {
+                                Uid = jsonObj["message"].ToString(),
+                                GachaId = "",
+                                GachaType = "",
+                                ItemId = "",
+                                Count = "",
+                                Time = "",
+                                Name = "",
+                                Lang = "",
+                                ItemType = "",
+                                RankType = "",
+                                Id = ""
+                            });
+                            return records;
+                        }
+                        else
+                        {
+                            if (data.GetProperty("list").GetArrayLength() == 0) break;
+                            foreach (var item in data.GetProperty("list").EnumerateArray())
+                            {
+                                records.Add(new GachaRecords
+                                {
+                                    Uid = item.GetProperty("uid").GetString(),
+                                    GachaId = item.GetProperty("gacha_id").GetString(),
+                                    GachaType = item.GetProperty("gacha_type").GetString(),
+                                    ItemId = item.GetProperty("item_id").GetString(),
+                                    Count = item.GetProperty("count").GetString(),
+                                    Time = item.GetProperty("time").GetString(),
+                                    Name = item.GetProperty("name").GetString(),
+                                    Lang = item.GetProperty("lang").GetString(),
+                                    ItemType = item.GetProperty("item_type").GetString(),
+                                    RankType = item.GetProperty("rank_type").GetString(),
+                                    Id = item.GetProperty("id").GetString()
+                                });
+                                Logging.Write(item.GetProperty("uid").GetString() + "|" + item.GetProperty("time").GetString() + "|" + item.GetProperty("gacha_id").GetString() + "|" + item.GetProperty("name").GetString() + "|" + item.GetProperty("id").GetString(), 0);
+                            }
+                            endId = records.Last().Id;
+                            page++;
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        records.Add(new GachaRecords
+                        {
+                            Uid = ex.Message,
+                            GachaId = "",
+                            GachaType = "",
+                            ItemId = "",
+                            Count = "",
+                            Time = "",
+                            Name = "",
+                            Lang = "",
+                            ItemType = "",
+                            RankType = "",
+                            Id = ""
+                        });
+                        return records;
+                    }
                 }
-                endId = records.Last().Id;
-                page++;
             }
+            else {
+                records = JsonConvert.DeserializeObject<List<GachaRecords>>(localData);
+            }
+            Logging.Write("Gacha Get Finished!", 0);
             return records;
         }
     }

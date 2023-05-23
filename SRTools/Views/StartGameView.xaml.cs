@@ -37,7 +37,6 @@ namespace SRTools.Views
     /// </summary>
     public sealed partial class StartGameView : Page
     {
-        private Timer timer;
         private DispatcherQueueTimer dispatcherTimer;
         ApplicationDataContainer localSettings = ApplicationData.Current.LocalSettings;
         string userDocumentsFolderPath = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
@@ -45,6 +44,7 @@ namespace SRTools.Views
         public StartGameView()
         {
             this.InitializeComponent();
+            Logging.Write("Switch to StartGameView",0);
             // 获取UI线程的DispatcherQueue
             var dispatcherQueue = DispatcherQueue.GetForCurrentThread();
 
@@ -53,10 +53,10 @@ namespace SRTools.Views
             dispatcherTimer.Interval = TimeSpan.FromSeconds(2);
             dispatcherTimer.Tick += CheckProcess;
             dispatcherTimer.Start();
-            if (localSettings.Values.ContainsKey("SRTools_Config_GamePath"))
+            if (localSettings.Values.ContainsKey("Config_GamePath"))
             {
-                var value = localSettings.Values["SRTools_Config_GamePath"] as string;
-                Trace.WriteLine(value);
+                var value = localSettings.Values["Config_GamePath"] as string;
+                Logging.Write("GamePath: "+ value,0);
                 if (!string.IsNullOrEmpty(value) && value.Contains("Null"))
                 {
                     UpdateUIElementsVisibility(0);
@@ -68,12 +68,12 @@ namespace SRTools.Views
             }
             else
             {
-                UpdateUIElementsVisibility(1);
+                UpdateUIElementsVisibility(0);
             }
 
-            if (localSettings.Values.ContainsKey("SRTools_Config_UnlockFPS"))
+            if (localSettings.Values.ContainsKey("Config_UnlockFPS"))
             {
-                var value = localSettings.Values["SRTools_Config_UnlockFPS"] as string;
+                var value = localSettings.Values["Config_UnlockFPS"] as string;
                 if (value == "1")
                 {
                     unlockFPS.IsChecked = true;
@@ -87,8 +87,6 @@ namespace SRTools.Views
             {
                 unlockFPS.IsChecked = false;
             }
-
-
         }
         private async void SelectGame(object sender, RoutedEventArgs e)
         {
@@ -100,7 +98,7 @@ namespace SRTools.Views
             var file = await picker.PickSingleFileAsync();
             if (file != null && file.Name == "StarRail.exe")
             {
-                localSettings.Values["SRTools_Config_GamePath"] = @file.Path;
+                localSettings.Values["Config_GamePath"] = @file.Path;
                 UpdateUIElementsVisibility(1);
             }
             else
@@ -110,20 +108,20 @@ namespace SRTools.Views
             }
         }
 
-        private async void RMGameLocation(object sender, RoutedEventArgs e)
+        private void RMGameLocation(object sender, RoutedEventArgs e)
         {
-            localSettings.Values["SRTools_Config_GamePath"] = @"Null";
+            localSettings.Values["Config_GamePath"] = @"Null";
             UpdateUIElementsVisibility(0);
         }
         //启动游戏
-        private async void StartGame_Click(object sender, RoutedEventArgs e)
+        private void StartGame_Click(object sender, RoutedEventArgs e)
         {
             if (unlockFPS.IsChecked ?? false)
             {
-                ProcessRun.RunProcess_Message(userDocumentsFolderPath + "\\JSG-LLC\\SRTools\\Depends\\SRToolsHelper\\SRToolsHelper.exe","/FPS 120");
+                ProcessRun.RunProcess_Message(userDocumentsFolderPath + "\\JSG-LLC\\SRTools\\Depends\\SRToolsHelper\\SRToolsHelper.exe", "/FPS 120");
                 StartGame(null, null);
             }
-            else 
+            else
             {
                 ProcessRun.RunProcess_Message(userDocumentsFolderPath + "\\JSG-LLC\\SRTools\\Depends\\SRToolsHelper\\SRToolsHelper.exe", "/FPS 60");
                 StartGame(null, null);
@@ -134,11 +132,11 @@ namespace SRTools.Views
         {
             if (unlockFPS.IsChecked ?? false)
             {
-                localSettings.Values["SRTools_Config_UnlockFPS"] = "1";
+                localSettings.Values["Config_UnlockFPS"] = "1";
             }
             else
             {
-                localSettings.Values["SRTools_Config_UnlockFPS"] = "0";
+                localSettings.Values["Config_UnlockFPS"] = "0";
             }
         }
 
@@ -164,7 +162,7 @@ namespace SRTools.Views
 
         private void StartGame(TeachingTip sender, object args)
         {
-            string gamePath = localSettings.Values["SRTools_Config_GamePath"] as string;
+            string gamePath = localSettings.Values["Config_GamePath"] as string;
             var processInfo = new ProcessStartInfo(gamePath);
             
             //启动程序

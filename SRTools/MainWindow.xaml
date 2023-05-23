@@ -12,7 +12,7 @@
         <Grid.Background>
             <ImageBrush ImageSource="Assets/starrail.png" />
         </Grid.Background>
-
+        <!-- 主界面 -->
         <Grid x:Name="MainAPP" Visibility="Collapsed">
             <Grid.Background>
                 <ImageBrush ImageSource="Assets/starrail.png" />
@@ -51,29 +51,30 @@
             </Border>
 
         </Grid>
-
-        <Grid x:Name="FirstRun" Visibility="Visible"  Background="{ThemeResource SystemControlAcrylicElementMediumHighBrush}">
+        <!-- 首次使用 -->
+        <Grid x:Name="FirstRun" Visibility="Collapsed" Background="{ThemeResource SystemControlAcrylicElementMediumHighBrush}">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="3*"/>
                 <ColumnDefinition Width="2*"/>
             </Grid.ColumnDefinitions>
 
-            <!-- 左侧区域 -->
-            <StackPanel  Grid.Column="0" HorizontalAlignment="Left">
+            <!-- 依赖文件左侧区域 -->
+            <StackPanel x:Name="depend_panel_left" Grid.Column="0" HorizontalAlignment="Left" Visibility="Collapsed">
                 <StackPanel HorizontalAlignment="Stretch" Margin="38">
-                    <TextBlock Text="首次运行" FontSize="24" FontWeight="Bold"/>
-                    <TextBlock Text="首席运行需要先下载依赖文件" Margin="0 12 0 0"/>
-                    <TextBlock x:Name="depend_Latest_Version" Text="注意事项" Margin="0 12 0 0"/>
+                    <TextBlock Text="首次运行" FontSize="32" FontWeight="Bold"/>
+                    <TextBlock Text="首次运行需要先下载依赖文件" Margin="0 12 0 0"/>
+                    <TextBlock x:Name="depend_Latest_Name" Text="依赖项:..." Margin="0 12 0 0"/>
+                    <TextBlock x:Name="depend_Latest_Version" Text="版本号:..."/>
                 </StackPanel>
             </StackPanel>
 
-            <!-- 右侧区域 -->
-            <StackPanel Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Bottom">
+            <!-- 依赖文件右侧区域 -->
+            <StackPanel x:Name="depend_panel_right" Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Bottom" Visibility="Collapsed">
                 <TextBlock x:Name="depend_Info"/>
-                <Button  x:Name="depend_Download" Width="90" Height="84" VerticalAlignment="Bottom" HorizontalAlignment="Right" Margin="12" Click="DependDownload_Click" IsEnabled="False">
+                <Button  x:Name="depend_Download" Width="90" Height="84" VerticalAlignment="Bottom" HorizontalAlignment="Right" Margin="32" Click="DependDownload_Click" IsEnabled="False">
                     <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
                         <StackPanel x:Name="depend_Grid">
-                            <SymbolIcon x:Name="depend_Btn_Icon" Symbol="Download" Width="32" Height="32"/>
+                            <FontIcon x:Name="depend_Btn_Icon" FontFamily="Segoe Fluent Icons" Glyph="&#xebd3;" Width="32" Height="32"/>
                             <TextBlock x:Name="depend_Btn_Text" Text="立即下载" FontSize="12"/>
                         </StackPanel>
                         <StackPanel x:Name="depend_Progress_Grid"  Visibility="Collapsed">
@@ -83,44 +84,34 @@
                     </StackPanel>
                 </Button>
             </StackPanel>
-        </Grid>
 
-        <Grid x:Name="Update" Background="{ThemeResource SystemControlAcrylicElementMediumHighBrush}" Visibility="Collapsed">
-
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="3*"/>
-                <ColumnDefinition Width="2*"/>
-            </Grid.ColumnDefinitions>
-
-            <!-- 左侧区域 -->
-            <StackPanel  Grid.Column="0" HorizontalAlignment="Left">
+            <!-- 选择下载渠道左侧区域 -->
+            <StackPanel x:Name="dservice_panel_left" Grid.Column="0" HorizontalAlignment="Left">
                 <StackPanel HorizontalAlignment="Stretch" Margin="38">
-                    <TextBlock Text="有可用更新" FontSize="24" FontWeight="Bold"/>
-                    <TextBlock Text="更新日志" Margin="0 12 0 0"/>
-                    <TextBlock Text="更新注意事项" Margin="0 12 0 0"/>
+                    <TextBlock Text="首次运行" FontSize="32" FontWeight="Bold"/>
+                    <RadioButtons Header="选择要更新渠道" Margin="0 12 0 0">
+                        <RadioButton Content="JSG-LLC(JSG-DS) 国内较快" Checked="DService_JSG_Choose"/>
+                        <RadioButton Content="Gitee" Checked="DService_Gitee_Choose"/>
+                        <RadioButton Content="Github" Checked="DService_Github_Choose" IsEnabled="False"/>
+                    </RadioButtons>
                 </StackPanel>
             </StackPanel>
 
-            <!-- 右侧区域 -->
-            <StackPanel Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Bottom">
-                <TextBlock x:Name="update_Info"/>
-                <Button  x:Name="UpdateDownload" Width="90" Height="84" VerticalAlignment="Bottom" HorizontalAlignment="Right" Margin="12" Click="DependDownload_Click">
+            <!-- 选择下载渠道右侧区域 -->
+            <StackPanel x:Name="dservice_panel_right" Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Bottom">
+                <TextBlock x:Name="dserivce_Info"/>
+                <Button  x:Name="dserivce_finish" Width="90" Height="84" VerticalAlignment="Bottom" HorizontalAlignment="Right" Margin="32" Click="DSerivceChoose_Click" IsEnabled="False">
                     <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
-                        <StackPanel x:Name="update_Grid" Visibility="Collapsed">
-                            <SymbolIcon x:Name="update_Btn_Icon" Symbol="Up" Width="32" Height="32"/>
-                            <TextBlock x:Name="update_Btn_Text" Text="立即更新" FontSize="12"/>
-                        </StackPanel>
-                        <StackPanel x:Name="update_Progress_Grid" >
-                            <ProgressRing x:Name="update_Btn_Ring" Margin="0 0 0 18"/>
-                            <ProgressBar x:Name="update_Btn_Bar" Width="130" IsIndeterminate="False" ShowPaused="False" ShowError="False" />
+                        <StackPanel x:Name="dserivce_Grid">
+                            <FontIcon FontFamily="Segoe Fluent Icons" Glyph="&#xe73a;" Width="32" Height="32"/>
+                            <TextBlock x:Name="dserivce_Btn_Text" Text="选择完成" FontSize="12"/>
                         </StackPanel>
                     </StackPanel>
                 </Button>
-                
             </StackPanel>
 
         </Grid>
-
+        
     </Grid>
 
 </Window>
