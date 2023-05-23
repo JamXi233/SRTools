@@ -1,3 +1,4 @@
+![](https://raw.githubusercontent.com/JamXi233/SRTools/main/ScreenShot/1.jpg)
 # 🔨星轨工具箱
 🔨星轨工具箱工具箱是一个用于修改星穹铁道画质和帧率的工具箱
 ⚠️仅支持 x64、arm64 架构的 Windows 10 1809 及以上版本的系统
@@ -34,3 +35,8 @@
 
 # 许可证
 本工具箱基于GPL许可证发布，详情请参阅LICENSE文件。
+
+# 其他截图
+![](https://raw.githubusercontent.com/JamXi233/SRTools/main/ScreenShot/2.jpg)
+![](https://raw.githubusercontent.com/JamXi233/SRTools/main/ScreenShot/3.jpg)
+![](https://raw.githubusercontent.com/JamXi233/SRTools/main/ScreenShot/4.jpg)
