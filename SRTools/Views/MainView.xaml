@@ -7,29 +7,53 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d">
 
-    <Grid>
-        <Image x:Name="BackgroundImage" Stretch="UniformToFill" Opacity="1" ImageOpened="BackgroundImage_ImageOpened" Margin="0 0 8 0"/>
+    <Grid Margin="0 -4 0 0 ">
+        <Image x:Name="BackgroundImage" Stretch="UniformToFill" Opacity="1" ImageOpened="BackgroundImage_ImageOpened" Margin="0 -8 0 0 "/>
         <Grid HorizontalAlignment="Stretch" Margin="24">
 
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="3*"/>
-                <ColumnDefinition Width="2*"/>
+                <ColumnDefinition Width="3*"/>
             </Grid.ColumnDefinitions>
 
             <!-- 左侧区域 -->
-            <StackPanel Grid.Column="0" HorizontalAlignment="Left">
-                <StackPanel HorizontalAlignment="Stretch">
+            <StackPanel Grid.Column="0" HorizontalAlignment="Left" VerticalAlignment="Bottom">
+                
+                <StackPanel VerticalAlignment="Bottom">
+                    
+                    <Grid>
+
+                        <FlipView x:Name="Gallery" ItemsSource="{x:Bind Pictures}" PointerPressed="Gallery_PointerPressed" Height="160" Width="345">
+                            <FlipView.ItemTemplate>
+                                <DataTemplate x:DataType="x:String">
+                                    <Image Source="{x:Bind Mode=OneTime}" />
+                                </DataTemplate>
+                            </FlipView.ItemTemplate>
+                        </FlipView>
+                        
+                        <Grid Background="{ThemeResource SystemControlAcrylicElementMediumHighBrush}" Height="20" Width="52" CornerRadius="12" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0 0 0 0">
+                            
+                            <PipsPager x:Name="FlipViewPipsPager"
+                                VerticalAlignment="Center"
+                                HorizontalAlignment="Center"
+                                NumberOfPages="3"
+                                SelectedPageIndex="{x:Bind Path=Gallery.SelectedIndex, Mode=TwoWay}" />
+                            
+                        </Grid>
+                        
+                    </Grid>
                     
                 </StackPanel>
+                
             </StackPanel>
 
             <!-- 右侧区域 -->
             <StackPanel Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Bottom">
-                <Button x:Name="OpenUrlButton" Click="OpenUrlButton_Click" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="70" Height="40" Width="136" BorderBrush="Transparent">
-                    <Button.Background>
+                <Grid x:Name="OpenUrlButton" PointerPressed="OpenUrlButton_Click"  HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="70" Height="40" Width="136" BorderBrush="Transparent">
+                    <Grid.Background>
                         <ImageBrush x:Name="IconImageBrush"/>
-                    </Button.Background>
-                </Button>
+                    </Grid.Background>
+                </Grid>
             </StackPanel>
         </Grid>
     </Grid>

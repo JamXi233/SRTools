@@ -21,6 +21,12 @@ using System.Diagnostics;
 using Windows.ApplicationModel;
 using Windows.Storage.Pickers;
 using Windows.System;
+using System.Threading.Tasks;
+using System.Net.Http;
+using System.Text.Json;
+using System.Collections.ObjectModel;
+using System.Security.Policy;
+using Microsoft.UI.Xaml.Media.Imaging;
 
 namespace SRTools
 {
@@ -29,11 +35,14 @@ namespace SRTools
         private GetNetData _getNetData;
         private readonly GetGiteeLatest _getGiteeLatest = new GetGiteeLatest();
         private readonly GetJSGLatest _getJSGLatest = new GetJSGLatest();
+        private static readonly HttpClient httpClient = new HttpClient();
         private IntPtr hwnd;
         string fileUrl;
         private AppWindow appWindow;
         private AppWindowTitleBar titleBar;
         private SystemBackdrop backdrop;
+
+        string backgroundUrl = "";
 
         private const string KeyPath = "SRTools";
         private const string ValueFirstRun = "Config_FirstRun";
@@ -58,6 +67,7 @@ namespace SRTools
             InitializeAppData();
             InitializeMicaBackground();
             InitializeWindowProperties();
+            BackgroundImage();
 
             _getNetData = new GetNetData();
         }
@@ -93,6 +103,7 @@ namespace SRTools
             hwnd = WindowNative.GetWindowHandle(this);
             WindowId id = Win32Interop.GetWindowIdFromWindow(hwnd);
             appWindow = AppWindow.GetFromWindowId(id);
+            DisableWindowResize();
 
             float scale = (float)User32.GetDpiForWindow(hwnd) / 96;
 
@@ -120,6 +131,26 @@ namespace SRTools
                 ExtendsContentIntoTitleBar = true;
                 SetTitleBar(AppTitleBar);
             }
+        }
+
+        private void DisableWindowResize()
+        {
+            int style = NativeMethods.GetWindowLong(hwnd, NativeMethods.GWL_STYLE);
+
+            // Remove the WS_SIZEBOX style to disable resizing
+            style &= ~NativeMethods.WS_SIZEBOX;
+            NativeMethods.SetWindowLong(hwnd, NativeMethods.GWL_STYLE, style);
+        }
+        
+        private async void BackgroundImage()
+        {
+            string apiUrl = "https://api-launcher-static.mihoyo.com/hkrpg_cn/mdk/launcher/api/content?filter_adv=false&key=6KcVuOkbcqjJomjZ&language=zh-cn&launcher_id=33";
+            ApiResponse response = await FetchData(apiUrl);
+            backgroundUrl = response.data.adv.background;
+            // 设置背景图片
+            Logging.Write("Getting Background: " + backgroundUrl, 0);
+            BitmapImage backgroundImage = new BitmapImage(new Uri(backgroundUrl));
+            Background.ImageSource = backgroundImage;
         }
 
         //应用数据检查开始
@@ -339,6 +370,18 @@ namespace SRTools
                 MainFrame.Navigate(typeof(AboutView));
             }
         }
-
+        public static async Task<ApiResponse> FetchData(string url)
+        {
+            HttpResponseMessage httpResponse = await httpClient.GetAsync(url);
+            httpResponse.EnsureSuccessStatusCode();
+            string responseBody = await httpResponse.Content.ReadAsStringAsync();
+            return JsonSerializer.Deserialize<ApiResponse>(responseBody);
+        }
+        public class ApiResponse
+        {
+            public int retcode { get; set; }
+            public string message { get; set; }
+            public Data data { get; set; }
+        }
     }
 }

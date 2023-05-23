@@ -84,6 +84,7 @@ namespace SRTools.Views
             }
         }
 
+        [Obsolete]
         private void Console_Toggle(object sender, RoutedEventArgs e)
         {
             ApplicationDataContainer localSettings = ApplicationData.Current.LocalSettings;
@@ -159,7 +160,6 @@ namespace SRTools.Views
             }
             Application.Current.Exit();
         }
-        private MainWindow _window2;
         private async void Check_Update(object sender, RoutedEventArgs e) 
         {
             checkUpdate.IsEnabled = false;
@@ -331,7 +331,7 @@ namespace SRTools.Views
             }
         }
 
-        private async void UpdateDownload_Ignore(object sender, RoutedEventArgs e) 
+        private void UpdateDownload_Ignore(object sender, RoutedEventArgs e) 
         {
             Update.Visibility = Visibility.Collapsed;
             MainAPP.Visibility = Visibility.Visible;

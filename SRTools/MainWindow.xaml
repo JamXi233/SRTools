@@ -10,13 +10,10 @@
 
     <Grid>
         <Grid.Background>
-            <ImageBrush ImageSource="Assets/starrail.png" />
+            <ImageBrush x:Name="Background"/>
         </Grid.Background>
         <!-- 主界面 -->
         <Grid x:Name="MainAPP" Visibility="Collapsed">
-            <Grid.Background>
-                <ImageBrush ImageSource="Assets/starrail.png" />
-            </Grid.Background>
 
             <NavigationView IsBackEnabled="False" IsBackButtonVisible="Collapsed" IsPaneOpen="False" SelectionChanged="NavView_SelectionChanged" Background="{ThemeResource SystemControlAcrylicElementMediumHighBrush}">
                 <NavigationView.Resources>

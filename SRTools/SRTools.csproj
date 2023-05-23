@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
     <TargetFramework>net7.0-windows10.0.22621.0</TargetFramework>
@@ -18,8 +18,6 @@
 	<TieredPGO>true</TieredPGO>
 	<DebugType>portable</DebugType>
 	<WindowsAppSDKSelfContained>true</WindowsAppSDKSelfContained>
-
-	<ApplicationIcon>Assets\Logo.ico</ApplicationIcon>
 
 	<PackageCertificateThumbprint>3830130E50D59313928BE67F3E76CB1D8DB2DBDA</PackageCertificateThumbprint>
 
@@ -43,13 +41,15 @@
 
 	<DefaultLanguage>zh-CN</DefaultLanguage>
 
-	<ApplicationManifest>app.manifest</ApplicationManifest>
-
 	<UseWindowsForms>False</UseWindowsForms>
 
 	<UseWPF>False</UseWPF>
 
 	<PlatformTarget>x64</PlatformTarget>
+
+	<ApplicationIcon>Assets\Logo.ico</ApplicationIcon>
+
+	<ApplicationManifest>app.manifest</ApplicationManifest>
   </PropertyGroup>
   <ItemGroup>
     <Compile Remove="Views\Dialog.xaml.cs" />

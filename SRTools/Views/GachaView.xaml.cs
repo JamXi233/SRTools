@@ -12,6 +12,7 @@ using Windows.Storage;
 using Newtonsoft.Json;
 using System.Diagnostics;
 using System.Collections.Generic;
+using SRTools.Views.GachaViews;
 
 namespace SRTools.Views
 {
@@ -22,7 +23,6 @@ namespace SRTools.Views
         BCCertMaker.BCCertMaker certProvider = new BCCertMaker.BCCertMaker();
         private DispatcherQueueTimer dispatcherTimer;
         ApplicationDataContainer localSettings = ApplicationData.Current.LocalSettings;
-
         public GachaView()
         {
             var dispatcherQueue = DispatcherQueue.GetForCurrentThread();
@@ -33,15 +33,11 @@ namespace SRTools.Views
             dispatcherTimer.Tick += CheckProcess;
             this.InitializeComponent();
             Logging.Write("Switch to GachaView", 0);
-            switch (localSettings.Values["SRTools_Gacha_Data"])
+
+            if(localSettings.Values["Gacha_Data"] as string == "1")
             {
-                case 0:
-                    break;
-                case 1:
-                    LoadData();
-                    break;
-                default:
-                    break;
+                gachaNav.Visibility = Visibility.Visible;
+                gachaFrame.Navigate(typeof(CharacterGachaView));
             }
         }
 
@@ -122,6 +118,7 @@ namespace SRTools.Views
                         }
                         isProxyRunning = true;
                         await StartAsync();
+                        gacha_status.Text = "正在等待打开抽卡历史记录...";
                         ProxyButton.IsEnabled = true;
                         dispatcherTimer.Start();
                     }
@@ -142,7 +139,6 @@ namespace SRTools.Views
                 
             }
             else { Stop(); isProxyRunning = false; }
-            
         }
         // 定时器回调函数，检查进程是否正在运行
         private void CheckProcess(DispatcherQueueTimer timer, object e)
@@ -155,8 +151,9 @@ namespace SRTools.Views
                 {
                     gacha_status.Text = GachaLink_String;
                     GachaLink.Title = "获取到抽卡记录地址";
-                    GachaLink.Subtitle = "正在获取API信息";
+                    GachaLink.Subtitle = "正在获取API信息,请不要退出...";
                     GachaLink.IsOpen = true;
+                    ProxyButton.IsEnabled = false;
                     Stop();
                     Logging.Write("Get GachaLink Finish!", 0);
                     ProxyButton.IsChecked = false;
@@ -166,7 +163,7 @@ namespace SRTools.Views
                     Clipboard.SetContent(dataPackage);
                     dispatcherTimer.Stop();
                     Logging.Write("Loading Gacha Data...", 0);
-                    gacha_status.Text = "Loading Gacha Data...";
+                    gacha_status.Text = "正在获取API信息,请不要退出...";
                     LoadDataAsync(GachaLink_String);
                     GachaLink_String = null;
                 }
@@ -179,12 +176,35 @@ namespace SRTools.Views
 
         private async void LoadDataAsync(String url)
         {
-            var records = await new GachaRecords().GetAllGachaRecordsAsync(url);
+            var char_records = await new GachaRecords().GetAllGachaRecordsAsync(url, null,"11");
+            var light_records = await new GachaRecords().GetAllGachaRecordsAsync(url, null,"12");
+            var newbie_records = await new GachaRecords().GetAllGachaRecordsAsync(url, null, "2");
+            var regular_records = await new GachaRecords().GetAllGachaRecordsAsync(url, null, "1");
             var folder = KnownFolders.DocumentsLibrary;
             var srtoolsFolder = await folder.CreateFolderAsync("JSG-LLC\\SRTools", CreationCollisionOption.OpenIfExists);
-            var gachaFile = await srtoolsFolder.CreateFileAsync("GachaRecords.ini", CreationCollisionOption.OpenIfExists);
-            // 两个数据
-            var serializedList = JsonConvert.SerializeObject(records);//获取到的数据
+            var char_gachaFile = await srtoolsFolder.CreateFileAsync("GachaRecords_Character.ini", CreationCollisionOption.OpenIfExists);
+            var light_gachaFile = await srtoolsFolder.CreateFileAsync("GachaRecords_LightCone.ini", CreationCollisionOption.OpenIfExists);
+            var newbie_gachaFile = await srtoolsFolder.CreateFileAsync("GachaRecords_Newbie.ini", CreationCollisionOption.OpenIfExists);
+            var regular_gachaFile = await srtoolsFolder.CreateFileAsync("GachaRecords_Regular.ini", CreationCollisionOption.OpenIfExists);
+            var char_serializedList = JsonConvert.SerializeObject(char_records);//获取到的数据
+            var light_serializedList = JsonConvert.SerializeObject(light_records);//获取到的数据
+            var newbie_serializedList = JsonConvert.SerializeObject(newbie_records);//获取到的数据
+            var regular_serializedList = JsonConvert.SerializeObject(regular_records);//获取到的数据
+            Logging.Write("正在获取API信息,请不要退出... | 正在获取角色池...", 0);
+            DataChange(char_serializedList,char_gachaFile);
+            Logging.Write("正在获取API信息,请不要退出... | 正在获取光锥池...", 0);
+            DataChange(light_serializedList,light_gachaFile);
+            Logging.Write("正在获取API信息,请不要退出... | 正在获取新手池...", 0);
+            DataChange(newbie_serializedList,newbie_gachaFile);
+            Logging.Write("正在获取API信息,请不要退出... | 正在获取常驻池...", 0);
+            DataChange(regular_serializedList,regular_gachaFile);
+
+
+        }
+
+        private async void DataChange(String serializedList, StorageFile gachaFile) 
+        {
+            
             var GachaRecords = FileIO.ReadTextAsync(gachaFile).AsTask().GetAwaiter().GetResult();//原来的数据
 
             if (GachaRecords != "") //如果不为空
@@ -205,62 +225,47 @@ namespace SRTools.Views
             {
                 await FileIO.WriteTextAsync(gachaFile, serializedList);
             }
-            
-            localSettings.Values["SRTools_Gacha_Data"] = 1;
+            localSettings.Values["Gacha_Data"] = "1";
             GachaLink.IsOpen = false;
             gacha_status.Text = "API获取完成";
-            LoadData();
+            gachaNav.Visibility = Visibility.Visible;
+            gachaFrame.Navigate(typeof(CharacterGachaView));
+            ProxyButton.IsEnabled = true;
         }
 
-        private async void LoadData()
+        private void NavView_SelectionChanged(NavigationView sender, NavigationViewSelectionChangedEventArgs args)
         {
-            var folder = KnownFolders.DocumentsLibrary;
-            var srtoolsFolder = folder.GetFolderAsync("JSG-LLC\\SRTools").AsTask().GetAwaiter().GetResult();
-            var settingsFile = srtoolsFolder.GetFileAsync("GachaRecords.ini").AsTask().GetAwaiter().GetResult();
-            var GachaRecords = FileIO.ReadTextAsync(settingsFile).AsTask().GetAwaiter().GetResult();
-            var records = await new GachaRecords().GetAllGachaRecordsAsync(null, GachaRecords);
-            var groupedRecords = records.GroupBy(r => r.RankType).ToDictionary(g => g.Key, g => g.ToList());
-            int RankType5 = records.TakeWhile(r => r.RankType != "5").Count();
-            int RankType4 = records.TakeWhile(r => r.RankType != "4").Count();
-            string uid = records.Select(r => r.Uid).FirstOrDefault();
-
-            // 筛选出四星和五星的记录
-            var rank4Records = records.Where(r => r.RankType == "4");
-            var rank5Records = records.Where(r => r.RankType == "5");
-
-            // 按名称进行分组并计算每个分组中的记录数量
-            var rank4Grouped = rank4Records.GroupBy(r => r.Name).Select(g => new { Name = g.Key, Count = g.Count() });
-            var rank5Grouped = rank5Records.GroupBy(r => r.Name).Select(g => new { Name = g.Key, Count = g.Count() });
-
-            // 输出五星记录
-            var rank5TextBlock = new TextBlock { Text = "五星：\n" };
-            var rank4TextBlock = new TextBlock { Text = "四星：\n" };
-            foreach (var group in rank5Grouped)
+            if (args.IsSettingsSelected)
             {
-                rank5TextBlock.Text += $"{group.Name} x{group.Count}, \n";
+                // 处理设置菜单项单击事件
             }
-            foreach (var group in rank4Grouped)
+            else if (args.SelectedItemContainer != null)
             {
-                rank4TextBlock.Text += $"{group.Name} x{group.Count}, \n";
-            }
-            MyStackPanel.Children.Clear();
-            MyStackPanel2.Children.Clear();
-            MyStackPanel2.Children.Add(rank5TextBlock);
-            MyStackPanel2.Children.Add(rank4TextBlock);
-
-            MyStackPanel.Children.Add(new TextBlock { Text = $"UID:" + uid });
-            foreach (var group in groupedRecords)
-            {
-                var textBlock = new TextBlock
+                switch (args.SelectedItemContainer.Tag.ToString())
                 {
-                    Text = $"{group.Key}星: {group.Value.Count} (相同的有{group.Value.GroupBy(r => r.Name).Count()}个)"
-                };
-                MyStackPanel.Children.Add(textBlock);
+                    case "CharacterGacha":
+                        // 导航到主页
+                        gachaFrame.Navigate(typeof(CharacterGachaView));
+                        break;
+                    case "LightConeGacha":
+                        // 导航到启动游戏页
+                        gachaFrame.Navigate(typeof(LightConeGachaView));
+                        break;
+                    case "RegularGacha":
+                        // 导航到启动游戏页
+                        gachaFrame.Navigate(typeof(RegularGachaView));
+                        break;
+                    case "NewbieGacha":
+                        // 导航到启动游戏页
+                        gachaFrame.Navigate(typeof(NewbieGachaView));
+                        break;
+                }
             }
-            MyStackPanel.Children.Add(new TextBlock { Text = $"距离上一个5星已经抽了" + RankType5 + "发" });
-            MyStackPanel.Children.Add(new TextBlock { Text = $"距离上一个4星已经抽了" + RankType4 + "发" });
-            MyListView.ItemsSource = records;
-            gacha_status.Text = "已加载本地缓存";
+            if (args.IsSettingsSelected)
+            {
+                // 导航到默认设置页面
+                gachaFrame.Navigate(typeof(AboutView));
+            }
         }
 
 

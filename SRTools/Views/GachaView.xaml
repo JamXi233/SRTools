@@ -21,40 +21,22 @@
             </StackPanel>
             <StackPanel HorizontalAlignment="Stretch" Orientation="Horizontal">
                 <TextBlock Text="状态:" />
-                <TextBlock x:Name="gacha_status" Text="等待操作" Width="150" />
+                <TextBlock x:Name="gacha_status" Text="等待操作"/>
             </StackPanel>
         </StackPanel>
 
         <Grid Grid.Row="1" HorizontalAlignment="Stretch">
 
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="2*"/>
-                <ColumnDefinition Width="3*"/>
-            </Grid.ColumnDefinitions>
 
-            <StackPanel Grid.Column="0">
-                <StackPanel x:Name="MyStackPanel" />
-                <StackPanel Orientation="Horizontal" Margin="15 20 0 0">
-                    <TextBlock Text="名称" Width="85" />
-                    <TextBlock Text="星级" Width="85" />
-                    <TextBlock Text="日期" Width="150" />
-                </StackPanel>
-                <ListView x:Name="MyListView" Height="200" CanBeScrollAnchor="True" Margin="0 12 0 0">
-                    <ListView.ItemTemplate>
-                        <DataTemplate>
-                            <StackPanel Orientation="Horizontal">
-                                <TextBlock Text="{Binding Name}" Width="85" />
-                                <TextBlock Text="{Binding RankType}" Width="85" />
-                                <TextBlock Text="{Binding Time}" Width="150" />
-                            </StackPanel>
-                        </DataTemplate>
-                    </ListView.ItemTemplate>
-                </ListView>
-            </StackPanel>
-
-            <StackPanel Grid.Column="1">
-                <StackPanel x:Name="MyStackPanel2" Margin="10 0 0 0"/>
-            </StackPanel>
+            <NavigationView x:Name="gachaNav" Grid.Column="0" PaneDisplayMode="Top" IsSettingsVisible="False" IsBackButtonVisible="Collapsed" SelectionChanged="NavView_SelectionChanged" Visibility="Collapsed">
+                <NavigationView.MenuItems>
+                    <NavigationViewItem  Content="角色池" Tag="CharacterGacha" IsSelected="True" />
+                    <NavigationViewItem  Content="光锥池" Tag="LightConeGacha" />
+                    <NavigationViewItem  Content="常驻池" Tag="RegularGacha" />
+                    <NavigationViewItem  Content="新手池" Tag="NewbieGacha" />
+                </NavigationView.MenuItems>
+                <Frame x:Name="gachaFrame"/>
+            </NavigationView>
 
         </Grid>
 

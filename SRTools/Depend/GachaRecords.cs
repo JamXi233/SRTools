@@ -27,13 +27,13 @@ namespace SRTools.Depend
         public string RankType { get; set; }
         public string Id { get; set; }
 
-        public async Task<List<GachaRecords>> GetAllGachaRecordsAsync(String url, String localData = null)
+        public async Task<List<GachaRecords>> GetAllGachaRecordsAsync(String url, String localData = null , String gachaType = "11")
         {
             var records = new List<GachaRecords>();
             if (localData == null){
                 var page = 1;
                 var endId = "0";
-                int urlindex = url.IndexOf("end_id=");
+                int urlindex = url.IndexOf("&gacha_type=");
                 while (true)
                 {
                     try
@@ -41,11 +41,12 @@ namespace SRTools.Depend
                         var client = new HttpClient();
                         await Task.Delay(TimeSpan.FromSeconds(0.1));
                         Logging.Write("Wait Timeout...", 0);
-                        var response = await client.GetAsync(url.Substring(0, urlindex) + "end_id=" + endId);
+                        var newurl = url.Substring(0, urlindex) + "&gacha_type=" + gachaType + "&end_id=" + endId;
+                        var response = await client.GetAsync(newurl);
                         if (!response.IsSuccessStatusCode) break;
                         var json = await response.Content.ReadAsStringAsync();
                         var data = System.Text.Json.JsonSerializer.Deserialize<JsonElement>(json).GetProperty("data");
-                        Logging.Write(url.Substring(0, urlindex) + "end_id=" + endId,0);
+                        Logging.Write(url.Substring(0, urlindex) + "&gacha_type=" + gachaType + "&end_id=" + endId, 0);
                         JObject jsonObj = JObject.Parse(json);
                         if (jsonObj["message"].ToString() == "authkey timeout")
                         {
