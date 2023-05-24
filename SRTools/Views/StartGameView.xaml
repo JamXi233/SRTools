@@ -26,7 +26,13 @@
         </StackPanel>
 
         <!-- 右侧区域 -->
-        <StackPanel Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Bottom">
+        <StackPanel Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Bottom" Orientation="Horizontal">
+            <Button  x:Name="startLauncher" Width="90" Height="84" VerticalAlignment="Bottom" HorizontalAlignment="Right" Margin="0 0 0 12" Click="StartLauncher_Click">
+                <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+                    <SymbolIcon Symbol="Home" Width="32" Height="32"/>
+                    <TextBlock Text="打开启动器" FontSize="12"/>
+                </StackPanel>
+            </Button>
             <Button  x:Name="startGame" Width="90" Height="84" VerticalAlignment="Bottom" HorizontalAlignment="Right" Margin="12" Click="StartGame_Click">
                 <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
                     <SymbolIcon Symbol="Play" Width="32" Height="32"/>

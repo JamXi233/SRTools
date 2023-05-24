@@ -16,6 +16,7 @@ namespace SRTools.Depend
 {
     internal class TermianlMode
     {
+        private Window m_window;
         // 导入 AllocConsole 和 FreeConsole 函数
         [DllImport("kernel32.dll", SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
@@ -42,16 +43,16 @@ namespace SRTools.Depend
                 var value = localSettings.Values["Config_GamePath"] as string;
                 if (!string.IsNullOrEmpty(value) && value.Contains("Null"))
                 {
-                    list = new[] { "选择游戏路径", "抽卡分析", "设置", "[red]退出控制台模式[/]", "[bold red]退出SRTools[/]", };
+                    list = new[] { "选择游戏路径", "[red]退出控制台模式[/]", "[bold red]退出SRTools[/]", };
                 }
                 else
                 {
-                    list = new[] { "[bold green]开启游戏(120FPS)[/]", "[bold yellow]清除游戏路径[/]", "抽卡分析", "设置", "[red]退出控制台模式[/]", "[bold red]退出SRTools[/]" };
+                    list = new[] { "[bold green]开启游戏(120FPS)[/]", "[bold yellow]清除游戏路径[/]", "[red]退出控制台模式[/]", "[bold red]退出SRTools[/]" };
                 }
             }
             else
             {
-                list = new[] { "选择游戏路径", "抽卡分析", "设置", "[red]退出控制台模式[/]", "[bold red]退出SRTools[/]", };
+                list = new[] { "选择游戏路径", "[red]退出控制台模式[/]", "[bold red]退出SRTools[/]", };
             }
             var select = AnsiConsole.Prompt(
                     new SelectionPrompt<string>()
@@ -63,11 +64,11 @@ namespace SRTools.Depend
             {
                 case "[bold green]开启游戏(120FPS)[/]":
                     startGameView.StartGame(null, null);
-                    Init();
+                    await Init();
                     return false;
                 case "[bold yellow]清除游戏路径[/]":
                     startGameView.RMGameLocation(null, null);
-                    Init();
+                    await Init();
                     return false;
                 case "[bold red]退出SRTools[/]":
                     Application.Current.Exit();
@@ -78,6 +79,8 @@ namespace SRTools.Depend
                 case "[red]退出控制台模式[/]":
                     localSettings.Values["Config_TerminalMode"] = 0;
                     FreeConsole();
+                    m_window = new MainWindow();
+                    m_window.Activate();
                     return true;
                 default:
                     return true;
@@ -93,23 +96,27 @@ namespace SRTools.Depend
             var hwnd = WinRT.Interop.WindowNative.GetWindowHandle(window);
             WinRT.Interop.InitializeWithWindow.Initialize(picker, hwnd);
             Console.Clear();
+            var fileselect = 2;
             Logging.Write("选择游戏文件\n通常位于(游戏根目录\\Game\\StarRail.exe)", 0);
             await AnsiConsole.Status().StartAsync("等待选择文件...", async ctx => { 
                 var file = await picker.PickSingleFileAsync();
-                if (file == null)
-                {
-                    Init();
-                }
+                if (file == null) { fileselect = 1; }
                 else if (file.Name == "StarRail.exe")
                 {
                     localSettings.Values["Config_GamePath"] = @file.Path;
-                    
-                    Init();
+                    fileselect = 0;
                 }
-                Logging.Write("选择文件不正确，请确保是StarRail.exe", 2);
-                await Task.Delay(TimeSpan.FromSeconds(3));
             });
-            SelectGame();
+            if (fileselect == 0)
+            { await Init(); }
+            else if (fileselect == 1)
+            { await Init(); }
+            else 
+            {
+                Logging.Write("选择文件不正确，请确保是StarRail.exe\n等待3秒后重新选择", 2);
+                await Task.Delay(TimeSpan.FromSeconds(3));
+                SelectGame();
+            }
         }
     }
 }

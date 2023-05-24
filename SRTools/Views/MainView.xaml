@@ -10,16 +10,6 @@
     <Grid>
         <Image x:Name="BackgroundImage" Stretch="UniformToFill" Opacity="1" ImageOpened="BackgroundImage_ImageOpened" Margin="0 -8 0 0 "/>
 
-        <Grid x:Name="loadRing" HorizontalAlignment="Center" VerticalAlignment="Center" Background="{ThemeResource SystemControlAcrylicElementMediumHighBrush}" CornerRadius="8" Width="72" Height="72">
-
-            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
-
-                <ProgressRing/>
-
-            </StackPanel>
-
-        </Grid>
-
         <Grid x:Name="MainAPP" HorizontalAlignment="Stretch" Margin="24">
 
             <Grid.ColumnDefinitions>
@@ -29,33 +19,51 @@
 
             <!-- 左侧区域 -->
             <StackPanel Grid.Column="0" HorizontalAlignment="Left" VerticalAlignment="Bottom">
-                
-                <StackPanel VerticalAlignment="Bottom">
-                    
-                    <Grid>
 
-                        <FlipView x:Name="Gallery" ItemsSource="{x:Bind Pictures}" PointerPressed="Gallery_PointerPressed" Height="160" Width="345">
+                <Grid>
+
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="1*"/>
+                        <RowDefinition Height="1*"/>
+                    </Grid.RowDefinitions>
+
+                    <Grid Grid.Row="1" Background="{ThemeResource SystemControlAcrylicElementMediumHighBrush}" Margin="0 18 0 0" CornerRadius="12" Height="160" Width="345">
+                        <NavigationView x:Name="NotifyNav" PaneDisplayMode="Top" IsBackButtonVisible="Collapsed" IsSettingsVisible="False" SelectionChanged="Notify_NavView_SelectionChanged">
+                            <NavigationView.MenuItems>
+                                <NavigationViewItem  Content="公告" Tag="Notify_Announce" IsSelected="True"/>
+                                <NavigationViewItem  Content="通知" Tag="Notify_Notification" />
+                                <NavigationViewItem  Content="信息" Tag="Notify_Message" />
+                            </NavigationView.MenuItems>
+                            <Frame x:Name="NotifyFrame" Height="100" Padding="10 0 10 0"/>
+                        </NavigationView>
+                    </Grid>
+
+
+                    <Grid Grid.Row="0">
+
+                        <FlipView x:Name="Gallery" ItemsSource="{x:Bind Pictures}" PointerPressed="Gallery_PointerPressed" Height="160" Width="345" CornerRadius="12">
                             <FlipView.ItemTemplate>
                                 <DataTemplate x:DataType="x:String">
                                     <Image Source="{x:Bind Mode=OneTime}" />
                                 </DataTemplate>
                             </FlipView.ItemTemplate>
                         </FlipView>
-                        
-                        <Grid Background="{ThemeResource SystemControlAcrylicElementMediumHighBrush}" Height="20" Width="52" CornerRadius="12" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0 0 0 0">
-                            
+
+                        <Grid Background="{ThemeResource SystemControlAcrylicElementMediumHighBrush}" Height="24" Width="64" CornerRadius="12" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0 0 12 -12">
+
                             <PipsPager x:Name="FlipViewPipsPager"
                                 VerticalAlignment="Center"
                                 HorizontalAlignment="Center"
                                 NumberOfPages="3"
                                 SelectedPageIndex="{x:Bind Path=Gallery.SelectedIndex, Mode=TwoWay}" />
-                            
+
                         </Grid>
-                        
+
                     </Grid>
-                    
-                </StackPanel>
-                
+
+                </Grid>
+
+
             </StackPanel>
 
             <!-- 右侧区域 -->
@@ -66,9 +74,19 @@
                     </Grid.Background>
                 </Grid>
             </StackPanel>
-            
+
         </Grid>
-            
+
+        <Grid x:Name="loadRing" HorizontalAlignment="Center" VerticalAlignment="Center" Background="{ThemeResource SystemControlAcrylicElementMediumHighBrush}" CornerRadius="8" Width="72" Height="72">
+
+            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+
+                <ProgressRing/>
+
+            </StackPanel>
+
+        </Grid>
+
     </Grid>
-        
+
 </Page>

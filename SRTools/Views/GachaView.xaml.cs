@@ -263,11 +263,6 @@ namespace SRTools.Views
                         break;
                 }
             }
-            if (args.IsSettingsSelected)
-            {
-                // 导航到默认设置页面
-                gachaFrame.Navigate(typeof(AboutView));
-            }
         }
 
 

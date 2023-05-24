@@ -127,6 +127,11 @@ namespace SRTools.Views
                 StartGame(null, null);
             }
         }
+        private void StartLauncher_Click(object sender, RoutedEventArgs e)
+        {
+            StartLauncher(null, null);
+
+        }
 
         private void UnlockFPS_Click(object sender, RoutedEventArgs e) 
         {
@@ -149,6 +154,7 @@ namespace SRTools.Views
                 rmGame.Visibility = Visibility.Collapsed;
                 rmGame.IsEnabled = false;
                 startGame.IsEnabled = false;
+                startLauncher.IsEnabled = false;
             }
             else
             {
@@ -157,6 +163,7 @@ namespace SRTools.Views
                 rmGame.Visibility = Visibility.Visible;
                 rmGame.IsEnabled = true;
                 startGame.IsEnabled = true;
+                startLauncher.IsEnabled = true;
             }
         }
 
@@ -168,6 +175,17 @@ namespace SRTools.Views
             //启动程序
             processInfo.UseShellExecute = true;
             processInfo.Verb = "runas"; 
+            Process.Start(processInfo);
+        }
+
+        public void StartLauncher(TeachingTip sender, object args)
+        {
+            string gamePath = localSettings.Values["Config_GamePath"] as string;
+            var processInfo = new ProcessStartInfo(gamePath.Replace("StarRail.exe","..\\launcher.exe"));
+
+            //启动程序
+            processInfo.UseShellExecute = true;
+            processInfo.Verb = "runas";
             Process.Start(processInfo);
         }
 

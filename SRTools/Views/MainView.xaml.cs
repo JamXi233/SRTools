@@ -14,6 +14,10 @@ using System.Text.Json;
 using System.Collections.ObjectModel;
 using System.Security.Policy;
 using Microsoft.UI.Xaml.Input;
+using SRTools.Views.NotifyViews;
+using Windows.UI.Core;
+using System.IO;
+using Org.BouncyCastle.Utilities.IO;
 
 namespace SRTools.Views
 {
@@ -31,7 +35,8 @@ namespace SRTools.Views
         {
             this.InitializeComponent();
             Logging.Write("Switch to MainView", 0);
-            _ = LoadPicturesAsync(); // 使用丢弃以避免警告
+            LoadPicturesAsync();
+            
         }
 
         private async Task LoadPicturesAsync()
@@ -43,20 +48,36 @@ namespace SRTools.Views
             _url = response.data.adv.url;
             PopulatePictures(response.data.banner);
             LoadAdvertisementData();
-            loadRing.Visibility = Visibility.Collapsed;
         }
 
-        private void LoadAdvertisementData()
+        private async void LoadAdvertisementData()
         {
             // 设置背景图片
-            Logging.Write("Getting Background: "+ backgroundUrl, 0);
-            BitmapImage backgroundImage = new BitmapImage(new Uri(backgroundUrl));
+            Logging.Write("Getting Background: " + backgroundUrl, 0);
+            BitmapImage backgroundImage = new BitmapImage();
+            using (var stream = await new HttpClient().GetStreamAsync(backgroundUrl))
+            using (var memStream = new MemoryStream())
+            {
+                await stream.CopyToAsync(memStream);
+                memStream.Position = 0;
+                var randomAccessStream = memStream.AsRandomAccessStream();
+                await backgroundImage.SetSourceAsync(randomAccessStream);
+            }
             BackgroundImage.Source = backgroundImage;
 
             // 设置按钮图标
-            Logging.Write("Getting Button Image: "+iconUrl, 0);
-            BitmapImage iconImage = new BitmapImage(new Uri(iconUrl));
+            Logging.Write("Getting Button Image: " + iconUrl, 0);
+            BitmapImage iconImage = new BitmapImage();
+            using (var stream = await new HttpClient().GetStreamAsync(iconUrl))
+            using (var memStream = new MemoryStream())
+            {
+                await stream.CopyToAsync(memStream);
+                memStream.Position = 0;
+                var randomAccessStream = memStream.AsRandomAccessStream();
+                await iconImage.SetSourceAsync(randomAccessStream);
+            }
             IconImageBrush.ImageSource = iconImage;
+            loadRing.Visibility = Visibility.Collapsed;
         }
 
         private void OpenUrlButton_Click(object sender, RoutedEventArgs e)
@@ -100,7 +121,6 @@ namespace SRTools.Views
 
         public void PopulatePictures(List<Banner> banners)
         {
-            
             foreach (Banner banner in banners)
             {
                 Pictures.Add(banner.img);
@@ -122,6 +142,31 @@ namespace SRTools.Views
             });
         }
 
+        private void Notify_NavView_SelectionChanged(NavigationView sender, NavigationViewSelectionChangedEventArgs args)
+        {
+            if (args.IsSettingsSelected)
+            {
+                // 处理设置菜单项单击事件
+            }
+            else if (args.SelectedItemContainer != null)
+            {
+                switch (args.SelectedItemContainer.Tag.ToString())
+                {
+                    case "Notify_Announce":
+                        // 导航到主页
+                        NotifyFrame.Navigate(typeof(NotifyAnnounceView));
+                        break;
+                    case "Notify_Notification":
+                        // 导航到启动游戏页
+                        NotifyFrame.Navigate(typeof(NotifyNotificationView));
+                        break;
+                    case "Notify_Message":
+                        // 导航到启动游戏页
+                        NotifyFrame.Navigate(typeof(NotifyMessageView));
+                        break;
+                }
+            }
+        }
     }
 
     public class ApiResponse
@@ -135,6 +180,7 @@ namespace SRTools.Views
     {
         public Adv adv { get; set; }
         public List<Banner> banner { get; set; }
+        public List<Banner> post { get; set; }
     }
 
     public class Adv
@@ -153,5 +199,16 @@ namespace SRTools.Views
         public string img { get; set; }
         public string url { get; set; }
         public string order { get; set; }
+    }
+
+    public class Post
+    {
+        public string post_id { get; set; }
+        public string type { get; set; }
+        public string tittle { get; set; }
+        public string url { get; set; }
+        public string show_time { get; set; }
+        public string order { get; set; }
+        public string title { get; set; }
     }
 }

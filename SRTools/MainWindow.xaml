@@ -30,7 +30,7 @@
 
             </NavigationView>
 
-            <Border x:Name="AppTitleBar" Height="48" Margin="48,0,0,0" VerticalAlignment="Top" Background="{ThemeResource SystemControlAcrylicElementMediumHighBrush}">
+            <Border x:Name="AppTitleBar" Height="48" Margin="48,0,0,0" VerticalAlignment="Top" >
                 <Grid>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto"/>

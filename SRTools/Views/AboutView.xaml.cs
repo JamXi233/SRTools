@@ -91,6 +91,7 @@ namespace SRTools.Views
             // 判断是否需要打开控制台
             if (consoleToggle.IsChecked ?? false)
             {
+                TerminalTip.IsOpen = true;
                 // 调用 AllocConsole 函数以打开控制台
                 AllocConsole();
                 localSettings.Values["Config_TerminalMode"] = 1;
@@ -321,7 +322,7 @@ namespace SRTools.Views
                     update_Progress_Grid.Visibility = Visibility.Collapsed;
                     update_Btn_Text.Text = "请点击安装";
                     update_Btn_Bar.Visibility = Visibility.Collapsed;
-                    update_Btn_Icon.Glyph = "&#xecaa";
+                    update_Btn_Icon.Glyph = "&#xea4e";
                 }
             }
             else

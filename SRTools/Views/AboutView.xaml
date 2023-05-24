@@ -32,6 +32,7 @@
             </StackPanel>
 
             <TeachingTip x:Name="UpdateTip"
+                Background="{ThemeResource SystemControlAcrylicElementMediumHighBrush}"
                 Target="{x:Bind checkUpdate}"
                 Title="更新"
                 Subtitle="SubTitle"
@@ -41,6 +42,17 @@
                 </TeachingTip.IconSource>
             </TeachingTip>
 
+            <TeachingTip x:Name="TerminalTip"
+                Background="{ThemeResource SystemControlAcrylicElementMediumHighBrush}"
+                Target="{x:Bind consoleToggle}"
+                Title="控制台模式开启"
+                Subtitle="开启控制台关闭软件下次启动会进入控制台模式"
+	            CloseButtonContent="关闭">
+                <TeachingTip.IconSource>
+                    <SymbolIconSource Symbol="Permissions" />
+                </TeachingTip.IconSource>
+            </TeachingTip>
+            
             <!-- 右侧区域 -->
             <StackPanel Orientation="Vertical" Grid.Column="1" HorizontalAlignment="Left">
                 <!-- 应用程序 logo -->
@@ -52,7 +64,7 @@
                         Height="128"/>
                 </Border>
                 <TextBlock Text="关于" FontSize="18" FontWeight="Bold" Margin="0 12 0 0"/>
-                <TextBlock Text="SRTools (星穹铁道工具箱) 23.5.23 Preview" FontSize="12" FontWeight="Bold" Margin="0 8 0 0"/>
+                <TextBlock Text="星轨工具箱(星穹铁道工具箱) 23.5.24 Preview" FontSize="12" FontWeight="Bold" Margin="0 8 0 0"/>
                 <TextBlock Text="Created by JamXi" FontSize="12" Margin="0 0 0 0"/>
                 <TextBlock Text="Copyright © JSG-LLC 2017-2023" FontSize="12" FontWeight="Bold" Margin="0 0 0 0"/>
                 <TextBlock Style="{ThemeResource BodyStrongTextBlockStyle}" Margin="0,8,0,4" HorizontalAlignment="Left">
