@@ -34,12 +34,19 @@ namespace SRTools.Views
             dispatcherTimer.Tick += CheckProcess;
             this.InitializeComponent();
             Logging.Write("Switch to GachaView", 0);
-
-            if(localSettings.Values["Gacha_Data"] as string == "1")
+            string uDFP = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+            string FileFolder = "\\JSG-LLC\\SRTools\\GachaRecords_Character.ini";
+            string FileFolder2 = "\\JSG-LLC\\SRTools\\GachaRecords_LightCone.ini";
+            string FileFolder3 = "\\JSG-LLC\\SRTools\\GachaRecords_Newbie.ini";
+            string FileFolder4 = "\\JSG-LLC\\SRTools\\GachaRecords_Regular.ini";
+            if (localSettings.Values["Gacha_Data"] as string == "1" || File.Exists(uDFP+ FileFolder) && File.Exists(uDFP + FileFolder2) && File.Exists(uDFP + FileFolder3) && File.Exists(uDFP + FileFolder4))
             {
                 gachaNav.Visibility = Visibility.Visible;
                 gachaFrame.Navigate(typeof(CharacterGachaView));
+                localSettings.Values["Gacha_Data"] = "1";
             }
+
+
         }
 
         private FiddlerCoreStartupSettings startupSettings;

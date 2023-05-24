@@ -58,8 +58,8 @@
             <!-- 依赖文件左侧区域 -->
             <StackPanel x:Name="depend_panel_left" Grid.Column="0" HorizontalAlignment="Left" Visibility="Collapsed">
                 <StackPanel HorizontalAlignment="Stretch" Margin="38">
-                    <TextBlock Text="首次运行" FontSize="32" FontWeight="Bold"/>
-                    <TextBlock Text="首次运行需要先下载依赖文件" Margin="0 12 0 0"/>
+                    <TextBlock Text="首次运行/恢复数据" FontSize="32" FontWeight="Bold"/>
+                    <TextBlock Text="需要先下载依赖文件" Margin="0 12 0 0"/>
                     <TextBlock x:Name="depend_Latest_Name" Text="依赖项:..." Margin="0 12 0 0"/>
                     <TextBlock x:Name="depend_Latest_Version" Text="版本号:..."/>
                 </StackPanel>
@@ -85,7 +85,7 @@
             <!-- 选择下载渠道左侧区域 -->
             <StackPanel x:Name="dservice_panel_left" Grid.Column="0" HorizontalAlignment="Left">
                 <StackPanel HorizontalAlignment="Stretch" Margin="38">
-                    <TextBlock Text="首次运行" FontSize="32" FontWeight="Bold"/>
+                    <TextBlock Text="首次运行/恢复数据" FontSize="32" FontWeight="Bold"/>
                     <RadioButtons Header="选择要更新渠道" Margin="0 12 0 0">
                         <RadioButton Content="JSG-LLC(JSG-DS) 国内较快" Checked="DService_JSG_Choose"/>
                         <RadioButton Content="Gitee" Checked="DService_Gitee_Choose"/>

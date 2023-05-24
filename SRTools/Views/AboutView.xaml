@@ -18,17 +18,37 @@
             </Grid.ColumnDefinitions>
 
             <!-- 左侧区域 -->
-            <StackPanel Grid.Column="0" HorizontalAlignment="Left" Margin="0 0 20 0">
+            <StackPanel Grid.Column="0" HorizontalAlignment="Left">
+                
                 <TextBlock Text="程序设置" FontSize="32" FontWeight="Bold" Margin="0 0 0 10"/>
                 <TextBlock Text="程序设置" FontSize="16" FontWeight="Bold" Margin="0 0 0 10"/>
-                <ToggleButton x:Name="consoleToggle" Click="Console_Toggle" Content="开启控制台" Margin="0 0 0 10"/>
-                <Button x:Name="clearAllData" Click="Clear_AllData" Content="清空所有数据" Margin="0 0 0 10"/>
-                <Button x:Name="checkUpdate" Click="Check_Update" Content="检查更新" Margin="0 0 0 10"/>
-                <RadioButtons Header="更新渠道" FontSize="16" FontWeight="Bold" Margin="0 12 0 0">
-                    <RadioButton x:Name="uservice_JSG" Content="JSG-LLC(JSG-DS) 国内较快" Checked="uservice_JSG_Choose"/>
-                    <RadioButton x:Name="uservice_Gitee" Content="Gitee" Checked="uservice_Gitee_Choose"/>
-                    <RadioButton x:Name="uservice_Github" Content="Github" Checked="uservice_Github_Choose" IsEnabled="False"/>
-                </RadioButtons>
+                
+                <Grid>
+                    
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="3*"/>
+                        <ColumnDefinition Width="2*"/>
+                    </Grid.ColumnDefinitions>
+                    
+                    <StackPanel Grid.Column="0" Margin="0 0 20 0">
+                        
+                        <ToggleButton x:Name="consoleToggle" Click="Console_Toggle" Content="开启控制台" Margin="0 0 0 10"/>
+                        <Button x:Name="clearAllData" Click="Clear_AllData" Content="清空所有数据" Margin="0 0 0 10"/>
+                        <Button x:Name="checkUpdate" Click="Check_Update" Content="检查更新" Margin="0 0 0 10"/>
+                        <RadioButtons Header="更新渠道" FontSize="16" FontWeight="Bold" Margin="0 12 0 0">
+                            <RadioButton x:Name="uservice_JSG" Content="JSG-LLC(JSG-DS) 国内较快" Checked="uservice_JSG_Choose"/>
+                            <RadioButton x:Name="uservice_Gitee" Content="Gitee" Checked="uservice_Gitee_Choose"/>
+                            <RadioButton x:Name="uservice_Github" Content="Github" Checked="uservice_Github_Choose" IsEnabled="False"/>
+                        </RadioButtons>
+                    </StackPanel>
+
+                    <StackPanel Grid.Column="1" Margin="0 0 0 0">
+                        <Button x:Name="backupData" Click="Backup_Data" Content="备份数据" Margin="0 0 0 10"/>
+                        <Button x:Name="restoreData" Click="Restore_Data_Click" Content="还原数据" Margin="0 0 0 10"/>
+                    </StackPanel>
+                    
+                </Grid>
+                
             </StackPanel>
 
             <TeachingTip x:Name="UpdateTip"
@@ -52,7 +72,20 @@
                     <SymbolIconSource Symbol="Permissions" />
                 </TeachingTip.IconSource>
             </TeachingTip>
-            
+
+            <TeachingTip x:Name="RestoreTip"
+                Background="{ThemeResource SystemControlAcrylicElementMediumHighBrush}"
+                Target="{x:Bind restoreData}"
+                Title="注意！"
+                Subtitle="还原配置文件会清空当前所有配置文件，请小心使用。恢复完成会自动关闭程序。"
+                ActionButtonContent="选择文件"
+                ActionButtonClick="Restore_Data"
+	            CloseButtonContent="关闭">
+                <TeachingTip.IconSource>
+                    <SymbolIconSource Symbol="Refresh" />
+                </TeachingTip.IconSource>
+            </TeachingTip>
+
             <!-- 右侧区域 -->
             <StackPanel Orientation="Vertical" Grid.Column="1" HorizontalAlignment="Left">
                 <!-- 应用程序 logo -->

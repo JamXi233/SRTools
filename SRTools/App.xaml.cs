@@ -63,7 +63,7 @@ namespace SRTools
                     m_window.Activate();
                     break;
                 case 1:
-                    TermianlMode terminalMode = new TermianlMode();
+                    TerminalMode terminalMode = new TerminalMode();
                     bool response = await terminalMode.Init();
                     if (response)
                     {

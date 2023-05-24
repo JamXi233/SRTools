@@ -256,14 +256,24 @@ namespace SRTools
                 string keyPath = "SRTools";
                 ApplicationDataContainer localSettings = ApplicationData.Current.LocalSettings;
                 ApplicationDataContainer keyContainer = localSettings.Containers[keyPath];
-                string valueFirstRun = "Config_FirstRun";
-                Trace.WriteLine(userDocumentsFolderPath);
                 string extractionPath = Path.Combine(userDocumentsFolderPath + FileFolder, ExtractedFolder);
-                Trace.WriteLine(extractionPath);
-                ZipFile.ExtractToDirectory(localFilePath, extractionPath);
-                FirstRun.Visibility = Visibility.Collapsed;
-                MainAPP.Visibility = Visibility.Visible;
-                keyContainer.Values[valueFirstRun] = "0";
+                if (File.Exists(extractionPath+ "\\SRToolsHelper.exe"))
+                {
+                    string valueFirstRun = "Config_FirstRun";
+                    FirstRun.Visibility = Visibility.Collapsed;
+                    MainAPP.Visibility = Visibility.Visible;
+                    keyContainer.Values[valueFirstRun] = "0";
+                }
+                else 
+                {
+                    string valueFirstRun = "Config_FirstRun";
+                    Trace.WriteLine(userDocumentsFolderPath);
+                    Trace.WriteLine(extractionPath);
+                    ZipFile.ExtractToDirectory(localFilePath, extractionPath);
+                    FirstRun.Visibility = Visibility.Collapsed;
+                    MainAPP.Visibility = Visibility.Visible;
+                    keyContainer.Values[valueFirstRun] = "0";
+                }
             }
             else
             {

@@ -23,6 +23,7 @@ using Windows.Storage;
 using Windows.System;
 using System.IO.Compression;
 using Org.BouncyCastle.Asn1.X509;
+using Windows.Storage.Pickers;
 
 // To learn more about WinUI, the WinUI project structure,
 // and more about our project templates, see: http://aka.ms/winui-project-info.
@@ -110,34 +111,39 @@ namespace SRTools.Views
 
         private void Clear_AllData(object sender, RoutedEventArgs e)
         {
-            clearAllData.IsEnabled = false;
             string userDocumentsFolderPath = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
-            DeleteFolder(userDocumentsFolderPath + "\\JSG-LLC\\SRTools\\");
+            DeleteFolder(userDocumentsFolderPath + "\\JSG-LLC\\SRTools\\","1");
         }
 
-        private void DeleteFolder(string folderPath)
+        private void Clear_AllData_NoClose(object sender, RoutedEventArgs e, string Close = "0")
+        {
+            string userDocumentsFolderPath = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+            DeleteFolder(userDocumentsFolderPath + "\\JSG-LLC\\SRTools\\", Close);
+        }
+
+        private void DeleteFolder(string folderPath , String Close)
         {
             if (Directory.Exists(folderPath))
             {
                 try { Directory.Delete(folderPath, true); }
                 catch (IOException) {}
             }
-            _ = ClearLocalDataAsync();
+            _ = ClearLocalDataAsync(Close);
         }
 
-        public async Task ClearLocalDataAsync()
+        public async Task ClearLocalDataAsync(String Close)
         {
             // 获取 LocalData 文件夹的引用
             var localFolder = ApplicationData.Current.LocalFolder;
 
             // 删除 LocalData 文件夹中的所有子文件夹和文件
-            await DeleteFilesAndSubfoldersAsync(localFolder);
+            await DeleteFilesAndSubfoldersAsync(localFolder , Close);
 
             // 需要重新创建删除的 LocalData 文件夹
             await ApplicationData.Current.ClearAsync(ApplicationDataLocality.Local);
         }
 
-        private async Task DeleteFilesAndSubfoldersAsync(StorageFolder folder)
+        private async Task DeleteFilesAndSubfoldersAsync(StorageFolder folder, String Close)
         {
             // 获取文件夹中的所有文件和子文件夹
             var items = await folder.GetItemsAsync();
@@ -153,13 +159,16 @@ namespace SRTools.Views
                 // 如果项目是文件夹，则递归删除其中所有文件和子文件夹
                 else if (item is StorageFolder subfolder)
                 {
-                    await DeleteFilesAndSubfoldersAsync(subfolder);
+                    await DeleteFilesAndSubfoldersAsync(subfolder , Close);
 
                     // 删除子文件夹本身
                     await subfolder.DeleteAsync();
                 }
             }
-            Application.Current.Exit();
+            if (Close == "1")
+            {
+                Application.Current.Exit();
+            }
         }
         private async void Check_Update(object sender, RoutedEventArgs e) 
         {
@@ -202,9 +211,7 @@ namespace SRTools.Views
             localSettings.Values["Config_UpdateService"] = 2;
         }
 
-
         //更新开始
-
         public async Task<int> OnGetUpdateLatestReleaseInfo()
         {
             PackageVersion packageVersion = Package.Current.Id.Version;
@@ -352,5 +359,49 @@ namespace SRTools.Views
             update_Btn_Bar.Value = progressPercentage;
         }
 
+        private async void Backup_Data(object sender, RoutedEventArgs e) 
+        {
+            DateTime now = DateTime.Now;
+            string formattedDate = now.ToString("yyyy_MM_dd_HH_mm_ss");
+            Console.WriteLine(formattedDate);
+            string userDocumentsFolderPath = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+            var savePicker = new FileSavePicker();
+            savePicker.FileTypeChoices.Add("Zip Archive", new List<string>() { ".SRToolsBackup" });
+            savePicker.SuggestedStartLocation = PickerLocationId.DocumentsLibrary;
+            savePicker.SuggestedFileName = "SRTools_Backup_"+formattedDate;
+            var window = new Window();
+            var hwnd = WinRT.Interop.WindowNative.GetWindowHandle(window);
+            WinRT.Interop.InitializeWithWindow.Initialize(savePicker, hwnd);
+            StorageFile file = await savePicker.PickSaveFileAsync();
+            if (file != null)
+            {
+                string startPath = userDocumentsFolderPath+@"\JSG-LLC\SRTools";
+                string zipPath = file.Path;
+                if (File.Exists(zipPath))
+                {
+                    File.Delete(zipPath);
+                }
+                ZipFile.CreateFromDirectory(startPath, zipPath);
+            }
+        }
+
+        private void Restore_Data_Click(object sender, RoutedEventArgs e) 
+        {
+            RestoreTip.IsOpen = true;
+        }
+
+        private async void Restore_Data(TeachingTip e, object o) 
+        {
+            var picker = new FileOpenPicker();
+            picker.FileTypeFilter.Add(".SRToolsBackup");
+            var window = new Window();
+            var hwnd = WinRT.Interop.WindowNative.GetWindowHandle(window);
+            WinRT.Interop.InitializeWithWindow.Initialize(picker, hwnd);
+            var file = await picker.PickSingleFileAsync();
+            string userDocumentsFolderPath = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+            Task.Run(() => Clear_AllData_NoClose(null, null)).Wait();
+            Task.Run(() => ZipFile.ExtractToDirectory(file.Path, userDocumentsFolderPath + "\\JSG-LLC\\SRTools\\")).Wait();
+            Application.Current.Exit();
+        }
     }
 }

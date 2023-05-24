@@ -14,7 +14,7 @@ using SRTools.Views;
 
 namespace SRTools.Depend
 {
-    internal class TermianlMode
+    internal class TerminalMode
     {
         private Window m_window;
         // 导入 AllocConsole 和 FreeConsole 函数
@@ -81,9 +81,9 @@ namespace SRTools.Depend
                     FreeConsole();
                     m_window = new MainWindow();
                     m_window.Activate();
-                    return true;
+                    return false;
                 default:
-                    return true;
+                    return false;
             }
 
         }
