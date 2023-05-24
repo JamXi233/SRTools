@@ -13,6 +13,7 @@ using Newtonsoft.Json;
 using System.Diagnostics;
 using System.Collections.Generic;
 using SRTools.Views.GachaViews;
+using Spectre.Console;
 
 namespace SRTools.Views
 {
@@ -126,6 +127,7 @@ namespace SRTools.Views
                     {
                         GachaLink.Subtitle = ex.Message;
                         GachaLink.IsOpen = true;
+                        AnsiConsole.WriteException(ex);
                     }
                 }
                 else

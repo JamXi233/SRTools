@@ -7,9 +7,20 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d">
 
-    <Grid Margin="0 -4 0 0 ">
+    <Grid>
         <Image x:Name="BackgroundImage" Stretch="UniformToFill" Opacity="1" ImageOpened="BackgroundImage_ImageOpened" Margin="0 -8 0 0 "/>
-        <Grid HorizontalAlignment="Stretch" Margin="24">
+
+        <Grid x:Name="loadRing" HorizontalAlignment="Center" VerticalAlignment="Center" Background="{ThemeResource SystemControlAcrylicElementMediumHighBrush}" CornerRadius="8" Width="72" Height="72">
+
+            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+
+                <ProgressRing/>
+
+            </StackPanel>
+
+        </Grid>
+
+        <Grid x:Name="MainAPP" HorizontalAlignment="Stretch" Margin="24">
 
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="3*"/>
@@ -55,6 +66,9 @@
                     </Grid.Background>
                 </Grid>
             </StackPanel>
+            
         </Grid>
+            
     </Grid>
+        
 </Page>

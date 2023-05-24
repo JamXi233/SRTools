@@ -9,6 +9,7 @@ using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Navigation;
 using Microsoft.UI.Xaml.Shapes;
+using SRTools.Depend;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -18,6 +19,7 @@ using Windows.ApplicationModel;
 using Windows.ApplicationModel.Activation;
 using Windows.Foundation;
 using Windows.Foundation.Collections;
+using Windows.Storage;
 
 // To learn more about WinUI, the WinUI project structure,
 // and more about our project templates, see: http://aka.ms/winui-project-info.
@@ -42,11 +44,33 @@ namespace SRTools
         /// Invoked when the application is launched.
         /// </summary>
         /// <param name="args">Details about the launch request and process.</param>
-        protected override void OnLaunched(Microsoft.UI.Xaml.LaunchActivatedEventArgs args)
+        protected override async void OnLaunched(Microsoft.UI.Xaml.LaunchActivatedEventArgs args)
         {
-            m_window = new MainWindow();
-            m_window.Activate();
+            ApplicationDataContainer localSettings = ApplicationData.Current.LocalSettings;
+            switch (localSettings.Values["Config_TerminalMode"])
+            {
+                case 0:
+                    m_window = new MainWindow();
+                    m_window.Activate();
+                    break;
+                case 1:
+                    TermianlMode terminalMode = new TermianlMode();
+                    bool response = await terminalMode.Init();
+                    if (response)
+                    {
+                        m_window = new MainWindow();
+                        m_window.Activate();
+                    }
+                    break;
+                default:
+                    m_window = new MainWindow();
+                    m_window.Activate();
+                    break;
+            }
+            
+            
         }
+
 
         private Window m_window;
     }

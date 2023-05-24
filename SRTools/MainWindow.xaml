@@ -43,7 +43,7 @@
                         Width="24"
                         Height="24"/>
                     </Border>
-                    <TextBlock Grid.Column="1" VerticalAlignment="Center" Foreground="{ThemeResource TextFillColorSecondaryBrush}" Text="SRTools(星穹铁道工具箱)" />
+                    <TextBlock Grid.Column="1" VerticalAlignment="Center" Foreground="{ThemeResource TextFillColorSecondaryBrush}" Text="星轨工具箱(星穹铁道工具箱)" />
                 </Grid>
             </Border>
 

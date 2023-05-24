@@ -34,9 +34,20 @@ namespace SRTools.Views
             _ = LoadPicturesAsync(); // 使用丢弃以避免警告
         }
 
+        private async Task LoadPicturesAsync()
+        {
+            string apiUrl = "https://api-launcher-static.mihoyo.com/hkrpg_cn/mdk/launcher/api/content?filter_adv=false&key=6KcVuOkbcqjJomjZ&language=zh-cn&launcher_id=33";
+            ApiResponse response = await FetchData(apiUrl);
+            backgroundUrl = response.data.adv.background;
+            iconUrl = response.data.adv.icon;
+            _url = response.data.adv.url;
+            PopulatePictures(response.data.banner);
+            LoadAdvertisementData();
+            loadRing.Visibility = Visibility.Collapsed;
+        }
+
         private void LoadAdvertisementData()
         {
-
             // 设置背景图片
             Logging.Write("Getting Background: "+ backgroundUrl, 0);
             BitmapImage backgroundImage = new BitmapImage(new Uri(backgroundUrl));
@@ -54,10 +65,11 @@ namespace SRTools.Views
             Logging.Write("Open Browser URL["+_url+"]", 0);
             Process.Start(new ProcessStartInfo(_url) { UseShellExecute = true });
         }
+
         private void BackgroundImage_ImageOpened(object sender, RoutedEventArgs e)
         {
-            StartFadeAnimation(BackgroundImage, 0, 1, TimeSpan.FromSeconds(0.1));
-            StartFadeAnimation(OpenUrlButton, 0, 1, TimeSpan.FromSeconds(0.1));
+            StartFadeAnimation(BackgroundImage, 0, 1, TimeSpan.FromSeconds(0.2));
+            StartFadeAnimation(OpenUrlButton, 0, 1, TimeSpan.FromSeconds(0.2));
         }
 
         private void StartFadeAnimation(FrameworkElement target, double from, double to, TimeSpan duration)
@@ -77,16 +89,6 @@ namespace SRTools.Views
             storyboard.Begin();
         }
 
-        private async Task LoadPicturesAsync()
-        {
-            string apiUrl = "https://api-launcher-static.mihoyo.com/hkrpg_cn/mdk/launcher/api/content?filter_adv=false&key=6KcVuOkbcqjJomjZ&language=zh-cn&launcher_id=33";
-            ApiResponse response = await FetchData(apiUrl);
-            backgroundUrl = response.data.adv.background;
-            iconUrl = response.data.adv.icon;
-            _url = response.data.adv.url;
-            PopulatePictures(response.data.banner);
-            LoadAdvertisementData();
-        }
 
         public static async Task<ApiResponse> FetchData(string url)
         {
@@ -104,8 +106,6 @@ namespace SRTools.Views
                 Pictures.Add(banner.img);
                 list.Add(banner.url);
             }
-            FlipViewPipsPager.Visibility = Visibility.Visible;
-            
         }
 
         private void Gallery_PointerPressed(object sender, PointerRoutedEventArgs e)
@@ -121,8 +121,6 @@ namespace SRTools.Views
                 UseShellExecute = true
             });
         }
-
-
 
     }
 

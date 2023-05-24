@@ -108,7 +108,7 @@ namespace SRTools.Views
             }
         }
 
-        private void RMGameLocation(object sender, RoutedEventArgs e)
+        public void RMGameLocation(object sender, RoutedEventArgs e)
         {
             localSettings.Values["Config_GamePath"] = @"Null";
             UpdateUIElementsVisibility(0);
@@ -160,7 +160,7 @@ namespace SRTools.Views
             }
         }
 
-        private void StartGame(TeachingTip sender, object args)
+        public void StartGame(TeachingTip sender, object args)
         {
             string gamePath = localSettings.Values["Config_GamePath"] as string;
             var processInfo = new ProcessStartInfo(gamePath);

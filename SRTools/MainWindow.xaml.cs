@@ -9,24 +9,17 @@ using Vanara.PInvoke;
 using Windows.Graphics;
 using WinRT.Interop;
 using Microsoft.UI.Xaml.Controls;
-using Microsoft.Win32;
 using Windows.Storage;
 using SRTools.Depend;
 using System.IO.Compression;
-using Windows.Devices.Geolocation;
 using System.Threading.Tasks;
 using System.IO;
-using Windows.UI.Core;
 using System.Diagnostics;
-using Windows.ApplicationModel;
-using Windows.Storage.Pickers;
-using Windows.System;
-using System.Threading.Tasks;
 using System.Net.Http;
 using System.Text.Json;
-using System.Collections.ObjectModel;
-using System.Security.Policy;
 using Microsoft.UI.Xaml.Media.Imaging;
+using Spectre.Console;
+using System.Threading;
 
 namespace SRTools
 {
@@ -67,7 +60,7 @@ namespace SRTools
             InitializeAppData();
             InitializeMicaBackground();
             InitializeWindowProperties();
-            BackgroundImage();
+            BackgroundImage(); 
 
             _getNetData = new GetNetData();
         }
