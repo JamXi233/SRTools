@@ -18,8 +18,6 @@ using System.Diagnostics;
 using System.Net.Http;
 using System.Text.Json;
 using Microsoft.UI.Xaml.Media.Imaging;
-using Spectre.Console;
-using System.Threading;
 
 namespace SRTools
 {
@@ -154,13 +152,13 @@ namespace SRTools
             switch (localSettings.Values["Config_TerminalMode"])
             {
                 case 0:
-                    FreeConsole();
+                    TerminalMode.HideConsole();
                     break;
                 case 1:
-                    AllocConsole();
+                    TerminalMode.ShowConsole();
                     break;
                 default:
-                    FreeConsole();
+                    TerminalMode.HideConsole();
                     break;
             }
             if (localSettings.Containers.ContainsKey(keyPath))

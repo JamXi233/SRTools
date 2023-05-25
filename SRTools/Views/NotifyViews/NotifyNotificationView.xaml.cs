@@ -26,7 +26,7 @@ namespace SRTools.Views.NotifyViews
             LoadData(records);
         }
 
-        private async void LoadData(List<GetNotify> getNotifies)
+        private void LoadData(List<GetNotify> getNotifies)
         {
             foreach (GetNotify getNotify in getNotifies)
             {

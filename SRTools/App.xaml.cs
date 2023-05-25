@@ -31,14 +31,6 @@ using Windows.UI.Popups;
 
 namespace SRTools
 {
-    /// <summary>
-    /// Provides application-specific behavior to supplement the default Application class.
-    /// </summary>
-    /// 
-
-    
-    
-
     public partial class App : Application
     {
         // 导入 AllocConsole 和 FreeConsole 函数
@@ -61,7 +53,7 @@ namespace SRTools
         /// Invoked when the application is launched.
         /// </summary>
         /// <param name="args">Details about the launch request and process.</param>
-        protected override async void OnLaunched(Microsoft.UI.Xaml.LaunchActivatedEventArgs args)
+        protected override void OnLaunched(Microsoft.UI.Xaml.LaunchActivatedEventArgs args)
         {
             Windows.ApplicationModel.Core.CoreApplication.UnhandledErrorDetected += OnUnhandledErrorDetected;
             Init();
@@ -69,55 +61,68 @@ namespace SRTools
 
         public async void Init()
         {
-            Task.Run(() => getNotify.Get()).Wait();
+            AllocConsole();
+            bool isDebug = false;
+            #if DEBUG
+            isDebug = true;
+            #else
+            #endif
+
+            if (isDebug)
+            {
+                Logging.Write("Debug Mode", 1);
+            }
+            else
+            {
+                Logging.Write("Release Mode", 1);
+            }
             ApplicationDataContainer localSettings = ApplicationData.Current.LocalSettings;
             switch (localSettings.Values["Config_TerminalMode"])
             {
                 case 0:
-                    m_window = new MainWindow();
-                    m_window.Activate();
+                    TerminalMode.HideConsole();
                     break;
                 case 1:
-                    TerminalMode terminalMode = new TerminalMode();
-                    bool response = await terminalMode.Init();
-                    if (response)
-                    {
-                        m_window = new MainWindow();
-                        m_window.Activate();
-                    }
+                    TerminalMode.ShowConsole();
                     break;
                 default:
-                    m_window = new MainWindow();
-                    m_window.Activate();
+                    TerminalMode.HideConsole();
                     break;
+            }
+            Task.Run(() => getNotify.Get()).Wait();
+            int Mode = (int)localSettings.Values["Config_TerminalMode"];
+            TerminalMode terminalMode = new TerminalMode();
+            bool response = await terminalMode.Init(Mode);
+            if (response)
+            {
+                m_window = new MainWindow();
+                m_window.Activate();
+            }
+            if (isDebug)
+            {
+                Console.Title = "𝐃𝐞𝐛𝐮𝐠𝐌𝐨𝐝𝐞:SRTools";
+                TerminalMode.ShowConsole();
             }
         }
 
 
         private async void OnUnhandledErrorDetected(object sender, Windows.ApplicationModel.Core.UnhandledErrorDetectedEventArgs e)
         {
-            e.UnhandledError.Propagate();
-            // 获取异常信息
-            
-            AllocConsole();
-            await Task.Delay(TimeSpan.FromSeconds(0.1));
-            Console.SetWindowSize(50, 20);
-            Console.SetBufferSize(50, 20);
-            Console.Title = "SRTools TerminalMode";
-            
-            // 显示错误消息框
-            var dialog = new MessageDialog("An error has occurred. The application will now close.");
-            await dialog.ShowAsync();
-
-            
-            // 处理异常并在控制台上输出错误消息
-            Console.WriteLine("发生全局异常: " + e.ToString());
-
-            // 关闭应用程序
-            Application.Current.Exit();
+            try
+            {
+                e.UnhandledError.Propagate();
+            }
+            catch (Exception ex)
+            {
+                await Task.Delay(TimeSpan.FromSeconds(0.1));
+                Console.Title = "SRTools TerminalMode";
+                TerminalMode.ShowConsole();
+                Logging.Write("发生全局异常: " + ex.Message,2);
+                // 关闭应用程序
+                //await Task.Delay(TimeSpan.FromSeconds(5));
+                //Application.Current.Exit();
+            }
         }
-
-
         private Window m_window;
     }
 }

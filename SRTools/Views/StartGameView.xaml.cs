@@ -1,43 +1,20 @@
 ﻿using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
-using Microsoft.UI.Xaml.Controls.Primitives;
-using Microsoft.UI.Xaml.Data;
-using Microsoft.UI.Xaml.Input;
-using Microsoft.UI.Xaml.Media;
-using Microsoft.UI.Xaml.Navigation;
 using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Runtime.InteropServices.WindowsRuntime;
-using Windows.Foundation;
-using Windows.Foundation.Collections;
 using Windows.Storage.Pickers;
 using Windows.Storage;
-using Microsoft.UI.Xaml.Media.Imaging;
 using System.Diagnostics;
-using Microsoft.Win32;
-using System.Text;
-using Vanara.PInvoke;
-using System.Threading;
 using Microsoft.UI.Dispatching;
-using Windows.Security.EnterpriseData;
-using Windows.Security.Authorization.AppCapabilityAccess;
-using Windows.ApplicationModel;
-using Windows.Foundation.Metadata;
 using SRTools.Depend;
-
-// To learn more about WinUI, the WinUI project structure,
-// and more about our project templates, see: http://aka.ms/winui-project-info.
+using Spectre.Console;
+using Microsoft.Win32;
 
 namespace SRTools.Views
 {
-    /// <summary>
-    /// An empty page that can be used on its own or navigated to within a Frame.
-    /// </summary>
     public sealed partial class StartGameView : Page
     {
-        private DispatcherQueueTimer dispatcherTimer;
+        private DispatcherQueueTimer dispatcherTimer_Launcher;
+        private DispatcherQueueTimer dispatcherTimer_Game;
         ApplicationDataContainer localSettings = ApplicationData.Current.LocalSettings;
         string userDocumentsFolderPath = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
 
@@ -46,13 +23,19 @@ namespace SRTools.Views
             this.InitializeComponent();
             Logging.Write("Switch to StartGameView",0);
             // 获取UI线程的DispatcherQueue
-            var dispatcherQueue = DispatcherQueue.GetForCurrentThread();
+            var dispatcherQueue_Launcher = DispatcherQueue.GetForCurrentThread();
+            var dispatcherQueue_Game = DispatcherQueue.GetForCurrentThread();
 
             // 创建定时器，并设置回调函数和时间间隔
-            dispatcherTimer = dispatcherQueue.CreateTimer();
-            dispatcherTimer.Interval = TimeSpan.FromSeconds(2);
-            dispatcherTimer.Tick += CheckProcess;
-            dispatcherTimer.Start();
+            dispatcherTimer_Launcher = dispatcherQueue_Launcher.CreateTimer();
+            dispatcherTimer_Launcher.Interval = TimeSpan.FromSeconds(0.2);
+            dispatcherTimer_Launcher.Tick += CheckProcess_Launcher;
+            dispatcherTimer_Launcher.Start();
+            dispatcherTimer_Game = dispatcherQueue_Game.CreateTimer();
+            dispatcherTimer_Game.Interval = TimeSpan.FromSeconds(0.2);
+            dispatcherTimer_Game.Tick += CheckProcess_Game;
+            dispatcherTimer_Game.Start();
+
             if (localSettings.Values.ContainsKey("Config_GamePath"))
             {
                 var value = localSettings.Values["Config_GamePath"] as string;
@@ -95,17 +78,20 @@ namespace SRTools.Views
             var window = new Window();
             var hwnd = WinRT.Interop.WindowNative.GetWindowHandle(window);
             WinRT.Interop.InitializeWithWindow.Initialize(picker, hwnd);
-            var file = await picker.PickSingleFileAsync();
-            if (file != null && file.Name == "StarRail.exe")
+            await AnsiConsole.Status().StartAsync("等待选择文件...", async ctx =>
             {
-                localSettings.Values["Config_GamePath"] = @file.Path;
-                UpdateUIElementsVisibility(1);
-            }
-            else
-            {
-                ValidGameFile.Subtitle = "选择正确的StarRail.exe\n通常位于[游戏根目录\\Game\\StarRail.exe]";
-                ValidGameFile.IsOpen = true;
-            }
+                var file = await picker.PickSingleFileAsync();
+                if (file != null && file.Name == "StarRail.exe")
+                {
+                    localSettings.Values["Config_GamePath"] = @file.Path;
+                    UpdateUIElementsVisibility(1);
+                }
+                else
+                {
+                    ValidGameFile.Subtitle = "选择正确的StarRail.exe\n通常位于[游戏根目录\\Game\\StarRail.exe]";
+                    ValidGameFile.IsOpen = true;
+                }
+            });
         }
 
         public void RMGameLocation(object sender, RoutedEventArgs e)
@@ -116,21 +102,32 @@ namespace SRTools.Views
         //启动游戏
         private void StartGame_Click(object sender, RoutedEventArgs e)
         {
-            if (unlockFPS.IsChecked ?? false)
+            string keyPath = @"Software\miHoYo\崩坏：星穹铁道";
+            string valueName = "GraphicsSettings_Model_h2986158309";
+            RegistryKey key = Registry.CurrentUser.OpenSubKey(keyPath, true);
+            byte[] valueBytes = (byte[])key.GetValue(valueName);
+            if (key == null || valueBytes == null)
             {
-                ProcessRun.RunProcess_Message(userDocumentsFolderPath + "\\JSG-LLC\\SRTools\\Depends\\SRToolsHelper\\SRToolsHelper.exe", "/FPS 120");
-                StartGame(null, null);
+                NoGraphicsTip.IsOpen = true;
+                return;
             }
-            else
+            else 
             {
-                ProcessRun.RunProcess_Message(userDocumentsFolderPath + "\\JSG-LLC\\SRTools\\Depends\\SRToolsHelper\\SRToolsHelper.exe", "/FPS 60");
-                StartGame(null, null);
+                if (unlockFPS.IsChecked ?? false)
+                {
+                    ProcessRun.RunProcess_Message(userDocumentsFolderPath + "\\JSG-LLC\\SRTools\\Depends\\SRToolsHelper\\SRToolsHelper.exe", "/FPS 120");
+                    StartGame(null, null);
+                }
+                else
+                {
+                    ProcessRun.RunProcess_Message(userDocumentsFolderPath + "\\JSG-LLC\\SRTools\\Depends\\SRToolsHelper\\SRToolsHelper.exe", "/FPS 60");
+                    StartGame(null, null);
+                }
             }
         }
         private void StartLauncher_Click(object sender, RoutedEventArgs e)
         {
             StartLauncher(null, null);
-
         }
 
         private void UnlockFPS_Click(object sender, RoutedEventArgs e) 
@@ -190,7 +187,7 @@ namespace SRTools.Views
         }
 
         // 定时器回调函数，检查进程是否正在运行
-        private void CheckProcess(DispatcherQueueTimer timer, object e)
+        private void CheckProcess_Game(DispatcherQueueTimer timer, object e)
         {
             if (Process.GetProcessesByName("StarRail").Length > 0)
             {
@@ -206,13 +203,27 @@ namespace SRTools.Views
             }
         }
 
+        private void CheckProcess_Launcher(DispatcherQueueTimer timer, object e)
+        {
+            if (Process.GetProcessesByName("launcher").Length > 0)
+            {
+                // 进程正在运行
+                startLauncher.Visibility = Visibility.Collapsed;
+                launcherRunning.Visibility = Visibility.Visible;
+            }
+            else
+            {
+                // 进程未运行
+                startLauncher.Visibility = Visibility.Visible;
+                launcherRunning.Visibility = Visibility.Collapsed;
+            }
+        }
+
         // 在窗口关闭时停止定时器
         private void Window_Closed(object sender, EventArgs e)
         {
-            dispatcherTimer.Stop();
-            dispatcherTimer.Tick -= CheckProcess;
+            dispatcherTimer_Launcher.Stop();
+            dispatcherTimer_Game.Stop();
         }
-
-
     }
 }

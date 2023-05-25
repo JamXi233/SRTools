@@ -35,8 +35,7 @@ namespace SRTools.Views
         {
             this.InitializeComponent();
             Logging.Write("Switch to MainView", 0);
-            LoadPicturesAsync();
-            
+            _ = LoadPicturesAsync();
         }
 
         private async Task LoadPicturesAsync()
@@ -46,7 +45,9 @@ namespace SRTools.Views
             backgroundUrl = response.data.adv.background;
             iconUrl = response.data.adv.icon;
             _url = response.data.adv.url;
+            Logging.Write("LoadPopulatePictures...", 0);
             PopulatePictures(response.data.banner);
+            Logging.Write("LoadAdvertisementData...", 0);
             LoadAdvertisementData();
         }
 
@@ -110,10 +111,10 @@ namespace SRTools.Views
             storyboard.Begin();
         }
 
-
         public static async Task<ApiResponse> FetchData(string url)
         {
             HttpResponseMessage httpResponse = await httpClient.GetAsync(url);
+            Logging.Write("FetchData:"+url, 0);
             httpResponse.EnsureSuccessStatusCode();
             string responseBody = await httpResponse.Content.ReadAsStringAsync();
             return JsonSerializer.Deserialize<ApiResponse>(responseBody);
@@ -132,6 +133,8 @@ namespace SRTools.Views
         {
             // 获取当前选中的图片
             int selectedPicture = Gallery.SelectedIndex;
+
+            Logging.Write("SelectedPicture:" + selectedPicture, 0);
 
             // 如果选中了图片，则打开浏览器并导航到指定的网页
             string url = list[selectedPicture]; // 替换为要打开的网页地址

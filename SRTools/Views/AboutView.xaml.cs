@@ -24,6 +24,7 @@ using Windows.System;
 using System.IO.Compression;
 using Org.BouncyCastle.Asn1.X509;
 using Windows.Storage.Pickers;
+using Vanara.PInvoke;
 
 // To learn more about WinUI, the WinUI project structure,
 // and more about our project templates, see: http://aka.ms/winui-project-info.
@@ -48,6 +49,12 @@ namespace SRTools.Views
 
         [DllImport("kernel32.dll", SetLastError = true)]
         private static extern IntPtr GetStdHandle(int nStdHandle);
+
+        [DllImport("kernel32.dll")]
+        private static extern IntPtr GetConsoleWindow();
+
+        [DllImport("user32.dll")]
+        private static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
 
         public AboutView()
         {
@@ -80,28 +87,33 @@ namespace SRTools.Views
                     consoleToggle.IsChecked = false;
                     break;
             }
+            bool isDebug = false;
+            #if DEBUG
+            isDebug = true;
+            #else
+            #endif
+            if (isDebug)
+            {
+                consoleToggle.IsEnabled = false;
+                debug_Panic.Visibility = Visibility.Visible;
+            }
         }
-
-        [Obsolete]
         private void Console_Toggle(object sender, RoutedEventArgs e)
         {
+            var currentProcess = Process.GetCurrentProcess();
+            var hWnd = currentProcess.MainWindowHandle;
             ApplicationDataContainer localSettings = ApplicationData.Current.LocalSettings;
             // 判断是否需要打开控制台
             if (consoleToggle.IsChecked ?? false)
             {
                 TerminalTip.IsOpen = true;
-                // 调用 AllocConsole 函数以打开控制台
-                AllocConsole();
+                TerminalMode.ShowConsole();
                 localSettings.Values["Config_TerminalMode"] = 1;
-                IntPtr consoleHandle = GetStdHandle(STD_OUTPUT_HANDLE);
-                StreamWriter consoleOutput = new StreamWriter(new FileStream(consoleHandle, FileAccess.Write));
-                consoleOutput.AutoFlush = true;
-                Console.SetOut(consoleOutput);
+                Logging.Write("Console Enabled",1);
             }
             else
             {
-                // 调用 FreeConsole 函数以关闭控制台
-                FreeConsole();
+                TerminalMode.HideConsole();
                 localSettings.Values["Config_TerminalMode"] = 0;
             }
         }
@@ -401,16 +413,10 @@ namespace SRTools.Views
             Application.Current.Exit();
         }
 
-        private const string FileFolder = "\\JSG-LLC\\SRTools\\Depends";
-        private const string ZipFileName = "SRToolsHelper.zip";
-        private const string ExtractedFolder = "SRToolsHelper";
         //Debug_Clicks
         private void Debug_Panic_Click(object sender, RoutedEventArgs e) 
         {
-            string userDocumentsFolderPath = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
-            string extractionPath = Path.Combine(userDocumentsFolderPath + FileFolder, ExtractedFolder);
-            string localFilePath = Path.Combine(userDocumentsFolderPath + FileFolder, ZipFileName);
-            ZipFile.ExtractToDirectory(localFilePath, extractionPath);
+            throw new Exception("异常处理测试");
         }
     }
 }
