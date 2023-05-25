@@ -90,10 +90,18 @@ namespace SRTools
                     break;
             }
             Task.Run(() => getNotify.Get()).Wait();
-            int Mode = (int)localSettings.Values["Config_TerminalMode"];
-            TerminalMode terminalMode = new TerminalMode();
-            bool response = await terminalMode.Init(Mode);
-            if (response)
+            if (localSettings.Values["Config_TerminalMode"] != null)
+            {
+                int Mode = (int)localSettings.Values["Config_TerminalMode"];
+                TerminalMode terminalMode = new TerminalMode();
+                bool response = await terminalMode.Init(Mode);
+                if (response)
+                {
+                    m_window = new MainWindow();
+                    m_window.Activate();
+                }
+            }
+            else
             {
                 m_window = new MainWindow();
                 m_window.Activate();
@@ -103,6 +111,7 @@ namespace SRTools
                 Console.Title = "𝐃𝐞𝐛𝐮𝐠𝐌𝐨𝐝𝐞:SRTools";
                 TerminalMode.ShowConsole();
             }
+
         }
 
 

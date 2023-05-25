@@ -8,6 +8,7 @@ using Microsoft.UI.Dispatching;
 using SRTools.Depend;
 using Spectre.Console;
 using Microsoft.Win32;
+using Windows.ApplicationModel;
 
 namespace SRTools.Views
 {
@@ -28,11 +29,11 @@ namespace SRTools.Views
 
             // 创建定时器，并设置回调函数和时间间隔
             dispatcherTimer_Launcher = dispatcherQueue_Launcher.CreateTimer();
-            dispatcherTimer_Launcher.Interval = TimeSpan.FromSeconds(0.2);
+            dispatcherTimer_Launcher.Interval = TimeSpan.FromSeconds(2);
             dispatcherTimer_Launcher.Tick += CheckProcess_Launcher;
             dispatcherTimer_Launcher.Start();
             dispatcherTimer_Game = dispatcherQueue_Game.CreateTimer();
-            dispatcherTimer_Game.Interval = TimeSpan.FromSeconds(0.2);
+            dispatcherTimer_Game.Interval = TimeSpan.FromSeconds(2);
             dispatcherTimer_Game.Tick += CheckProcess_Game;
             dispatcherTimer_Game.Start();
 
@@ -219,11 +220,5 @@ namespace SRTools.Views
             }
         }
 
-        // 在窗口关闭时停止定时器
-        private void Window_Closed(object sender, EventArgs e)
-        {
-            dispatcherTimer_Launcher.Stop();
-            dispatcherTimer_Game.Stop();
-        }
     }
 }
