@@ -72,15 +72,12 @@ namespace SRTools.Views
             {
                 case 0:
                     consoleToggle.IsChecked = false;
-                    FreeConsole();
                     break;
                 case 1:
                     consoleToggle.IsChecked = true;
-                    AllocConsole();
                     break;
                 default:
                     consoleToggle.IsChecked = false;
-                    FreeConsole();
                     break;
             }
         }
@@ -112,7 +109,7 @@ namespace SRTools.Views
         private void Clear_AllData(object sender, RoutedEventArgs e)
         {
             string userDocumentsFolderPath = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
-            DeleteFolder(userDocumentsFolderPath + "\\JSG-LLC\\SRTools\\","1");
+            DeleteFolder(userDocumentsFolderPath + "\\JSG-LLC\\SRTools\\", "1");
         }
 
         private void Clear_AllData_NoClose(object sender, RoutedEventArgs e, string Close = "0")
@@ -121,12 +118,12 @@ namespace SRTools.Views
             DeleteFolder(userDocumentsFolderPath + "\\JSG-LLC\\SRTools\\", Close);
         }
 
-        private void DeleteFolder(string folderPath , String Close)
+        private void DeleteFolder(string folderPath, String Close)
         {
             if (Directory.Exists(folderPath))
             {
                 try { Directory.Delete(folderPath, true); }
-                catch (IOException) {}
+                catch (IOException) { }
             }
             _ = ClearLocalDataAsync(Close);
         }
@@ -137,7 +134,7 @@ namespace SRTools.Views
             var localFolder = ApplicationData.Current.LocalFolder;
 
             // 删除 LocalData 文件夹中的所有子文件夹和文件
-            await DeleteFilesAndSubfoldersAsync(localFolder , Close);
+            await DeleteFilesAndSubfoldersAsync(localFolder, Close);
 
             // 需要重新创建删除的 LocalData 文件夹
             await ApplicationData.Current.ClearAsync(ApplicationDataLocality.Local);
@@ -159,7 +156,7 @@ namespace SRTools.Views
                 // 如果项目是文件夹，则递归删除其中所有文件和子文件夹
                 else if (item is StorageFolder subfolder)
                 {
-                    await DeleteFilesAndSubfoldersAsync(subfolder , Close);
+                    await DeleteFilesAndSubfoldersAsync(subfolder, Close);
 
                     // 删除子文件夹本身
                     await subfolder.DeleteAsync();
@@ -170,7 +167,7 @@ namespace SRTools.Views
                 Application.Current.Exit();
             }
         }
-        private async void Check_Update(object sender, RoutedEventArgs e) 
+        private async void Check_Update(object sender, RoutedEventArgs e)
         {
             checkUpdate.IsEnabled = false;
             int result = await OnGetUpdateLatestReleaseInfo();
@@ -180,7 +177,7 @@ namespace SRTools.Views
                 UpdateTip.Subtitle = "无可用更新";
                 checkUpdate.IsEnabled = false;
             }
-            else if (result == 1) 
+            else if (result == 1)
             {
                 Update.Visibility = Visibility.Visible;
                 MainAPP.Visibility = Visibility.Collapsed;
@@ -216,7 +213,7 @@ namespace SRTools.Views
         {
             PackageVersion packageVersion = Package.Current.Id.Version;
             string version = $"{packageVersion.Major}.{packageVersion.Minor}.{packageVersion.Build}.{packageVersion.Revision}";
-            Logging.Write("Current Version:"+ version,0);
+            Logging.Write("Current Version:" + version, 0);
             update_Grid.Visibility = Visibility.Collapsed;
             update_Progress_Grid.Visibility = Visibility.Visible;
             var dispatcher = Microsoft.UI.Dispatching.DispatcherQueue.GetForCurrentThread();
@@ -224,7 +221,7 @@ namespace SRTools.Views
             {
                 ApplicationDataContainer localSettings = ApplicationData.Current.LocalSettings;
                 var latestReleaseInfo = await _getJSGLatest.GetLatestReleaseInfoAsync("cn.jamsg.srtools");
-                Logging.Write("Getting Update Info...",0);
+                Logging.Write("Getting Update Info...", 0);
                 switch (localSettings.Values["Config_UpdateService"])
                 {
                     case 0:
@@ -243,8 +240,8 @@ namespace SRTools.Views
                         Logging.Write($"Invalid update service value: {localSettings.Values["Config_UpdateService"]}", 0);
                         throw new InvalidOperationException($"Invalid update service value: {localSettings.Values["Config_UpdateService"]}");
                 }
-                Logging.Write("Software Name:" + latestReleaseInfo.Name,0);
-                Logging.Write("Newer Version:" + latestReleaseInfo.Version,0);
+                Logging.Write("Software Name:" + latestReleaseInfo.Name, 0);
+                Logging.Write("Newer Version:" + latestReleaseInfo.Version, 0);
                 if (latestReleaseInfo.Version != version)
                 {
                     fileUrl = latestReleaseInfo.DownloadUrl;
@@ -319,9 +316,9 @@ namespace SRTools.Views
             if (downloadResult)
             {
                 Trace.WriteLine(userDocumentsFolderPath);
-                string extractionPath = Path.Combine(userDocumentsFolderPath+UpdateFileFolder, UpdateExtractedFolder);
+                string extractionPath = Path.Combine(userDocumentsFolderPath + UpdateFileFolder, UpdateExtractedFolder);
                 ZipFile.ExtractToDirectory(localFilePath, extractionPath);
-                StorageFile file = await StorageFile.GetFileFromPathAsync(extractionPath + "\\"+ UpdateExtractedFolder+ ".msix");
+                StorageFile file = await StorageFile.GetFileFromPathAsync(extractionPath + "\\" + UpdateExtractedFolder + ".msix");
                 if (file != null)
                 {
                     await Launcher.LaunchFileAsync(file);
@@ -339,7 +336,7 @@ namespace SRTools.Views
             }
         }
 
-        private void UpdateDownload_Ignore(object sender, RoutedEventArgs e) 
+        private void UpdateDownload_Ignore(object sender, RoutedEventArgs e)
         {
             Update.Visibility = Visibility.Collapsed;
             MainAPP.Visibility = Visibility.Visible;
@@ -359,7 +356,7 @@ namespace SRTools.Views
             update_Btn_Bar.Value = progressPercentage;
         }
 
-        private async void Backup_Data(object sender, RoutedEventArgs e) 
+        private async void Backup_Data(object sender, RoutedEventArgs e)
         {
             DateTime now = DateTime.Now;
             string formattedDate = now.ToString("yyyy_MM_dd_HH_mm_ss");
@@ -368,14 +365,14 @@ namespace SRTools.Views
             var savePicker = new FileSavePicker();
             savePicker.FileTypeChoices.Add("Zip Archive", new List<string>() { ".SRToolsBackup" });
             savePicker.SuggestedStartLocation = PickerLocationId.DocumentsLibrary;
-            savePicker.SuggestedFileName = "SRTools_Backup_"+formattedDate;
+            savePicker.SuggestedFileName = "SRTools_Backup_" + formattedDate;
             var window = new Window();
             var hwnd = WinRT.Interop.WindowNative.GetWindowHandle(window);
             WinRT.Interop.InitializeWithWindow.Initialize(savePicker, hwnd);
             StorageFile file = await savePicker.PickSaveFileAsync();
             if (file != null)
             {
-                string startPath = userDocumentsFolderPath+@"\JSG-LLC\SRTools";
+                string startPath = userDocumentsFolderPath + @"\JSG-LLC\SRTools";
                 string zipPath = file.Path;
                 if (File.Exists(zipPath))
                 {
@@ -385,12 +382,12 @@ namespace SRTools.Views
             }
         }
 
-        private void Restore_Data_Click(object sender, RoutedEventArgs e) 
+        private void Restore_Data_Click(object sender, RoutedEventArgs e)
         {
             RestoreTip.IsOpen = true;
         }
 
-        private async void Restore_Data(TeachingTip e, object o) 
+        private async void Restore_Data(TeachingTip e, object o)
         {
             var picker = new FileOpenPicker();
             picker.FileTypeFilter.Add(".SRToolsBackup");
@@ -402,6 +399,18 @@ namespace SRTools.Views
             Task.Run(() => Clear_AllData_NoClose(null, null)).Wait();
             Task.Run(() => ZipFile.ExtractToDirectory(file.Path, userDocumentsFolderPath + "\\JSG-LLC\\SRTools\\")).Wait();
             Application.Current.Exit();
+        }
+
+        private const string FileFolder = "\\JSG-LLC\\SRTools\\Depends";
+        private const string ZipFileName = "SRToolsHelper.zip";
+        private const string ExtractedFolder = "SRToolsHelper";
+        //Debug_Clicks
+        private void Debug_Panic_Click(object sender, RoutedEventArgs e) 
+        {
+            string userDocumentsFolderPath = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+            string extractionPath = Path.Combine(userDocumentsFolderPath + FileFolder, ExtractedFolder);
+            string localFilePath = Path.Combine(userDocumentsFolderPath + FileFolder, ZipFileName);
+            ZipFile.ExtractToDirectory(localFilePath, extractionPath);
         }
     }
 }

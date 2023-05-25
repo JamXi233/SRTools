@@ -55,6 +55,7 @@ namespace SRTools
 
         public MainWindow()
         {
+            
             Title = "–«πÏπ§æﬂœ‰";
             InitializeComponent();
             InitializeAppData();
@@ -386,5 +387,9 @@ namespace SRTools
             public string message { get; set; }
             public Data data { get; set; }
         }
+
+
+        
+
     }
 }

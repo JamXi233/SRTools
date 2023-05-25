@@ -43,16 +43,16 @@ namespace SRTools.Depend
                 var value = localSettings.Values["Config_GamePath"] as string;
                 if (!string.IsNullOrEmpty(value) && value.Contains("Null"))
                 {
-                    list = new[] { "选择游戏路径", "[red]退出控制台模式[/]", "[bold red]退出SRTools[/]", };
+                    list = new[] { "选择游戏路径", "[Cyan]显示主界面[/]", "[red]退出控制台模式[/]", "[bold red]退出SRTools[/]", };
                 }
                 else
                 {
-                    list = new[] { "[bold green]开启游戏(120FPS)[/]", "[bold yellow]清除游戏路径[/]", "[red]退出控制台模式[/]", "[bold red]退出SRTools[/]" };
+                    list = new[] { "[bold green]开启游戏(120FPS)[/]", "[bold yellow]清除游戏路径[/]", "[Cyan]显示主界面[/]", "[red]退出控制台模式[/]", "[bold red]退出SRTools[/]" };
                 }
             }
             else
             {
-                list = new[] { "选择游戏路径", "[red]退出控制台模式[/]", "[bold red]退出SRTools[/]", };
+                list = new[] { "选择游戏路径", "[Cyan]显示主界面[/]", "[red]退出控制台模式[/]", "[bold red]退出SRTools[/]", };
             }
             var select = AnsiConsole.Prompt(
                     new SelectionPrompt<string>()
@@ -79,6 +79,11 @@ namespace SRTools.Depend
                 case "[red]退出控制台模式[/]":
                     localSettings.Values["Config_TerminalMode"] = 0;
                     FreeConsole();
+                    m_window = new MainWindow();
+                    m_window.Activate();
+                    return false;
+                case "[Cyan]显示主界面[/]":
+                    Console.Clear();
                     m_window = new MainWindow();
                     m_window.Activate();
                     return false;
