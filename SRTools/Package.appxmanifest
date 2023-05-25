@@ -9,7 +9,7 @@
   <Identity
     Name="2305cb6a-348b-48ce-906f-547149ecbd59"
     Publisher="CN=JamXi"
-    Version="1.0.4.0" />
+    Version="1.0.5.0" />
 
   <Properties>
     <DisplayName>SRTools(星轨工具箱)</DisplayName>
