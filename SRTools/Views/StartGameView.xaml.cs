@@ -26,6 +26,8 @@ namespace SRTools.Views
             // 获取UI线程的DispatcherQueue
             var dispatcherQueue_Launcher = DispatcherQueue.GetForCurrentThread();
             var dispatcherQueue_Game = DispatcherQueue.GetForCurrentThread();
+            this.Loaded += OnLoaded;
+            this.Unloaded += OnUnloaded;
 
             // 创建定时器，并设置回调函数和时间间隔
             dispatcherTimer_Launcher = dispatcherQueue_Launcher.CreateTimer();
@@ -219,6 +221,16 @@ namespace SRTools.Views
                 launcherRunning.Visibility = Visibility.Collapsed;
             }
         }
+        private void OnLoaded(object sender, RoutedEventArgs e)
+        {
 
+        }
+
+        private void OnUnloaded(object sender, RoutedEventArgs e)
+        {
+            dispatcherTimer_Game.Stop();
+            dispatcherTimer_Launcher.Stop();
+            Logging.Write("Timer Stopped", 0);
+        }
     }
 }

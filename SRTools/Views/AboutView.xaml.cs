@@ -95,7 +95,7 @@ namespace SRTools.Views
             if (isDebug)
             {
                 consoleToggle.IsEnabled = false;
-                debug_Panic.Visibility = Visibility.Visible;
+                debug_Mode.Visibility = Visibility.Visible;
             }
         }
         private void Console_Toggle(object sender, RoutedEventArgs e)
@@ -118,7 +118,7 @@ namespace SRTools.Views
             }
         }
 
-        private void Clear_AllData(object sender, RoutedEventArgs e)
+        public void Clear_AllData(object sender, RoutedEventArgs e)
         {
             string userDocumentsFolderPath = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
             DeleteFolder(userDocumentsFolderPath + "\\JSG-LLC\\SRTools\\", "1");
@@ -181,8 +181,7 @@ namespace SRTools.Views
         }
         private async void Check_Update(object sender, RoutedEventArgs e)
         {
-            checkUpdate.IsEnabled = false;
-            int result = await OnGetUpdateLatestReleaseInfo();
+            int result = await OnGetUpdateLatestReleaseInfo("SRTools");
             if (result == 0)
             {
                 UpdateTip.IsOpen = true;
@@ -193,11 +192,31 @@ namespace SRTools.Views
             {
                 Update.Visibility = Visibility.Visible;
                 MainAPP.Visibility = Visibility.Collapsed;
+                update_Download.Visibility = Visibility.Visible;
+                depend_Download.Visibility = Visibility.Collapsed;
             }
             else
             {
                 UpdateTip.IsOpen = true;
                 UpdateTip.Subtitle = "网络连接失败，可能是请求次数过多";
+            }
+        }
+
+        private async void Check_Depend_Update(object sender, RoutedEventArgs e)
+        {
+            int result = await OnGetUpdateLatestReleaseInfo("SRToolsHelper", "Depend");
+            if (result == 0)
+            {
+                DependUpdateTip.IsOpen = true;
+                DependUpdateTip.Subtitle = "无可用更新";
+                checkDependUpdate.IsEnabled = false;
+            }
+            else if (result == 1)
+            {
+                Update.Visibility = Visibility.Visible;
+                MainAPP.Visibility = Visibility.Collapsed;
+                update_Download.Visibility = Visibility.Collapsed;
+                depend_Download.Visibility = Visibility.Visible;
             }
         }
 
@@ -221,7 +240,7 @@ namespace SRTools.Views
         }
 
         //更新开始
-        public async Task<int> OnGetUpdateLatestReleaseInfo()
+        public async Task<int> OnGetUpdateLatestReleaseInfo(String PkgName, String Mode = null)
         {
             PackageVersion packageVersion = Package.Current.Id.Version;
             string version = $"{packageVersion.Major}.{packageVersion.Minor}.{packageVersion.Build}.{packageVersion.Revision}";
@@ -232,7 +251,7 @@ namespace SRTools.Views
             try
             {
                 ApplicationDataContainer localSettings = ApplicationData.Current.LocalSettings;
-                var latestReleaseInfo = await _getJSGLatest.GetLatestReleaseInfoAsync("cn.jamsg.srtools");
+                var latestReleaseInfo = await _getJSGLatest.GetLatestReleaseInfoAsync("cn.jamsg.SRTools");
                 Logging.Write("Getting Update Info...", 0);
                 switch (localSettings.Values["Config_UpdateService"])
                 {
@@ -242,11 +261,11 @@ namespace SRTools.Views
                         break;
                     case 1:
                         Logging.Write("UService:Gitee", 0);
-                        latestReleaseInfo = await _getGiteeLatest.GetLatestReleaseInfoAsync("JSG-JamXi", "SRTools");
+                        latestReleaseInfo = await _getGiteeLatest.GetLatestReleaseInfoAsync("JSG-JamXi", PkgName);
                         break;
                     case 2:
                         Logging.Write("UService:JSG-DS", 0);
-                        latestReleaseInfo = await _getJSGLatest.GetLatestReleaseInfoAsync("cn.jamsg.srtools");
+                        latestReleaseInfo = await _getJSGLatest.GetLatestReleaseInfoAsync("cn.jamsg." + PkgName);
                         break;
                     default:
                         Logging.Write($"Invalid update service value: {localSettings.Values["Config_UpdateService"]}", 0);
@@ -254,31 +273,62 @@ namespace SRTools.Views
                 }
                 Logging.Write("Software Name:" + latestReleaseInfo.Name, 0);
                 Logging.Write("Newer Version:" + latestReleaseInfo.Version, 0);
-                if (latestReleaseInfo.Version != version)
+                if (Mode == "Depend")
                 {
-                    fileUrl = latestReleaseInfo.DownloadUrl;
-                    update_Latest_Name.Text = $"软件名称: {latestReleaseInfo.Name}";
-                    update_Latest_Version.Text = $"版本号: {latestReleaseInfo.Version}";
-                    update_Current_Version.Text = $"当前版本: {version}";
-                    update_Download.IsEnabled = true;
-                    update_Grid.Visibility = Visibility.Visible;
-                    update_Progress_Grid.Visibility = Visibility.Collapsed;
-                    return 1;
+                    string userDocumentsFolderPath = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+                    string path = userDocumentsFolderPath + "\\JSG-LLC\\SRTools\\Depends\\SRToolsHelper\\SRToolsHelperVersion.ini";
+                    try { string content = File.ReadAllText(path); }
+                    catch
+                    {
+                        string content = "Null";
+                        if (latestReleaseInfo.Version != content)
+                        {
+                            fileUrl = latestReleaseInfo.DownloadUrl;
+                            update_Latest_Name.Text = $"软件名称: {latestReleaseInfo.Name}";
+                            update_Latest_Version.Text = $"版本号: {latestReleaseInfo.Version}";
+                            update_Current_Version.Text = $"当前版本: {content}";
+                            update_Download.IsEnabled = true;
+                            depend_Grid.Visibility = Visibility.Visible;
+                            depend_Progress_Grid.Visibility = Visibility.Collapsed;
+                            return 1;
+                        }
+                        else
+                        {
+                            return 0;
+                        }
+                    }
+                    return 0;
                 }
                 else
                 {
-                    return 0;
+                    if (latestReleaseInfo.Version != version)
+                    {
+                        fileUrl = latestReleaseInfo.DownloadUrl;
+                        update_Latest_Name.Text = $"软件名称: {latestReleaseInfo.Name}";
+                        update_Latest_Version.Text = $"版本号: {latestReleaseInfo.Version}";
+                        update_Current_Version.Text = $"当前版本: {version}";
+                        update_Download.IsEnabled = true;
+                        update_Grid.Visibility = Visibility.Visible;
+                        update_Progress_Grid.Visibility = Visibility.Collapsed;
+                        return 1;
+                    }
+                    else
+                    {
+                        return 0;
+                    }
                 }
 
             }
             catch (Exception ex)
             {
-                update_Grid.Visibility = Visibility.Visible;
-                update_Progress_Grid.Visibility = Visibility.Collapsed;
-                update_Btn_Text.Text = "获取失败";
-                update_Latest_Version.Text = ex.Message;
-                update_Btn_Bar.Visibility = Visibility.Collapsed;
-                update_Btn_Icon.Glyph = "&#xe8bb";
+                ContentDialog dialog = new ContentDialog();
+                dialog.XamlRoot = this.XamlRoot;
+                dialog.Style = Application.Current.Resources["DefaultContentDialogStyle"] as Style;
+                dialog.Title = "检查更新出现问题";
+                dialog.Content = ex.Message;
+                dialog.PrimaryButtonText = "确定";
+                dialog.DefaultButton = ContentDialogButton.Primary;
+                var result = await dialog.ShowAsync();
                 return 2;
             }
         }
@@ -287,7 +337,7 @@ namespace SRTools.Views
         {
             _getNetData = new GetNetData();
             ApplicationDataContainer localSettings = ApplicationData.Current.LocalSettings;
-            var latestReleaseInfo = await _getJSGLatest.GetLatestReleaseInfoAsync("cn.jamsg.srtools");
+            var latestReleaseInfo = await _getJSGLatest.GetLatestReleaseInfoAsync("cn.jamsg.SRTools");
             switch (localSettings.Values["Config_UpdateService"])
             {
                 case 0:
@@ -300,7 +350,7 @@ namespace SRTools.Views
                     break;
                 case 2:
                     Logging.Write("UService:JSG-DS", 0);
-                    latestReleaseInfo = await _getJSGLatest.GetLatestReleaseInfoAsync("cn.jamsg.srtools");
+                    latestReleaseInfo = await _getJSGLatest.GetLatestReleaseInfoAsync("cn.jamsg.SRTools");
                     break;
                 default:
                     Logging.Write($"Invalid update service value: {localSettings.Values["Config_UpdateService"]}", 0);
@@ -311,6 +361,7 @@ namespace SRTools.Views
             string UpdateFileName = "SRTools_" + latestReleaseInfo.Version + "_x64.zip";
             string UpdateExtractedFolder = "SRTools_" + latestReleaseInfo.Version + "_x64";
             string userDocumentsFolderPath = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+            DeleteFolder(userDocumentsFolderPath + "\\JSG-LLC\\SRTools\\Depends\\", "1");
             string localFilePath = Path.Combine(userDocumentsFolderPath + UpdateFileFolder, UpdateFileName);
             ToggleUpdateGridVisibility(false);
             update_Download.IsEnabled = false;
@@ -348,6 +399,66 @@ namespace SRTools.Views
             }
         }
 
+
+        private async void DependUpdateDownload_Click(object sender, RoutedEventArgs e)
+        {
+            _getNetData = new GetNetData();
+            ApplicationDataContainer localSettings = ApplicationData.Current.LocalSettings;
+            var latestReleaseInfo = await _getJSGLatest.GetLatestReleaseInfoAsync("cn.jamsg.SRTools");
+            switch (localSettings.Values["Config_UpdateService"])
+            {
+                case 0:
+                    Logging.Write("UService:Github", 0);
+                    //latestReleaseInfo = await _getGithubLatest.GetLatestReleaseInfoAsync("JamXi233", "SRToolsHelper");
+                    break;
+                case 1:
+                    Logging.Write("UService:Gitee", 0);
+                    latestReleaseInfo = await _getGiteeLatest.GetLatestReleaseInfoAsync("JSG-JamXi", "SRToolsHelper");
+                    break;
+                case 2:
+                    Logging.Write("UService:JSG-DS", 0);
+                    latestReleaseInfo = await _getJSGLatest.GetLatestReleaseInfoAsync("cn.jamsg.SRToolsHelper");
+                    break;
+                default:
+                    Logging.Write($"Invalid update service value: {localSettings.Values["Config_UpdateService"]}", 0);
+                    throw new InvalidOperationException($"Invalid update service value: {localSettings.Values["Config_UpdateService"]}");
+            }
+            Trace.WriteLine(fileUrl);
+            string UpdateFileFolder = "\\JSG-LLC\\SRTools\\Depends\\";
+            string UpdateFileName = "SRToolsHelper_" + latestReleaseInfo.Version + ".zip";
+            string UpdateExtractedFolder = "SRToolsHelper";
+            string userDocumentsFolderPath = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+            DeleteFolder(userDocumentsFolderPath + "\\JSG-LLC\\SRTools\\Depends\\", "0");
+            string localFilePath = Path.Combine(userDocumentsFolderPath + UpdateFileFolder, UpdateFileName);
+            ToggleDependUpdateGridVisibility(false);
+            depend_Download.IsEnabled = false;
+            var progress = new Progress<double>(UpdateReportProgress);
+            bool downloadResult = false;
+            try
+            {
+                downloadResult = await _getNetData.DownloadFileWithProgressAsync(fileUrl, localFilePath, progress);
+            }
+            catch (Exception ex)
+            {
+                update_Info.Text = ex.Message;
+            }
+
+            if (downloadResult)
+            {
+                Trace.WriteLine(userDocumentsFolderPath);
+                string extractionPath = Path.Combine(userDocumentsFolderPath + UpdateFileFolder, UpdateExtractedFolder);
+                ZipFile.ExtractToDirectory(localFilePath, extractionPath);
+                MainAPP.Visibility = Visibility.Visible;
+                Update.Visibility = Visibility.Collapsed;
+            }
+            else
+            {
+                // 使用Dispatcher在UI线程上执行ToggleUpdateGridVisibility函数
+                ToggleDependUpdateGridVisibility(true, false);
+            }
+        }
+
+
         private void UpdateDownload_Ignore(object sender, RoutedEventArgs e)
         {
             Update.Visibility = Visibility.Collapsed;
@@ -363,9 +474,18 @@ namespace SRTools.Views
             update_Btn_Icon.Glyph = downloadSuccess ? "&#xe73a;" : "&#xe8bb;";
         }
 
+        private void ToggleDependUpdateGridVisibility(bool updateGridVisible, bool downloadSuccess = false)
+        {
+            depend_Grid.Visibility = updateGridVisible ? Visibility.Visible : Visibility.Collapsed;
+            depend_Progress_Grid.Visibility = updateGridVisible ? Visibility.Collapsed : Visibility.Visible;
+            depend_Btn_Text.Text = downloadSuccess ? "下载完成" : "下载失败";
+            depend_Btn_Icon.Glyph = downloadSuccess ? "&#xe73a;" : "&#xe8bb;";
+        }
+
         private void UpdateReportProgress(double progressPercentage)
         {
             update_Btn_Bar.Value = progressPercentage;
+            depend_Btn_Bar.Value = progressPercentage;
         }
 
         private async void Backup_Data(object sender, RoutedEventArgs e)

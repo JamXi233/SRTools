@@ -14,6 +14,7 @@ using System.Diagnostics;
 using System.Collections.Generic;
 using SRTools.Views.GachaViews;
 using Spectre.Console;
+using Newtonsoft.Json.Linq;
 
 namespace SRTools.Views
 {
@@ -228,6 +229,16 @@ namespace SRTools.Views
                             .ToList();
                 string combinedDataJson = JsonConvert.SerializeObject(combinedData);
                 // 如果需要，将合并后的数据序列化为JSON字符串
+                // 消除ID为空的记录
+                JArray data = JArray.Parse(combinedDataJson);
+                for (int i = data.Count - 1; i >= 0; i--)
+                {
+                    if (data[i]["Id"].ToString() == "")
+                    {
+                        data.RemoveAt(i);
+                    }
+                }
+                combinedDataJson = JsonConvert.SerializeObject(data);
                 await FileIO.WriteTextAsync(gachaFile, combinedDataJson);
             }
             else

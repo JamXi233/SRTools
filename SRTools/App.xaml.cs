@@ -62,6 +62,8 @@ namespace SRTools
         public async void Init()
         {
             AllocConsole();
+            Console.SetWindowSize(50, 20);
+            Console.SetBufferSize(50, 20);
             bool isDebug = false;
             #if DEBUG
             isDebug = true;
@@ -123,10 +125,11 @@ namespace SRTools
             }
             catch (Exception ex)
             {
-                await Task.Delay(TimeSpan.FromSeconds(0.1));
-                Console.Title = "SRTools TerminalMode";
+                var m_window = Window.Current;
+                try { m_window.Close(); }catch { }
                 TerminalMode.ShowConsole();
-                Logging.Write("发生全局异常: " + ex.Message,2);
+                TerminalMode terminalMode = new TerminalMode();
+                terminalMode.Init(0, 1, ex.Message);
                 // 关闭应用程序
                 //await Task.Delay(TimeSpan.FromSeconds(5));
                 //Application.Current.Exit();
