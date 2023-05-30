@@ -105,10 +105,12 @@ namespace SRTools.Views
         //启动游戏
         private void StartGame_Click(object sender, RoutedEventArgs e)
         {
+            
             string keyPath = @"Software\miHoYo\崩坏：星穹铁道";
             string valueName = "GraphicsSettings_Model_h2986158309";
             RegistryKey key = Registry.CurrentUser.OpenSubKey(keyPath, true);
-            byte[] valueBytes = (byte[])key.GetValue(valueName);
+            byte[] valueBytes;
+            try { valueBytes = (byte[])key.GetValue(valueName); } catch { valueBytes = null; }
             if (key == null || valueBytes == null)
             {
                 NoGraphicsTip.IsOpen = true;
