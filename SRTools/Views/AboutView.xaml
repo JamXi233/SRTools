@@ -45,7 +45,7 @@
                     <StackPanel Grid.Column="1" Margin="0 0 0 0">
                         <Button x:Name="backupData" Click="Backup_Data" Content="备份数据" Margin="0 0 0 10"/>
                         <Button x:Name="restoreData" Click="Restore_Data_Click" Content="还原数据" Margin="0 0 0 10"/>
-                        <StackPanel x:Name="debug_Mode" Margin="0 52 0 10" Visibility="Collapsed">
+                        <StackPanel x:Name="debug_Mode" Margin="0 94 0 10" Visibility="Collapsed">
                             <TextBlock Text="Debug设置" FontSize="16" FontWeight="Bold" Margin="0 0 0 10"/>
                             <Button x:Name="debug_Panic" Click="Debug_Panic_Click" Content="Debug_崩溃" Margin="0 0 0 10"/>
                             <TextBlock Text="处于Debug模式，控制台无法关闭" Margin="0 0 0 0"/>
@@ -112,8 +112,9 @@
                         Width="128"
                         Height="128"/>
                 </Border>
+                <TextBlock Text="Logo from @__QuAn_" FontWeight="Bold" FontSize="12" Margin="0 5 0 0"/>
                 <TextBlock Text="关于" FontSize="18" FontWeight="Bold" Margin="0 12 0 0"/>
-                <TextBlock Text="星轨工具箱(星穹铁道工具箱) 23.5.25 Preview" FontSize="12" FontWeight="Bold" Margin="0 8 0 0"/>
+                <TextBlock Text="星轨工具箱(星穹铁道工具箱) 23.5.30 Preview" FontSize="12" FontWeight="Bold" Margin="0 8 0 0"/>
                 <TextBlock Text="Created by JamXi" FontSize="12" Margin="0 0 0 0"/>
                 <TextBlock Text="Copyright © JSG-LLC 2017-2023" FontSize="12" FontWeight="Bold" Margin="0 0 0 0"/>
                 <TextBlock Style="{ThemeResource BodyStrongTextBlockStyle}" Margin="0,8,0,4" HorizontalAlignment="Left">
@@ -142,6 +143,7 @@
                     <TextBlock x:Name="update_Latest_Name" Text="依赖项:..." Margin="0 12 0 0"/>
                     <TextBlock x:Name="update_Latest_Version" Text="版本号:..."/>
                     <TextBlock x:Name="update_Current_Version" Text="当前版本:..."/>
+                    <TextBlock x:Name="update_Latest_Changelog" Text="更新日志:..."/>
                 </StackPanel>
             </StackPanel>
 

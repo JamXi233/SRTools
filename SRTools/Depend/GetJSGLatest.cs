@@ -9,7 +9,7 @@ public class GetJSGLatest
 {
     private static readonly HttpClient httpClient = new HttpClient();
 
-    public async Task<(string Name, string Version, string DownloadUrl)> GetLatestReleaseInfoAsync(string package)
+    public async Task<(string Name, string Version, string DownloadUrl, string Changelog)> GetLatestReleaseInfoAsync(string package)
     {
         string apiUrl = $"https://api.jamsg.cn/release/getversion.php?package={package}";
         httpClient.DefaultRequestHeaders.Add("User-Agent", "JSG-Official-Update-Client");
@@ -21,9 +21,10 @@ public class GetJSGLatest
         JObject jsonObj = JObject.Parse(content);
 
         var name = jsonObj["name"].ToString();
+        var Changelog = jsonObj["changelog"].ToString();
         var version = jsonObj["version"].ToString();
         var downloadUrl = jsonObj["link"].ToString();
 
-        return (name, version, downloadUrl);
+        return (name, version, downloadUrl, Changelog);
     }
 }
