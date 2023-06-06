@@ -90,7 +90,7 @@ namespace SRTools
                     TerminalMode.HideConsole();
                     break;
             }
-            Task.Run(() => getNotify.Get()).Wait();
+            try { Task.Run(() => getNotify.Get()).Wait(); } catch { }
             if (localSettings.Values["Config_TerminalMode"] != null)
             {
                 int Mode = (int)localSettings.Values["Config_TerminalMode"];

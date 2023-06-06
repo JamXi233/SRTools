@@ -188,5 +188,6 @@
             </StackPanel>
 
         </Grid>
+        <InfoBar x:Name="infoBar" IsOpen="False" Severity="Error" Title="" Message="" />
     </Grid>
 </Page>

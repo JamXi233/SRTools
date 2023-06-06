@@ -74,7 +74,7 @@
                 <SymbolIconSource Symbol="Help" />
             </TeachingTip.IconSource>
         </TeachingTip>
-
+        <InfoBar x:Name="infoBar" IsOpen="False" Severity="Error" Title="" Message="" />
     </Grid>
     
 </Page>

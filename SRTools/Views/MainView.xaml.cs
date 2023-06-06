@@ -179,6 +179,7 @@ namespace SRTools.Views
             }
             catch (Exception ex)
             {
+                loadRing.Visibility = Visibility.Collapsed;
                 infoBar.IsOpen = true;
                 infoBar.Title = "灾难性错误"; 
                 infoBar.Message = ex.Message;

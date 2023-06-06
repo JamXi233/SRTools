@@ -21,6 +21,7 @@ namespace SRTools.Views
 
         public StartGameView()
         {
+            Windows.ApplicationModel.Core.CoreApplication.UnhandledErrorDetected += OnUnhandledErrorDetected;
             this.InitializeComponent();
             Logging.Write("Switch to StartGameView",0);
             // 获取UI线程的DispatcherQueue
@@ -233,6 +234,20 @@ namespace SRTools.Views
             dispatcherTimer_Game.Stop();
             dispatcherTimer_Launcher.Stop();
             Logging.Write("Timer Stopped", 0);
+        }
+
+        private void OnUnhandledErrorDetected(object sender, Windows.ApplicationModel.Core.UnhandledErrorDetectedEventArgs e)
+        {
+            try
+            {
+                e.UnhandledError.Propagate();
+            }
+            catch (Exception ex)
+            {
+                infoBar.IsOpen = true;
+                infoBar.Title = "灾难性错误";
+                infoBar.Message = ex.Message;
+            }
         }
     }
 }

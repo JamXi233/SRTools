@@ -27,6 +27,7 @@ namespace SRTools.Views
         ApplicationDataContainer localSettings = ApplicationData.Current.LocalSettings;
         public GachaView()
         {
+            Windows.ApplicationModel.Core.CoreApplication.UnhandledErrorDetected += OnUnhandledErrorDetected;
             var dispatcherQueue = DispatcherQueue.GetForCurrentThread();
 
             // 创建定时器，并设置回调函数和时间间隔
@@ -283,6 +284,19 @@ namespace SRTools.Views
             }
         }
 
+        private void OnUnhandledErrorDetected(object sender, Windows.ApplicationModel.Core.UnhandledErrorDetectedEventArgs e)
+        {
+            try
+            {
+                e.UnhandledError.Propagate();
+            }
+            catch (Exception ex)
+            {
+                infoBar.IsOpen = true;
+                infoBar.Title = "灾难性错误";
+                infoBar.Message = ex.Message;
+            }
+        }
 
         private void Window_Closed(object sender, EventArgs e)
         {

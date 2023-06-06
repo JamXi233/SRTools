@@ -58,6 +58,7 @@ namespace SRTools.Views
 
         public AboutView()
         {
+            Windows.ApplicationModel.Core.CoreApplication.UnhandledErrorDetected += OnUnhandledErrorDetected;
             InitializeComponent();
             Logging.Write("Switch to AboutView", 0);
             ApplicationDataContainer localSettings = ApplicationData.Current.LocalSettings;
@@ -538,6 +539,20 @@ namespace SRTools.Views
         private void Debug_Panic_Click(object sender, RoutedEventArgs e) 
         {
             throw new Exception("异常处理测试");
+        }
+
+        private void OnUnhandledErrorDetected(object sender, Windows.ApplicationModel.Core.UnhandledErrorDetectedEventArgs e)
+        {
+            try
+            {
+                e.UnhandledError.Propagate();
+            }
+            catch (Exception ex)
+            {
+                infoBar.IsOpen = true;
+                infoBar.Title = "灾难性错误";
+                infoBar.Message = ex.Message;
+            }
         }
     }
 }

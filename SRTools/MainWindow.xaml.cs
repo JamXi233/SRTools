@@ -66,6 +66,7 @@ namespace SRTools
 
         private void InitializeAppData()
         {
+            Windows.ApplicationModel.Core.CoreApplication.UnhandledErrorDetected += OnUnhandledErrorDetected;
             //应用数据检查开始
             ApplicationDataContainer keyContainer = GetOrCreateContainer(KeyPath);
             LocalSettingsData defaultValues = new LocalSettingsData("1", "Null", "Null", "Null");
