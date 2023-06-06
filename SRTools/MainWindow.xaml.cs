@@ -386,8 +386,20 @@ namespace SRTools
             public Data data { get; set; }
         }
 
+        private void OnUnhandledErrorDetected(object sender, Windows.ApplicationModel.Core.UnhandledErrorDetectedEventArgs e)
+        {
+            try
+            {
+                e.UnhandledError.Propagate();
+            }
+            catch (Exception ex)
+            {
+                infoBar.IsOpen = true;
+                infoBar.Title = "ÔÖÄÑÐÔ´íÎó";
+                infoBar.Message = ex.Message;
+            }
+        }
 
-        
 
     }
 }

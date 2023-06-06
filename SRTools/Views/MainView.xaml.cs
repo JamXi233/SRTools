@@ -33,6 +33,7 @@ namespace SRTools.Views
 
         public MainView()
         {
+            Windows.ApplicationModel.Core.CoreApplication.UnhandledErrorDetected += OnUnhandledErrorDetected;
             this.InitializeComponent();
             Logging.Write("Switch to MainView", 0);
             _ = LoadPicturesAsync();
@@ -170,7 +171,21 @@ namespace SRTools.Views
                 }
             }
         }
+        private void OnUnhandledErrorDetected(object sender, Windows.ApplicationModel.Core.UnhandledErrorDetectedEventArgs e)
+        {
+            try
+            {
+                e.UnhandledError.Propagate();
+            }
+            catch (Exception ex)
+            {
+                infoBar.IsOpen = true;
+                infoBar.Title = "灾难性错误"; 
+                infoBar.Message = ex.Message;
+            }
+        }
     }
+
 
     public class ApiResponse
     {
