@@ -128,7 +128,7 @@
         </Grid>
 
         <!-- 更新面板 -->
-        <Grid x:Name="Update" Background="{ThemeResource SystemControlAcrylicElementMediumHighBrush}" Visibility="Collapsed">
+        <Grid x:Name="Update" Background="Transparent" Visibility="Collapsed">
 
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="3*"/>

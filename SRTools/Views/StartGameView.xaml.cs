@@ -21,7 +21,7 @@ namespace SRTools.Views
 
         public StartGameView()
         {
-            Windows.ApplicationModel.Core.CoreApplication.UnhandledErrorDetected += OnUnhandledErrorDetected;
+            //Windows.ApplicationModel.Core.CoreApplication.UnhandledErrorDetected += OnUnhandledErrorDetected;
             this.InitializeComponent();
             Logging.Write("Switch to StartGameView",0);
             // 获取UI线程的DispatcherQueue

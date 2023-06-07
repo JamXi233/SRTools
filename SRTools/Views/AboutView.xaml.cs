@@ -58,7 +58,7 @@ namespace SRTools.Views
 
         public AboutView()
         {
-            Windows.ApplicationModel.Core.CoreApplication.UnhandledErrorDetected += OnUnhandledErrorDetected;
+            //Windows.ApplicationModel.Core.CoreApplication.UnhandledErrorDetected += OnUnhandledErrorDetected;
             InitializeComponent();
             Logging.Write("Switch to AboutView", 0);
             ApplicationDataContainer localSettings = ApplicationData.Current.LocalSettings;

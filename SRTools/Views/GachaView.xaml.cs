@@ -27,7 +27,7 @@ namespace SRTools.Views
         ApplicationDataContainer localSettings = ApplicationData.Current.LocalSettings;
         public GachaView()
         {
-            Windows.ApplicationModel.Core.CoreApplication.UnhandledErrorDetected += OnUnhandledErrorDetected;
+            //Windows.ApplicationModel.Core.CoreApplication.UnhandledErrorDetected += OnUnhandledErrorDetected;
             var dispatcherQueue = DispatcherQueue.GetForCurrentThread();
 
             // 创建定时器，并设置回调函数和时间间隔

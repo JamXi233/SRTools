@@ -33,7 +33,7 @@ namespace SRTools.Views
 
         public MainView()
         {
-            Windows.ApplicationModel.Core.CoreApplication.UnhandledErrorDetected += OnUnhandledErrorDetected;
+            //Windows.ApplicationModel.Core.CoreApplication.UnhandledErrorDetected += OnUnhandledErrorDetected;
             this.InitializeComponent();
             Logging.Write("Switch to MainView", 0);
             _ = LoadPicturesAsync();
@@ -85,7 +85,6 @@ namespace SRTools.Views
         private void OpenUrlButton_Click(object sender, RoutedEventArgs e)
         {
             // 打开浏览器访问指定URL
-            Logging.Write("Open Browser URL["+_url+"]", 0);
             Process.Start(new ProcessStartInfo(_url) { UseShellExecute = true });
         }
 
@@ -134,8 +133,6 @@ namespace SRTools.Views
         {
             // 获取当前选中的图片
             int selectedPicture = Gallery.SelectedIndex;
-
-            Logging.Write("SelectedPicture:" + selectedPicture, 0);
 
             // 如果选中了图片，则打开浏览器并导航到指定的网页
             string url = list[selectedPicture]; // 替换为要打开的网页地址

@@ -396,7 +396,7 @@ namespace SRTools
             catch (Exception ex)
             {
                 infoBar.IsOpen = true;
-                infoBar.Title = "灾难性错误";
+                infoBar.Title = "严重错误";
                 infoBar.Message = ex.Message;
             }
         }
