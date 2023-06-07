@@ -108,7 +108,7 @@
             </StackPanel>
 
         </Grid>
-        <InfoBar x:Name="infoBar" IsOpen="False" Severity="Error" Title="" Message="" VerticalAlignment="Top" HorizontalAlignment="Right" Width="500" Height="auto" Margin="0 64 12 0"/>
+        <InfoBar x:Name="infoBar" IsOpen="False" Severity="Error" Title="" Message="" VerticalAlignment="Top" HorizontalAlignment="Right" Width="400" Height="auto" Margin="0 64 12 0"/>
     </Grid>
 
 </Window>

@@ -284,20 +284,6 @@ namespace SRTools.Views
             }
         }
 
-        private void OnUnhandledErrorDetected(object sender, Windows.ApplicationModel.Core.UnhandledErrorDetectedEventArgs e)
-        {
-            try
-            {
-                e.UnhandledError.Propagate();
-            }
-            catch (Exception ex)
-            {
-                infoBar.IsOpen = true;
-                infoBar.Title = "灾难性错误";
-                infoBar.Message = ex.Message;
-            }
-        }
-
         private void Window_Closed(object sender, EventArgs e)
         {
             dispatcherTimer.Stop();

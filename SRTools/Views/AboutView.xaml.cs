@@ -538,21 +538,7 @@ namespace SRTools.Views
         //Debug_Clicks
         private void Debug_Panic_Click(object sender, RoutedEventArgs e) 
         {
-            throw new Exception("异常处理测试");
-        }
-
-        private void OnUnhandledErrorDetected(object sender, Windows.ApplicationModel.Core.UnhandledErrorDetectedEventArgs e)
-        {
-            try
-            {
-                e.UnhandledError.Propagate();
-            }
-            catch (Exception ex)
-            {
-                infoBar.IsOpen = true;
-                infoBar.Title = "灾难性错误";
-                infoBar.Message = ex.Message;
-            }
+            throw new Exception("全局异常处理测试");
         }
     }
 }

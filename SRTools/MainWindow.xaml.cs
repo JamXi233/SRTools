@@ -18,6 +18,7 @@ using System.Diagnostics;
 using System.Net.Http;
 using System.Text.Json;
 using Microsoft.UI.Xaml.Media.Imaging;
+using System.Threading;
 
 namespace SRTools
 {
@@ -50,23 +51,21 @@ namespace SRTools
         private static extern bool FreeConsole();
 
         private record LocalSettingsData(string FirstRun, string GamePath, string UnlockFPSValue, string UpdateService);
-
         public MainWindow()
         {
-            
+            Windows.ApplicationModel.Core.CoreApplication.UnhandledErrorDetected += OnUnhandledErrorDetected;
             Title = "星轨工具箱";
             InitializeComponent();
             InitializeAppData();
             InitializeMicaBackground();
             InitializeWindowProperties();
-            BackgroundImage(); 
+            BackgroundImage();
 
             _getNetData = new GetNetData();
         }
 
         private void InitializeAppData()
         {
-            Windows.ApplicationModel.Core.CoreApplication.UnhandledErrorDetected += OnUnhandledErrorDetected;
             //应用数据检查开始
             ApplicationDataContainer keyContainer = GetOrCreateContainer(KeyPath);
             LocalSettingsData defaultValues = new LocalSettingsData("1", "Null", "Null", "Null");
@@ -400,7 +399,5 @@ namespace SRTools
                 infoBar.Message = ex.Message;
             }
         }
-
-
     }
 }

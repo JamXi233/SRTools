@@ -30,13 +30,23 @@ namespace SRTools.Views
         string backgroundUrl = "";
         string iconUrl = "";
         List<String> list = new List<String>();
+        GetNotify getNotify = new GetNotify();
 
         public MainView()
         {
-            //Windows.ApplicationModel.Core.CoreApplication.UnhandledErrorDetected += OnUnhandledErrorDetected;
             this.InitializeComponent();
             Logging.Write("Switch to MainView", 0);
             _ = LoadPicturesAsync();
+            try 
+            { 
+                Task.Run(() => getNotify.Get()).Wait();
+                Notify_Grid.Visibility = Visibility.Visible;
+            } 
+            catch 
+            { 
+                loadRing.Visibility = Visibility.Collapsed;
+                loadErr.Visibility = Visibility.Visible;
+            }
         }
 
         private async Task LoadPicturesAsync()
@@ -127,6 +137,7 @@ namespace SRTools.Views
                 Pictures.Add(banner.img);
                 list.Add(banner.url);
             }
+            Gallery_Grid.Visibility = Visibility.Visible;
         }
 
         private void Gallery_PointerPressed(object sender, PointerRoutedEventArgs e)
@@ -166,20 +177,6 @@ namespace SRTools.Views
                         NotifyFrame.Navigate(typeof(NotifyMessageView));
                         break;
                 }
-            }
-        }
-        private void OnUnhandledErrorDetected(object sender, Windows.ApplicationModel.Core.UnhandledErrorDetectedEventArgs e)
-        {
-            try
-            {
-                e.UnhandledError.Propagate();
-            }
-            catch (Exception ex)
-            {
-                loadRing.Visibility = Visibility.Collapsed;
-                infoBar.IsOpen = true;
-                infoBar.Title = "灾难性错误"; 
-                infoBar.Message = ex.Message;
             }
         }
     }

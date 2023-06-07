@@ -236,18 +236,5 @@ namespace SRTools.Views
             Logging.Write("Timer Stopped", 0);
         }
 
-        private void OnUnhandledErrorDetected(object sender, Windows.ApplicationModel.Core.UnhandledErrorDetectedEventArgs e)
-        {
-            try
-            {
-                e.UnhandledError.Propagate();
-            }
-            catch (Exception ex)
-            {
-                infoBar.IsOpen = true;
-                infoBar.Title = "灾难性错误";
-                infoBar.Message = ex.Message;
-            }
-        }
     }
 }
