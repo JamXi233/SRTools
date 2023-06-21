@@ -3,6 +3,7 @@ using Microsoft.UI.Xaml.Controls;
 using SRTools.Depend;
 using System.Linq;
 using Windows.Storage;
+using System.Diagnostics;
 
 namespace SRTools.Views.GachaViews
 {
@@ -38,25 +39,40 @@ namespace SRTools.Views.GachaViews
             int rank5Count = 0;
             int i;
             int j = 0;
+            bool NoEvent = false;
+
             // 输出五星记录
             var rank5TextBlock = new TextBlock { };
             var rank4TextBlock = new TextBlock { };
-            rank5Grouped.Reverse();
+            rank5Records.Reverse();
             records.Reverse();
-            foreach (var group in rank5Grouped)
+            foreach (var group in rank5Records)
             {
                 for (i = j; i < records.Count; i++)
                 {
+                    //Logging.Write(i+ records[i].Name,0);
                     rank5Count++;
                     if (records[i].RankType == "5" && records[i].Name == group.Name)
                     {
-                        rank5TextBlock.Text += $"{group.Name} x{group.Count}：用了{rank5Count}抽, \n";
+                        Logging.Write("抽到5星:[[" + j + "]]:" + rank5Count + group.Name, 0);
+                        if (NoEvent)
+                        {
+                            rank5TextBlock.Text += $"{group.Name}：用了{rank5Count}抽[大保底] \n";
+                            NoEvent = false;
+                        }
+                        else
+                        {
+                            rank5TextBlock.Text += $"{group.Name}：用了{rank5Count}抽 \n";
+
+                        }
+
                         rank5Count = 0;
                         j = i + 1;
-                        break;
+                        break; //移动到下一个五星
                     }
                 }
             }
+            records.Reverse();
             var lines5 = rank5TextBlock.Text.Split("\n");
             var reversedLines5 = lines5.Reverse();
             rank5TextBlock.Text = string.Join("\n", reversedLines5);

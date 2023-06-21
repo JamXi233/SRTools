@@ -44,7 +44,6 @@ namespace SRTools.Views
             if (localSettings.Values["Gacha_Data"] as string == "1" || File.Exists(uDFP+ FileFolder) && File.Exists(uDFP + FileFolder2) && File.Exists(uDFP + FileFolder3) && File.Exists(uDFP + FileFolder4))
             {
                 gachaNav.Visibility = Visibility.Visible;
-                gachaFrame.Navigate(typeof(CharacterGachaView));
                 localSettings.Values["Gacha_Data"] = "1";
             }
 
@@ -209,8 +208,6 @@ namespace SRTools.Views
             DataChange(newbie_serializedList,newbie_gachaFile);
             Logging.Write("正在获取API信息,请不要退出... | 正在获取常驻池...", 0);
             DataChange(regular_serializedList,regular_gachaFile);
-
-
         }
 
         private async void DataChange(String serializedList, StorageFile gachaFile) 
