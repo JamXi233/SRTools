@@ -34,13 +34,15 @@
             </ListView>
         </StackPanel>
 
-        <ScrollViewer Grid.Column="1">
-            <StackPanel>
-                <TextBlock Text="五星:" FontSize="18" FontWeight="ExtraBold"/>
-                <StackPanel x:Name="Gacha5Stars" Margin="10 -12 0 10"/>
-                <TextBlock Text="四星:" FontSize="18" FontWeight="ExtraBold"/>
-                <StackPanel x:Name="Gacha4Stars" Margin="10 -12 0 10"/>
-            </StackPanel>
-        </ScrollViewer>
+        <StackPanel Grid.Column="1">
+            <ScrollViewer>
+                <StackPanel>
+                    <TextBlock Text="五星:" FontSize="18" FontWeight="ExtraBold"/>
+                    <StackPanel x:Name="Gacha5Stars" Margin="10 -12 0 10"/>
+                    <TextBlock Text="四星:" FontSize="18" FontWeight="ExtraBold"/>
+                    <StackPanel x:Name="Gacha4Stars" Margin="10 -12 0 10"/>
+                </StackPanel>
+            </ScrollViewer>
+        </StackPanel>
     </Grid>
 </Page>

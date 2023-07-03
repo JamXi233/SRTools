@@ -6,6 +6,12 @@ using Windows.Storage;
 using System.Diagnostics;
 using System.Collections.Generic;
 using System.Text;
+using Microsoft.UI.Xaml;
+using System.Text.Json;
+using Spectre.Console;
+using Windows.Storage.Pickers;
+using static SRTools.Depend.ExportSRGF;
+using System.Text.Encodings.Web;
 
 namespace SRTools.Views.GachaViews
 {

@@ -16,8 +16,10 @@
         </Grid.RowDefinitions>
 
         <StackPanel Grid.Row="0" HorizontalAlignment="Left" >
-            <StackPanel HorizontalAlignment="Stretch">
+            <StackPanel HorizontalAlignment="Stretch" Orientation="Horizontal">
                 <ToggleButton x:Name="ProxyButton" Content="开启代理" Click="ProxyButton_Click" Margin="0 0 0 8"/>
+                <Button x:Name="ExportSRGF" Content="导出记录" Click="ExportSRGF_Click" IsEnabled="False" Margin="8 0 0 8"/>
+                <Button x:Name="ImportSRGF" Content="导入记录" Click="ImportSRGF_Click" IsEnabled="true" Margin="8 0 0 8"/>
             </StackPanel>
             <StackPanel HorizontalAlignment="Stretch" Orientation="Horizontal">
                 <TextBlock Text="状态:" />

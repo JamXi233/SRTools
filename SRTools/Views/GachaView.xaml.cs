@@ -41,12 +41,18 @@ namespace SRTools.Views
             string FileFolder2 = "\\JSG-LLC\\SRTools\\GachaRecords_LightCone.ini";
             string FileFolder3 = "\\JSG-LLC\\SRTools\\GachaRecords_Newbie.ini";
             string FileFolder4 = "\\JSG-LLC\\SRTools\\GachaRecords_Regular.ini";
-            if (localSettings.Values["Gacha_Data"] as string == "1" || File.Exists(uDFP+ FileFolder) && File.Exists(uDFP + FileFolder2) && File.Exists(uDFP + FileFolder3) && File.Exists(uDFP + FileFolder4))
+            if (localSettings.Values["Gacha_Data"] as string == "1" && File.Exists(uDFP + FileFolder) && File.Exists(uDFP + FileFolder2) && File.Exists(uDFP + FileFolder3) && File.Exists(uDFP + FileFolder4))
             {
+                ExportSRGF.IsEnabled = true;
+                ImportSRGF.IsEnabled = false;
                 gachaNav.Visibility = Visibility.Visible;
                 localSettings.Values["Gacha_Data"] = "1";
             }
-
+            else 
+            {
+                gachaNav.Visibility = Visibility.Collapsed;
+                localSettings.Values["Gacha_Data"] = "0";
+            }
 
         }
 
@@ -249,6 +255,21 @@ namespace SRTools.Views
             gachaNav.Visibility = Visibility.Visible;
             gachaFrame.Navigate(typeof(CharacterGachaView));
             ProxyButton.IsEnabled = true;
+        }
+
+        private async void ExportSRGF_Click(object sender, RoutedEventArgs e)
+        {
+            ExportSRGF exportSRGF = new ExportSRGF();
+            exportSRGF.ExportAll();
+        }
+
+        private async void ImportSRGF_Click(object sender, RoutedEventArgs e)
+        {
+            ImportSRGF importSRGF = new ImportSRGF();
+            await importSRGF.Main();
+            gachaNav.Visibility = Visibility.Visible;
+            ImportSRGF.IsEnabled = false;
+            localSettings.Values["Gacha_Data"] = "1";
         }
 
         private void NavView_SelectionChanged(NavigationView sender, NavigationViewSelectionChangedEventArgs args)
