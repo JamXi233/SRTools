@@ -8,6 +8,7 @@ using System.Text.Json;
 using System.Threading.Tasks;
 using Windows.Storage.Pickers;
 using Windows.Storage;
+using Windows.ApplicationModel;
 
 namespace SRTools.Depend
 {
@@ -99,13 +100,15 @@ namespace SRTools.Depend
                 id = oItem.Id
             }).ToList();
             ExportSRGF data = new ExportSRGF();
+            PackageVersion packageVersion = Package.Current.Id.Version;
+            string version = $"{packageVersion.Major}.{packageVersion.Minor}.{packageVersion.Build}.{packageVersion.Revision}";
             var uid = oitems.FirstOrDefault()?.Uid;
             data.info.uid = uid;
             data.info.lang = "zh-cn";
             data.info.region_time_zone = 8;
-            data.info.export_timestamp = 1684124992;
+            data.info.export_timestamp = (int)(DateTime.UtcNow - new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc)).TotalSeconds;
             data.info.export_app = "SRTools";
-            data.info.export_app_version = "1.1.2.0";
+            data.info.export_app_version = version;
             data.info.srgf_version = "v1.0";
             data.list = items;
 

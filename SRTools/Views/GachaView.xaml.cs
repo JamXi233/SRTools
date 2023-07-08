@@ -15,6 +15,7 @@ using System.Collections.Generic;
 using SRTools.Views.GachaViews;
 using Spectre.Console;
 using Newtonsoft.Json.Linq;
+using Windows.UI.Core;
 
 namespace SRTools.Views
 {
@@ -25,6 +26,7 @@ namespace SRTools.Views
         BCCertMaker.BCCertMaker certProvider = new BCCertMaker.BCCertMaker();
         private DispatcherQueueTimer dispatcherTimer;
         ApplicationDataContainer localSettings = ApplicationData.Current.LocalSettings;
+        public event EventHandler DisableNavigationItems;
         public GachaView()
         {
             //Windows.ApplicationModel.Core.CoreApplication.UnhandledErrorDetected += OnUnhandledErrorDetected;
@@ -257,7 +259,7 @@ namespace SRTools.Views
             ProxyButton.IsEnabled = true;
         }
 
-        private async void ExportSRGF_Click(object sender, RoutedEventArgs e)
+        private void ExportSRGF_Click(object sender, RoutedEventArgs e)
         {
             ExportSRGF exportSRGF = new ExportSRGF();
             exportSRGF.ExportAll();
@@ -271,6 +273,12 @@ namespace SRTools.Views
             ImportSRGF.IsEnabled = false;
             localSettings.Values["Gacha_Data"] = "1";
         }
+
+        private async void Debug1_Click(object sender, RoutedEventArgs e)
+        {
+
+        }
+
 
         private void NavView_SelectionChanged(NavigationView sender, NavigationViewSelectionChangedEventArgs args)
         {
@@ -301,6 +309,7 @@ namespace SRTools.Views
                 }
             }
         }
+
 
         private void Window_Closed(object sender, EventArgs e)
         {

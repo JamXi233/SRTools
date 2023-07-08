@@ -114,26 +114,6 @@ namespace SRTools
             }
 
         }
-
-
-        private async void OnUnhandledErrorDetected(object sender, Windows.ApplicationModel.Core.UnhandledErrorDetectedEventArgs e)
-        {
-            try
-            {
-                e.UnhandledError.Propagate();
-            }
-            catch (Exception ex)
-            {
-                var m_window = Window.Current;
-                try { m_window.Close(); }catch { }
-                TerminalMode.ShowConsole();
-                TerminalMode terminalMode = new TerminalMode();
-                terminalMode.Init(0, 1, ex.Message);
-                // 关闭应用程序
-                //await Task.Delay(TimeSpan.FromSeconds(5));
-                //Application.Current.Exit();
-            }
-        }
         private Window m_window;
     }
 }

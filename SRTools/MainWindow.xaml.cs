@@ -19,11 +19,14 @@ using System.Net.Http;
 using System.Text.Json;
 using Microsoft.UI.Xaml.Media.Imaging;
 using System.Threading;
+using System.Security.AccessControl;
 
 namespace SRTools
 {
     public partial class MainWindow : Window
     {
+        public event EventHandler NavViewControlRequested;
+
         private GetNetData _getNetData;
         private readonly GetGiteeLatest _getGiteeLatest = new GetGiteeLatest();
         private readonly GetJSGLatest _getJSGLatest = new GetJSGLatest();
@@ -51,6 +54,9 @@ namespace SRTools
         private static extern bool FreeConsole();
 
         private record LocalSettingsData(string FirstRun, string GamePath, string UnlockFPSValue, string UpdateService);
+
+        public NavigationView NavigationView { get; }
+
         public MainWindow()
         {
             Windows.ApplicationModel.Core.CoreApplication.UnhandledErrorDetected += OnUnhandledErrorDetected;
@@ -344,9 +350,12 @@ namespace SRTools
 
         private void NavView_SelectionChanged(NavigationView sender, NavigationViewSelectionChangedEventArgs args)
         {
+            NavigationViewItem item = args.SelectedItem as NavigationViewItem;
+            string tag = item.Tag.ToString();
+            Type pageType = null;
             if (args.IsSettingsSelected)
             {
-                // 处理设置菜单项单击事件
+                MainFrame.Navigate(typeof(AboutView));
             }
             else if (args.SelectedItemContainer != null)
             {
@@ -362,14 +371,16 @@ namespace SRTools
                         break;
                     case "gacha":
                         // 导航到启动游戏页
-                        MainFrame.Navigate(typeof(GachaView));
+                        pageType = typeof(GachaView);
+                        GachaView gachaViewInstance = MainFrame.Content as GachaView;
+                        if (gachaViewInstance == null)
+                        {
+                            gachaViewInstance = new GachaView();
+                            gachaViewInstance.DisableNavigationItems += GachaView_DisableNavigationItems;
+                        }
+                        MainFrame.Navigate(pageType);
                         break;
                 }
-            }
-            if (args.IsSettingsSelected)
-            {
-                // 导航到默认设置页面
-                MainFrame.Navigate(typeof(AboutView));
             }
         }
         public static async Task<ApiResponse> FetchData(string url)
@@ -384,6 +395,17 @@ namespace SRTools
             public int retcode { get; set; }
             public string message { get; set; }
             public Data data { get; set; }
+        }
+
+        private void GachaView_DisableNavigationItems(object sender, EventArgs e)
+        {
+            foreach (NavigationViewItem item in navView.MenuItems)
+            {
+                if (item.Tag.ToString() == "home" || item.Tag.ToString() == "startgame")
+                {
+                    item.IsEnabled = false;
+                }
+            }
         }
 
         private void OnUnhandledErrorDetected(object sender, Windows.ApplicationModel.Core.UnhandledErrorDetectedEventArgs e)
