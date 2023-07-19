@@ -1,5 +1,7 @@
 
-![](https://raw.githubusercontent.com/JamXi233/SRTools/main/ScreenShot/1.jpg)
+
+
+![](https://cdn.jamsg.cn/release/SRTools/Preview.webp)
 # 🔨星轨工具箱
 🔨星轨工具箱工具箱是一个用于修改星穹铁道画质和帧率的工具箱
 ⚠️仅支持 x64、arm64 架构的 Windows 10 1809 及以上版本的系统
@@ -27,10 +29,3 @@
 本工具箱仅适用于PC版星穹铁道。
 
 ⚠️修改游戏画质和帧率可能会影响游戏的稳定性和性能。
-
-⚠️在使用本工具箱前，请备份游戏文件以防数据丢失。
-
-⚠️使用本工具箱可能违反游戏开发者的使用协议，使用风险自负。
-
-# 贡献
-💞如果您有任何建议或意见，请在GitHub上提交issue或pull request。
