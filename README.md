@@ -1,3 +1,4 @@
+
 ![](https://raw.githubusercontent.com/JamXi233/SRTools/main/ScreenShot/1.jpg)
 # 🔨星轨工具箱
 🔨星轨工具箱工具箱是一个用于修改星穹铁道画质和帧率的工具箱
@@ -7,7 +8,7 @@
 🔓帧率解锁
 
 🗃️抽卡分析
-**[支持导入SRGF标准的抽卡记录]**
+**[支持导入/导出SRGF标准的抽卡记录]**
 
 ⚙️画质修改(未实现)
 
@@ -33,11 +34,3 @@
 
 # 贡献
 💞如果您有任何建议或意见，请在GitHub上提交issue或pull request。
-
-# 许可证
-本工具箱基于GPL许可证发布，详情请参阅LICENSE文件。
-
-# 其他截图
-![](https://raw.githubusercontent.com/JamXi233/SRTools/main/ScreenShot/2.jpg)
-![](https://raw.githubusercontent.com/JamXi233/SRTools/main/ScreenShot/3.jpg)
-![](https://raw.githubusercontent.com/JamXi233/SRTools/main/ScreenShot/4.jpg)
