@@ -26,7 +26,6 @@ namespace SRTools.Views
         BCCertMaker.BCCertMaker certProvider = new BCCertMaker.BCCertMaker();
         private DispatcherQueueTimer dispatcherTimer;
         ApplicationDataContainer localSettings = ApplicationData.Current.LocalSettings;
-        public event EventHandler DisableNavigationItems;
         public GachaView()
         {
             //Windows.ApplicationModel.Core.CoreApplication.UnhandledErrorDetected += OnUnhandledErrorDetected;
@@ -43,12 +42,25 @@ namespace SRTools.Views
             string FileFolder2 = "\\JSG-LLC\\SRTools\\GachaRecords_LightCone.ini";
             string FileFolder3 = "\\JSG-LLC\\SRTools\\GachaRecords_Newbie.ini";
             string FileFolder4 = "\\JSG-LLC\\SRTools\\GachaRecords_Regular.ini";
-            if (localSettings.Values["Gacha_Data"] as string == "1" && File.Exists(uDFP + FileFolder) && File.Exists(uDFP + FileFolder2) && File.Exists(uDFP + FileFolder3) && File.Exists(uDFP + FileFolder4))
+            if (File.Exists(uDFP + FileFolder) || File.Exists(uDFP + FileFolder2) || File.Exists(uDFP + FileFolder3) || File.Exists(uDFP + FileFolder4))
             {
                 ExportSRGF.IsEnabled = true;
                 ImportSRGF.IsEnabled = false;
                 gachaNav.Visibility = Visibility.Visible;
                 localSettings.Values["Gacha_Data"] = "1";
+                if (File.Exists(uDFP + FileFolder)) CharacterGachaSelect.IsEnabled = true;
+                if (File.Exists(uDFP + FileFolder2)) LightConeGachaSelect.IsEnabled = true;
+                if (File.Exists(uDFP + FileFolder3)) NewbieGachaSelect.IsEnabled = true;
+                if (File.Exists(uDFP + FileFolder4)) RegularGachaSelect.IsEnabled = true;
+                // 查找第一个已启用的MenuItem并将其选中
+                foreach (var menuItem in gachaNav.MenuItems)
+                {
+                    if (menuItem is NavigationViewItem item && item.IsEnabled)
+                    {
+                        gachaNav.SelectedItem = item;
+                        break;
+                    }
+                }
             }
             else 
             {
@@ -274,7 +286,7 @@ namespace SRTools.Views
             localSettings.Values["Gacha_Data"] = "1";
         }
 
-        private async void Debug1_Click(object sender, RoutedEventArgs e)
+        private void Debug1_Click(object sender, RoutedEventArgs e)
         {
 
         }

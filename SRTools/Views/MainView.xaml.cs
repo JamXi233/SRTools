@@ -88,6 +88,17 @@ namespace SRTools.Views
                 var randomAccessStream = memStream.AsRandomAccessStream();
                 await iconImage.SetSourceAsync(randomAccessStream);
             }
+
+            AboutView aboutView = new AboutView();
+            int result = await aboutView.OnGetUpdateLatestReleaseInfo("SRToolsHelper", "Depend");
+            if (result == 1)
+            {
+                infoBar.Title = "更新提示";
+                infoBar.Message = "依赖包需要更新，请尽快到[设置-检查依赖更新]进行更新";
+                infoBar.IsOpen = true;
+                infoBar.IsClosable = false;
+            }
+
             IconImageBrush.ImageSource = iconImage;
             loadRing.Visibility = Visibility.Collapsed;
         }

@@ -25,6 +25,9 @@ using System.IO.Compression;
 using Org.BouncyCastle.Asn1.X509;
 using Windows.Storage.Pickers;
 using Vanara.PInvoke;
+using Microsoft.Windows.Security.AccessControl;
+using Newtonsoft.Json;
+using System.Net.Http;
 
 // To learn more about WinUI, the WinUI project structure,
 // and more about our project templates, see: http://aka.ms/winui-project-info.
@@ -98,7 +101,28 @@ namespace SRTools.Views
                 consoleToggle.IsEnabled = false;
                 debug_Mode.Visibility = Visibility.Visible;
             }
+            PackageVersion packageVersion = Package.Current.Id.Version;
+            string version = $"{packageVersion.Major}.{packageVersion.Minor}.{packageVersion.Build}.{packageVersion.Revision}";
+            appVersion.Text = "SRTools "+version;
+            GetVersionButton_Click(null, null);
         }
+
+        private async void GetVersionButton_Click(object sender, RoutedEventArgs e)
+        {
+            HttpClient client = new HttpClient();
+            string url = "https://api.jamsg.cn/version/";
+            HttpResponseMessage response = await client.GetAsync(url);
+            if (response.IsSuccessStatusCode)
+            {
+                string jsonData = await response.Content.ReadAsStringAsync();
+                var data = JsonConvert.DeserializeObject<dynamic>(jsonData);
+                string arrowVer = data.arrow_ver;
+                string anticatVer = data.anticat_ver;
+                apiVersion.Text = "ArrowAPI " + arrowVer;
+                antiCatVersion.Text = "AntiCat " + anticatVer;
+            }
+        }
+
         private void Console_Toggle(object sender, RoutedEventArgs e)
         {
             var currentProcess = Process.GetCurrentProcess();
@@ -276,12 +300,13 @@ namespace SRTools.Views
                 Logging.Write("Newer Version:" + latestReleaseInfo.Version, 0);
                 if (Mode == "Depend")
                 {
+                    string content;
                     string userDocumentsFolderPath = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
                     string path = userDocumentsFolderPath + "\\JSG-LLC\\SRTools\\Depends\\SRToolsHelper\\SRToolsHelperVersion.ini";
-                    try { string content = File.ReadAllText(path); }
+                    try { content = File.ReadAllText(path); }
                     catch
                     {
-                        string content = "Null";
+                        content = "Null";
                         if (latestReleaseInfo.Version != content)
                         {
                             fileUrl = latestReleaseInfo.DownloadUrl;
@@ -299,7 +324,22 @@ namespace SRTools.Views
                             return 0;
                         }
                     }
-                    return 0;
+                    if (latestReleaseInfo.Version != content)
+                    {
+                        fileUrl = latestReleaseInfo.DownloadUrl;
+                        update_Latest_Name.Text = $"软件名称: {latestReleaseInfo.Name}";
+                        update_Latest_Version.Text = $"版本号: {latestReleaseInfo.Version}";
+                        update_Current_Version.Text = $"当前版本: {content}";
+                        update_Latest_Changelog.Text = $"更新日志: \n{latestReleaseInfo.Changelog}";
+                        update_Download.IsEnabled = true;
+                        depend_Grid.Visibility = Visibility.Visible;
+                        depend_Progress_Grid.Visibility = Visibility.Collapsed;
+                        return 1;
+                    }
+                    else
+                    {
+                        return 0;
+                    }
                 }
                 else
                 {
@@ -430,7 +470,11 @@ namespace SRTools.Views
             string UpdateFileName = "SRToolsHelper_" + latestReleaseInfo.Version + ".zip";
             string UpdateExtractedFolder = "SRToolsHelper";
             string userDocumentsFolderPath = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
-            DeleteFolder(userDocumentsFolderPath + "\\JSG-LLC\\SRTools\\Depends\\", "0");
+            if (Directory.Exists(userDocumentsFolderPath + "\\JSG-LLC\\SRTools\\Depends\\"))
+            {
+                try { Directory.Delete(userDocumentsFolderPath + "\\JSG-LLC\\SRTools\\Depends\\", true); }
+                catch (IOException) { }
+            }
             string localFilePath = Path.Combine(userDocumentsFolderPath + UpdateFileFolder, UpdateFileName);
             ToggleDependUpdateGridVisibility(false);
             depend_Download.IsEnabled = false;
@@ -494,7 +538,6 @@ namespace SRTools.Views
         {
             DateTime now = DateTime.Now;
             string formattedDate = now.ToString("yyyy_MM_dd_HH_mm_ss");
-            Console.WriteLine(formattedDate);
             string userDocumentsFolderPath = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
             var savePicker = new FileSavePicker();
             savePicker.FileTypeChoices.Add("Zip Archive", new List<string>() { ".SRToolsBackup" });
@@ -533,6 +576,11 @@ namespace SRTools.Views
             Task.Run(() => Clear_AllData_NoClose(null, null)).Wait();
             Task.Run(() => ZipFile.ExtractToDirectory(file.Path, userDocumentsFolderPath + "\\JSG-LLC\\SRTools\\")).Wait();
             Application.Current.Exit();
+        }
+
+        private async void Restore_Data_Cancel(TeachingTip e, object o)
+        {
+
         }
 
         //Debug_Clicks

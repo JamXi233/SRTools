@@ -61,8 +61,8 @@ namespace SRTools
         public async void Init()
         {
             AllocConsole();
-            Console.SetWindowSize(50, 20);
-            Console.SetBufferSize(50, 20);
+            Console.SetWindowSize(60, 25);
+            Console.SetBufferSize(60, 25);
             bool isDebug = false;
             #if DEBUG
             isDebug = true;

@@ -20,12 +20,12 @@ using System.Text.Json;
 using Microsoft.UI.Xaml.Media.Imaging;
 using System.Threading;
 using System.Security.AccessControl;
+using Spectre.Console;
 
 namespace SRTools
 {
     public partial class MainWindow : Window
     {
-        public event EventHandler NavViewControlRequested;
 
         private GetNetData _getNetData;
         private readonly GetGiteeLatest _getGiteeLatest = new GetGiteeLatest();
@@ -376,7 +376,6 @@ namespace SRTools
                         if (gachaViewInstance == null)
                         {
                             gachaViewInstance = new GachaView();
-                            gachaViewInstance.DisableNavigationItems += GachaView_DisableNavigationItems;
                         }
                         MainFrame.Navigate(pageType);
                         break;
@@ -397,17 +396,6 @@ namespace SRTools
             public Data data { get; set; }
         }
 
-        private void GachaView_DisableNavigationItems(object sender, EventArgs e)
-        {
-            foreach (NavigationViewItem item in navView.MenuItems)
-            {
-                if (item.Tag.ToString() == "home" || item.Tag.ToString() == "startgame")
-                {
-                    item.IsEnabled = false;
-                }
-            }
-        }
-
         private void OnUnhandledErrorDetected(object sender, Windows.ApplicationModel.Core.UnhandledErrorDetectedEventArgs e)
         {
             try
@@ -419,6 +407,9 @@ namespace SRTools
                 infoBar.IsOpen = true;
                 infoBar.Title = "—œ÷ÿ¥ÌŒÛ";
                 infoBar.Message = ex.Message;
+                AnsiConsole.WriteException(ex,
+    ExceptionFormats.ShortenPaths | ExceptionFormats.ShortenTypes |
+    ExceptionFormats.ShortenMethods | ExceptionFormats.ShowLinks);
             }
         }
     }

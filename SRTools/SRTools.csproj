@@ -33,7 +33,6 @@
 	<UseWPF>False</UseWPF>
 	<PlatformTarget>x64</PlatformTarget>
 	<ApplicationIcon>Assets\Logo.ico</ApplicationIcon>
-
 	<ApplicationManifest>app.manifest</ApplicationManifest>
   </PropertyGroup>
   <ItemGroup>
@@ -50,6 +49,8 @@
     <None Remove="Views\BlankPage1.xaml" />
     <None Remove="Views\Dialog.xaml" />
     <None Remove="Views\GachaView.xaml.cs.bak" />
+    <None Remove="Views\SGViews\AccountView.xaml" />
+    <None Remove="Views\SGViews\GraphicSettingView.xaml" />
   </ItemGroup>
   <ItemGroup>
     <Page Remove="Views\Dialog.xaml" />
@@ -86,6 +87,13 @@
   <ItemGroup>
     <Page Update="Views\BlankPage1.xaml">
       <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Update="Views\SGViews\AccountView.xaml">
+      <XamlRuntime>$(DefaultXamlRuntime)</XamlRuntime>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Update="Views\SGViews\GraphicSettingView.xaml">
+      <XamlRuntime>$(DefaultXamlRuntime)</XamlRuntime>
     </Page>
   </ItemGroup>
   <ItemGroup>

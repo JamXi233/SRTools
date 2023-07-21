@@ -37,7 +37,7 @@
                         <Button x:Name="checkDependUpdate" Click="Check_Depend_Update" Content="检查依赖更新" Margin="0 0 0 10"/>
                         <RadioButtons Header="更新渠道" FontSize="16" FontWeight="Bold" Margin="0 12 0 0">
                             <RadioButton x:Name="uservice_JSG" Content="JSG-LLC(JSG-DS) 国内较快" Checked="uservice_JSG_Choose"/>
-                            <RadioButton x:Name="uservice_Gitee" Content="Gitee" Checked="uservice_Gitee_Choose"/>
+                            <RadioButton x:Name="uservice_Gitee" Content="Gitee" Checked="uservice_Gitee_Choose" IsEnabled="False"/>
                             <RadioButton x:Name="uservice_Github" Content="Github" Checked="uservice_Github_Choose" IsEnabled="False"/>
                         </RadioButtons>
                     </StackPanel>
@@ -96,7 +96,8 @@
                 Subtitle="还原配置文件会清空当前所有配置文件，请小心使用。恢复完成会自动关闭程序。"
                 ActionButtonContent="选择文件"
                 ActionButtonClick="Restore_Data"
-	            CloseButtonContent="关闭">
+	            CloseButtonContent="关闭"
+                CloseButtonClick="Restore_Data_Cancel">
                 <TeachingTip.IconSource>
                     <SymbolIconSource Symbol="Refresh" />
                 </TeachingTip.IconSource>
@@ -114,7 +115,7 @@
                 </Border>
                 <TextBlock Text="Logo from @__QuAn_" FontWeight="Bold" FontSize="12" Margin="0 5 0 0"/>
                 <TextBlock Text="关于" FontSize="18" FontWeight="Bold" Margin="0 12 0 0"/>
-                <TextBlock Text="星轨工具箱(星穹铁道工具箱) 23.5.30 Preview" FontSize="12" FontWeight="Bold" Margin="0 8 0 0"/>
+                <TextBlock x:Name="appName" Text="星轨工具箱(星穹铁道工具箱) Goshawk" FontSize="12" FontWeight="Bold" Margin="0 8 0 0"/>
                 <TextBlock Text="Created by JamXi" FontSize="12" Margin="0 0 0 0"/>
                 <TextBlock Text="Copyright © JSG-LLC 2017-2023" FontSize="12" FontWeight="Bold" Margin="0 0 0 0"/>
                 <TextBlock Style="{ThemeResource BodyStrongTextBlockStyle}" Margin="0,8,0,4" HorizontalAlignment="Left">
@@ -186,8 +187,14 @@
                 </Button>
 
             </StackPanel>
-
+            
         </Grid>
+        <StackPanel Margin="0 0 20 20" VerticalAlignment="Bottom" HorizontalAlignment="Right">
+            <TextBlock x:Name="appVersion" Text="" FontSize="18" FontWeight="Bold" Foreground="LightGray" HorizontalAlignment="Right"/>
+            <TextBlock x:Name="apiVersion" Text="" FontSize="12" FontWeight="Bold" Foreground="Gray" HorizontalAlignment="Right"/>
+            <TextBlock x:Name="antiCatVersion" Text="" FontSize="12" FontWeight="Bold" Foreground="Gray" HorizontalAlignment="Right"/>
+        </StackPanel>
         <InfoBar x:Name="infoBar" IsOpen="False" Severity="Error" Title="" Message="" />
+        
     </Grid>
 </Page>
