@@ -3,28 +3,11 @@
 
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
-using Microsoft.UI.Xaml.Controls.Primitives;
-using Microsoft.UI.Xaml.Data;
-using Microsoft.UI.Xaml.Input;
-using Microsoft.UI.Xaml.Media;
-using Microsoft.UI.Xaml.Navigation;
-using Microsoft.UI.Xaml.Shapes;
 using SRTools.Depend;
 using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.IO;
-using System.Linq;
 using System.Runtime.InteropServices;
-using System.Runtime.InteropServices.WindowsRuntime;
-using System.Security.Cryptography.X509Certificates;
 using System.Threading.Tasks;
-using Windows.ApplicationModel;
-using Windows.ApplicationModel.Activation;
-using Windows.Foundation;
-using Windows.Foundation.Collections;
 using Windows.Storage;
-using Windows.UI.Popups;
 
 // To learn more about WinUI, the WinUI project structure,
 // and more about our project templates, see: http://aka.ms/winui-project-info.
@@ -33,12 +16,16 @@ namespace SRTools
 {
     public partial class App : Application
     {
+        public static bool SDebugMode { get; set; }
         // 导入 AllocConsole 和 FreeConsole 函数
         [DllImport("kernel32.dll", SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
         private static extern bool AllocConsole();
         [DllImport("kernel32.dll", SetLastError = true)]
         private static extern bool FreeConsole();
+        // 导入 GetAsyncKeyState 函数
+        [DllImport("User32.dll")]
+        public static extern short GetAsyncKeyState(int vKey);
         GetNotify getNotify = new GetNotify();
         /// <summary>
         /// Initializes the singleton application object.  This is the first line of authored code
@@ -55,7 +42,22 @@ namespace SRTools
         /// <param name="args">Details about the launch request and process.</param>
         protected override void OnLaunched(Microsoft.UI.Xaml.LaunchActivatedEventArgs args)
         {
+            // 获取根Frame并导航到初始页面
             Init();
+
+            bool isShiftPressed = (GetAsyncKeyState(0x10) & 0x8000) != 0;
+
+            if (isShiftPressed)
+            {
+                Logging.Write("Pressed", 1);
+                Console.Title = "🆂𝐃𝐞𝐛𝐮𝐠𝐌𝐨𝐝𝐞:SRTools";
+                TerminalMode.ShowConsole();
+                SDebugMode = true;
+            }
+            else
+            {
+                Logging.Write("NoPressed", 1);
+            }
         }
 
         public async void Init()

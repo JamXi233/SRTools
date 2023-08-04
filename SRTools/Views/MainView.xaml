@@ -30,9 +30,21 @@
                     <Grid x:Name="Notify_Grid" Grid.Row="1" Background="{ThemeResource SystemControlAcrylicElementMediumHighBrush}" Margin="0 18 0 0" CornerRadius="12" Height="160" Width="345" Visibility="Collapsed">
                         <NavigationView x:Name="NotifyNav" PaneDisplayMode="Top" IsBackButtonVisible="Collapsed" IsSettingsVisible="False" SelectionChanged="Notify_NavView_SelectionChanged">
                             <NavigationView.MenuItems>
-                                <NavigationViewItem  Content="公告" Tag="Notify_Announce" IsSelected="True"/>
-                                <NavigationViewItem  Content="通知" Tag="Notify_Notification" />
-                                <NavigationViewItem  Content="信息" Tag="Notify_Message" />
+                                <NavigationViewItem  Content="公告" Tag="Notify_Announce" IsSelected="True">
+                                    <NavigationViewItem.Icon>
+                                        <FontIcon FontFamily="Segoe Fluent Icons" Glyph="&#xe789;"/>
+                                    </NavigationViewItem.Icon>
+                                </NavigationViewItem>
+                                <NavigationViewItem  Content="通知" Tag="Notify_Notification" >
+                                    <NavigationViewItem.Icon>
+                                        <FontIcon FontFamily="Segoe Fluent Icons" Glyph="&#xf580;"/>
+                                    </NavigationViewItem.Icon>
+                                </NavigationViewItem>
+                                <NavigationViewItem  Content="信息" Tag="Notify_Message" >
+                                    <NavigationViewItem.Icon>
+                                        <FontIcon FontFamily="Segoe Fluent Icons" Glyph="&#xe8bd;"/>
+                                    </NavigationViewItem.Icon>
+                                </NavigationViewItem>
                             </NavigationView.MenuItems>
                             <Frame x:Name="NotifyFrame" Height="100" Padding="10 0 10 0"/>
                         </NavigationView>

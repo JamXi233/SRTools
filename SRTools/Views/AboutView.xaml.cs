@@ -91,6 +91,7 @@ namespace SRTools.Views
                     consoleToggle.IsChecked = false;
                     break;
             }
+            bool SDebugMode = App.SDebugMode;
             bool isDebug = false;
             #if DEBUG
             isDebug = true;
@@ -101,10 +102,29 @@ namespace SRTools.Views
                 consoleToggle.IsEnabled = false;
                 debug_Mode.Visibility = Visibility.Visible;
             }
+            else if (SDebugMode)
+            {
+                consoleToggle.IsEnabled = false;
+                debug_Mode.Visibility = Visibility.Visible;
+                debug_Message.Text = "您现在处于手动Debug模式";
+            }
             PackageVersion packageVersion = Package.Current.Id.Version;
             string version = $"{packageVersion.Major}.{packageVersion.Minor}.{packageVersion.Build}.{packageVersion.Revision}";
             appVersion.Text = "SRTools "+version;
             GetVersionButton_Click(null, null);
+            CheckFont();
+        }
+
+        private void CheckFont() 
+        {
+            string fontsFolderPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Fonts));
+            string segoeIconsFilePath = Path.Combine(fontsFolderPath, "SegoeIcons.ttf");
+            string segoeIconsFilePath2 = Path.Combine(fontsFolderPath, "Segoe Fluent Icons.ttf");
+            if (Directory.Exists(fontsFolderPath) && (File.Exists(segoeIconsFilePath) || File.Exists(segoeIconsFilePath2)))
+            {
+                installSFF.IsEnabled = false;
+                installSFF.Content = "图标字体正常";
+            }
         }
 
         private async void GetVersionButton_Click(object sender, RoutedEventArgs e)
@@ -426,18 +446,57 @@ namespace SRTools.Views
                 StorageFile file = await StorageFile.GetFileFromPathAsync(extractionPath + "\\" + UpdateExtractedFolder + ".msix");
                 if (file != null)
                 {
-                    await Launcher.LaunchFileAsync(file);
-                    update_Grid.Visibility = Visibility.Visible;
-                    update_Progress_Grid.Visibility = Visibility.Collapsed;
-                    update_Btn_Text.Text = "请点击安装";
-                    update_Btn_Bar.Visibility = Visibility.Collapsed;
-                    update_Btn_Icon.Glyph = "&#xea4e";
+
+                    await ExecutePowerShellCommandAsync(file);
                 }
             }
             else
             {
                 // 使用Dispatcher在UI线程上执行ToggleUpdateGridVisibility函数
                 ToggleUpdateGridVisibility(true, false);
+            }
+        }
+
+
+        public async Task ExecutePowerShellCommandAsync(IStorageFile file)
+        {
+            // PowerShell 命令
+            string command = $"Add-AppxPackage -Path \"{file.Path}\"";
+
+            // 创建新的进程启动信息
+            ProcessStartInfo startInfo = new ProcessStartInfo
+            {
+                FileName = "powershell.exe",
+                Arguments = $"-NoProfile -Command {command}",
+                UseShellExecute = false,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                CreateNoWindow = true
+            };
+
+            // 创建并启动新的进程
+            Process process = new Process
+            {
+                StartInfo = startInfo
+            };
+            process.Start();
+
+            // 异步读取输出和错误信息，以避免挂起进程
+            string output = await process.StandardOutput.ReadToEndAsync();
+            string errors = await process.StandardError.ReadToEndAsync();
+
+            // 等待进程结束
+            process.WaitForExit();
+
+            // 处理结果
+            if (!string.IsNullOrEmpty(errors))
+            {
+                await Launcher.LaunchFileAsync(file);
+                update_Grid.Visibility = Visibility.Visible;
+                update_Progress_Grid.Visibility = Visibility.Collapsed;
+                update_Btn_Text.Text = "请手动安装";
+                update_Btn_Bar.Visibility = Visibility.Collapsed;
+                update_Btn_Icon.Glyph = "\uE001";
             }
         }
 
@@ -578,10 +637,19 @@ namespace SRTools.Views
             Application.Current.Exit();
         }
 
-        private async void Restore_Data_Cancel(TeachingTip e, object o)
+        private void Restore_Data_Cancel(TeachingTip e, object o)
         {
 
         }
+        private async void Install_Font_Click(object sender, RoutedEventArgs e)
+        {
+            installSFF.IsEnabled = false;
+            installSFF_Progress.Visibility = Visibility.Visible;
+            int result = await InstallFont.SegoeFluentFontAsync();
+            installSFF.Content = "安装字体后重启SRTools即生效";
+            installSFF_Progress.Visibility = Visibility.Collapsed;
+        }
+
 
         //Debug_Clicks
         private void Debug_Panic_Click(object sender, RoutedEventArgs e) 

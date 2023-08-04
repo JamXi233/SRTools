@@ -45,15 +45,18 @@
                     <StackPanel Grid.Column="1" Margin="0 0 0 0">
                         <Button x:Name="backupData" Click="Backup_Data" Content="备份数据" Margin="0 0 0 10"/>
                         <Button x:Name="restoreData" Click="Restore_Data_Click" Content="还原数据" Margin="0 0 0 10"/>
-                        <StackPanel x:Name="debug_Mode" Margin="0 94 0 10" Visibility="Collapsed">
-                            <TextBlock Text="Debug设置" FontSize="16" FontWeight="Bold" Margin="0 0 0 10"/>
-                            <Button x:Name="debug_Panic" Click="Debug_Panic_Click" Content="Debug_崩溃" Margin="0 0 0 10"/>
-                            <TextBlock Text="处于Debug模式，控制台无法关闭" Margin="0 0 0 0"/>
+                        <StackPanel x:Name="other" Margin="0 94 0 10" Visibility="Visible">
+                            <TextBlock Text="其他依赖" FontSize="16" FontWeight="Bold" Margin="0 0 0 10"/>
+                            <StackPanel Orientation="Horizontal">
+                                <Button x:Name="installSFF" Click="Install_Font_Click" Content="安装图标字体" Margin="0 0 10 0"/>
+                                <ProgressRing x:Name="installSFF_Progress" Height="20" Width="20" Visibility="Collapsed"/>
+                            </StackPanel>
                         </StackPanel>
                     </StackPanel>
                     
                 </Grid>
-                
+
+
             </StackPanel>
 
             <TeachingTip x:Name="UpdateTip"
@@ -103,28 +106,38 @@
                 </TeachingTip.IconSource>
             </TeachingTip>
 
-            <!-- 右侧区域 -->
-            <StackPanel Orientation="Vertical" Grid.Column="1" HorizontalAlignment="Left">
-                <!-- 应用程序 logo -->
-                <Border CornerRadius="24" HorizontalAlignment="Left">
-                    <Image
-                        Grid.Row="0"
-                        Source="ms-appx:///Assets/Logo_2.jpg"
-                        Width="128"
-                        Height="128"/>
-                </Border>
-                <TextBlock Text="Logo from @__QuAn_" FontWeight="Bold" FontSize="12" Margin="0 5 0 0"/>
-                <TextBlock Text="关于" FontSize="18" FontWeight="Bold" Margin="0 12 0 0"/>
-                <TextBlock x:Name="appName" Text="星轨工具箱(星穹铁道工具箱) Goshawk" FontSize="12" FontWeight="Bold" Margin="0 8 0 0"/>
-                <TextBlock Text="Created by JamXi" FontSize="12" Margin="0 0 0 0"/>
-                <TextBlock Text="Copyright © JSG-LLC 2017-2023" FontSize="12" FontWeight="Bold" Margin="0 0 0 0"/>
-                <TextBlock Style="{ThemeResource BodyStrongTextBlockStyle}" Margin="0,8,0,4" HorizontalAlignment="Left">
-                    <Hyperlink NavigateUri="https://github.com/JamXi233/SRTools/issues" UnderlineStyle="None"><Run Text="报告问题"/></Hyperlink>
-                </TextBlock>
-                <TextBlock Style="{ThemeResource BodyStrongTextBlockStyle}" Margin="0,8,0,4" HorizontalAlignment="Left">
-                    <Hyperlink NavigateUri="https://github.com/JamXi233/SRTools" UnderlineStyle="None"><Run Text="贡献代码"/></Hyperlink>
-                </TextBlock>
-            </StackPanel>
+            <Grid Grid.Column="1">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="*" />
+                </Grid.RowDefinitions>
+                <StackPanel Orientation="Vertical"  HorizontalAlignment="Left">
+                    <!-- 应用程序 logo -->
+                    <Border CornerRadius="24" HorizontalAlignment="Left">
+                        <Image Grid.Row="0" Source="ms-appx:///Assets/Logo_2.jpg" Width="128" Height="128"/>
+                    </Border>
+                    <TextBlock Text="Logo from @__QuAn_" FontWeight="Bold" FontSize="12" Margin="0 5 0 0"/>
+                    <TextBlock Text="关于" FontSize="18" FontWeight="Bold" Margin="0 12 0 0"/>
+                    <TextBlock x:Name="appName" Text="星轨工具箱(星穹铁道工具箱) Goshawk" FontSize="12" FontWeight="Bold" Margin="0 8 0 0"/>
+                    <TextBlock Text="Created by JamXi" FontSize="12" Margin="0 0 0 0"/>
+                    <TextBlock Text="Copyright © JSG-LLC 2017-2023" FontSize="12" FontWeight="Bold" Margin="0 0 0 0"/>
+                    <TextBlock Style="{ThemeResource BodyStrongTextBlockStyle}" Margin="0,8,0,4" HorizontalAlignment="Left">
+      <Hyperlink NavigateUri="https://github.com/JamXi233/SRTools/issues" UnderlineStyle="None"><Run Text="报告问题"/></Hyperlink>
+                    </TextBlock>
+                    <TextBlock Style="{ThemeResource BodyStrongTextBlockStyle}" Margin="0,8,0,4" HorizontalAlignment="Left">
+      <Hyperlink NavigateUri="https://github.com/JamXi233/SRTools" UnderlineStyle="None"><Run Text="贡献代码"/></Hyperlink>
+                    </TextBlock>
+                    <StackPanel x:Name="debug_Mode" Margin="0 12 0 0" Visibility="Visible">
+                        <TextBlock Text="Debug设置" FontSize="16" FontWeight="Bold" Margin="0 0 0 10"/>
+                        <Button x:Name="debug_Panic" Click="Debug_Panic_Click" Content="Debug_崩溃" Margin="0 0 0 10"/>
+                        <TextBlock x:Name="debug_Message" Text="处于Debug模式，控制台无法关闭" Margin="0 0 0 0"/>
+                    </StackPanel>
+                    <StackPanel Margin="230 120 0 0" VerticalAlignment="Bottom" HorizontalAlignment="Right">
+                        <TextBlock x:Name="appVersion" Text="" FontSize="18" FontWeight="Bold" Foreground="LightGray" HorizontalAlignment="Right"/>
+                        <TextBlock x:Name="apiVersion" Text="" FontSize="12" FontWeight="Bold" Foreground="Gray" HorizontalAlignment="Right"/>
+                        <TextBlock x:Name="antiCatVersion" Text="" FontSize="12" FontWeight="Bold" Foreground="Gray" HorizontalAlignment="Right"/>
+                    </StackPanel>
+                </StackPanel>
+            </Grid>
 
         </Grid>
 
@@ -189,11 +202,7 @@
             </StackPanel>
             
         </Grid>
-        <StackPanel Margin="0 0 20 20" VerticalAlignment="Bottom" HorizontalAlignment="Right">
-            <TextBlock x:Name="appVersion" Text="" FontSize="18" FontWeight="Bold" Foreground="LightGray" HorizontalAlignment="Right"/>
-            <TextBlock x:Name="apiVersion" Text="" FontSize="12" FontWeight="Bold" Foreground="Gray" HorizontalAlignment="Right"/>
-            <TextBlock x:Name="antiCatVersion" Text="" FontSize="12" FontWeight="Bold" Foreground="Gray" HorizontalAlignment="Right"/>
-        </StackPanel>
+        
         <InfoBar x:Name="infoBar" IsOpen="False" Severity="Error" Title="" Message="" />
         
     </Grid>

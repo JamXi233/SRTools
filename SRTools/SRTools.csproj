@@ -46,8 +46,14 @@
     <Content Remove="Assets\BadgeLogo.scale-400.png" />
   </ItemGroup>
   <ItemGroup>
+    <None Remove="Assets\Don_Alipay.jpg" />
+    <None Remove="Assets\Don_Hand.gif" />
+    <None Remove="Assets\Don_Hand.png" />
+    <None Remove="Assets\Don_Icon.gif" />
+    <None Remove="Assets\Don_Wechat.jpg" />
     <None Remove="Views\BlankPage1.xaml" />
     <None Remove="Views\Dialog.xaml" />
+    <None Remove="Views\DonationView.xaml" />
     <None Remove="Views\GachaView.xaml.cs.bak" />
     <None Remove="Views\SGViews\AccountView.xaml" />
     <None Remove="Views\SGViews\GraphicSettingView.xaml" />
@@ -88,6 +94,13 @@
     <Page Update="Views\BlankPage1.xaml">
       <Generator>MSBuild:Compile</Generator>
     </Page>
+    <Page Update="Views\DonationView.xaml">
+      <XamlRuntime>$(DefaultXamlRuntime)</XamlRuntime>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Update="Views\QuestionView.xaml">
+      <XamlRuntime>$(DefaultXamlRuntime)</XamlRuntime>
+    </Page>
     <Page Update="Views\SGViews\AccountView.xaml">
       <XamlRuntime>$(DefaultXamlRuntime)</XamlRuntime>
       <SubType>Designer</SubType>
@@ -98,6 +111,22 @@
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Views\NotifyViews\" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Update="Assets\Don_Alipay.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Update="Assets\Don_Wechat.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+  <ItemGroup>
+    <Content Update="Assets\Don_Hand.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Update="Assets\Don_Icon.gif">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
 
   <!-- 

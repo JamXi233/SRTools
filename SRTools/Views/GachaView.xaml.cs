@@ -16,6 +16,8 @@ using SRTools.Views.GachaViews;
 using Spectre.Console;
 using Newtonsoft.Json.Linq;
 using Windows.UI.Core;
+using System.Net.Http;
+using Vanara.PInvoke;
 
 namespace SRTools.Views
 {
@@ -23,6 +25,8 @@ namespace SRTools.Views
     {
         public bool isProxyRunning;
         public String GachaLink_String;
+        public String GachaLinkCache_String;
+
         BCCertMaker.BCCertMaker certProvider = new BCCertMaker.BCCertMaker();
         private DispatcherQueueTimer dispatcherTimer;
         ApplicationDataContainer localSettings = ApplicationData.Current.LocalSettings;
@@ -37,6 +41,12 @@ namespace SRTools.Views
             dispatcherTimer.Tick += CheckProcess;
             this.InitializeComponent();
             Logging.Write("Switch to GachaView", 0);
+            LoadData();
+            GetCacheGacha();
+        }
+
+        private void LoadData() 
+        {
             string uDFP = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
             string FileFolder = "\\JSG-LLC\\SRTools\\GachaRecords_Character.ini";
             string FileFolder2 = "\\JSG-LLC\\SRTools\\GachaRecords_LightCone.ini";
@@ -62,17 +72,73 @@ namespace SRTools.Views
                     }
                 }
             }
-            else 
+            else
             {
                 gachaNav.Visibility = Visibility.Collapsed;
                 localSettings.Values["Gacha_Data"] = "0";
             }
+        }
 
+        private async void GetCacheGacha() 
+        {
+            if (localSettings.Values.ContainsKey("Config_GamePath"))
+            {
+                var value = localSettings.Values["Config_GamePath"] as string;
+                Logging.Write("GamePath: " + value, 0);
+                if (!string.IsNullOrEmpty(value) && value.Contains("Null")) { }
+                else
+                {
+                    Logging.Write("Getting CacheVersion From ArrowAPI...", 0);
+                    string directoryPath = value.Replace(@"\StarRail.exe", "") + "\\StarRail_Data\\webCaches\\";
+                    HttpClient client = new HttpClient();
+                    string url = "https://srtools.jamsg.cn/api/getgachacacheversion";
+                    HttpResponseMessage response = await client.GetAsync(url);
+                    if (response.IsSuccessStatusCode)
+                    {
+                        directoryPath = directoryPath+await response.Content.ReadAsStringAsync()+"\\Cache\\Cache_Data\\data_2";
+                        Logging.Write("Getted Version:"+ await response.Content.ReadAsStringAsync(), 0);
+                    }
+                    string searchString = "https://api-takumi.mihoyo.com/common/gacha_record/api/getGachaLog";
+
+                    try
+                    {
+                        // Open the file using a StreamReader
+                        using (StreamReader reader = new StreamReader(directoryPath))
+                        {
+                            // Read the entire file as a single string
+                            string fileContent = reader.ReadToEnd();
+
+                            // Find the search string in the file content
+                            int index = fileContent.IndexOf(searchString);
+                            if (index >= 0)
+                            {
+                                // If the search string is found, output the entire string
+                                int endIndex = fileContent.IndexOf("&end_id=0", index);
+                                string result = fileContent.Substring(index, endIndex - index) + "&end_id=0";
+                                GachaLinkCache_String = result;
+                                Logging.Write("The gacha link was found.", 0);
+                                GetCache.IsEnabled = true;
+                            }
+                            else
+                            {
+                                Logging.Write("The gacha link was not found.", 1);
+                            }
+                        }
+                    }
+                    catch (FileNotFoundException)
+                    {
+                        Logging.Write("The cache file was not found.", 1);
+                    }
+                    catch (IOException ex)
+                    {
+                        Logging.Write("An error occurred while reading the file: " + ex.Message, 1);
+                    }
+                }
+            }
         }
 
         private FiddlerCoreStartupSettings startupSettings;
         private Proxy oProxy;
-
 
         public async Task StartAsync()
         {
@@ -99,6 +165,7 @@ namespace SRTools.Views
             if (oProxy != null)
             {
                 oProxy.Dispose();
+                Logging.Write("Stopped Proxy", 0);
             }
         }
 
@@ -173,12 +240,33 @@ namespace SRTools.Views
         // 定时器回调函数，检查进程是否正在运行
         private void CheckProcess(DispatcherQueueTimer timer, object e)
         {
-            if (isProxyRunning)
+            if (isProxyRunning || GachaLinkCache_String != null)
             {
                 ProxyButton.IsChecked = true;
-                // 进程正在运行
-                if (GachaLink_String != null && GachaLink_String.Contains("getGachaLog"))
+                if ((GachaLinkCache_String != null && GachaLinkCache_String.Contains("getGachaLog")))
+                { 
+                    // 进程正在运行
+                    gacha_status.Text = GachaLinkCache_String;
+                    GachaLink.Title = "获取到抽卡记录地址";
+                    GachaLink.Subtitle = "正在获取API信息,请不要退出...";
+                    GachaLink.IsOpen = true;
+                    ProxyButton.IsEnabled = false;
+                    Stop();
+                    Logging.Write("Get GachaLink Finish!", 0);
+                    ProxyButton.IsChecked = false;
+                    DataPackage dataPackage = new DataPackage();
+                    dataPackage.SetText(GachaLinkCache_String);
+                    Logging.Write("Writing GachaLink in Clipboard...", 0);
+                    Clipboard.SetContent(dataPackage);
+                    dispatcherTimer.Stop();
+                    Logging.Write("Loading Gacha Data...", 0);
+                    gacha_status.Text = "正在获取API信息,请不要退出...";
+                    LoadDataAsync(GachaLinkCache_String);
+                    GachaLinkCache_String = null;
+                }
+                else if (GachaLink_String != null && GachaLink_String.Contains("getGachaLog"))
                 {
+                    // 进程正在运行
                     gacha_status.Text = GachaLink_String;
                     GachaLink.Title = "获取到抽卡记录地址";
                     GachaLink.Subtitle = "正在获取API信息,请不要退出...";
@@ -206,28 +294,51 @@ namespace SRTools.Views
 
         private async void LoadDataAsync(String url)
         {
+            ProxyButton.IsEnabled = false;
+            GetCache.IsEnabled = false;
+            ExportSRGF.IsEnabled = false;
+            ImportSRGF.IsEnabled = false;
+
+            gacha_status.Text = "正在获取角色池";
             var char_records = await new GachaRecords().GetAllGachaRecordsAsync(url, null,"11");
+            gacha_status.Text = "正在获取光锥池";
             var light_records = await new GachaRecords().GetAllGachaRecordsAsync(url, null,"12");
+            gacha_status.Text = "正在获取新手池";
             var newbie_records = await new GachaRecords().GetAllGachaRecordsAsync(url, null, "2");
+            gacha_status.Text = "正在获取常驻池";
             var regular_records = await new GachaRecords().GetAllGachaRecordsAsync(url, null, "1");
-            var folder = KnownFolders.DocumentsLibrary;
-            var srtoolsFolder = await folder.CreateFolderAsync("JSG-LLC\\SRTools", CreationCollisionOption.OpenIfExists);
-            var char_gachaFile = await srtoolsFolder.CreateFileAsync("GachaRecords_Character.ini", CreationCollisionOption.OpenIfExists);
-            var light_gachaFile = await srtoolsFolder.CreateFileAsync("GachaRecords_LightCone.ini", CreationCollisionOption.OpenIfExists);
-            var newbie_gachaFile = await srtoolsFolder.CreateFileAsync("GachaRecords_Newbie.ini", CreationCollisionOption.OpenIfExists);
-            var regular_gachaFile = await srtoolsFolder.CreateFileAsync("GachaRecords_Regular.ini", CreationCollisionOption.OpenIfExists);
-            var char_serializedList = JsonConvert.SerializeObject(char_records);//获取到的数据
-            var light_serializedList = JsonConvert.SerializeObject(light_records);//获取到的数据
-            var newbie_serializedList = JsonConvert.SerializeObject(newbie_records);//获取到的数据
-            var regular_serializedList = JsonConvert.SerializeObject(regular_records);//获取到的数据
-            Logging.Write("正在获取API信息,请不要退出... | 正在获取角色池...", 0);
-            DataChange(char_serializedList,char_gachaFile);
-            Logging.Write("正在获取API信息,请不要退出... | 正在获取光锥池...", 0);
-            DataChange(light_serializedList,light_gachaFile);
-            Logging.Write("正在获取API信息,请不要退出... | 正在获取新手池...", 0);
-            DataChange(newbie_serializedList,newbie_gachaFile);
-            Logging.Write("正在获取API信息,请不要退出... | 正在获取常驻池...", 0);
-            DataChange(regular_serializedList,regular_gachaFile);
+            if (char_records != null && char_records.Count > 0)
+            {
+                if (char_records[0].Uid.Length != 9)
+                {
+                    Logging.Write("GachaLinkUID=" + char_records[0].Uid, 1);
+                    gacha_status.Text = "获取API信息出现问题，可能是抽卡链接已过期，请重新获取";
+                    GachaLink.IsOpen = false;
+                }
+                else 
+                {
+                    var folder = KnownFolders.DocumentsLibrary;
+                    var srtoolsFolder = await folder.CreateFolderAsync("JSG-LLC\\SRTools", CreationCollisionOption.OpenIfExists);
+                    var char_gachaFile = await srtoolsFolder.CreateFileAsync("GachaRecords_Character.ini", CreationCollisionOption.OpenIfExists);
+                    var light_gachaFile = await srtoolsFolder.CreateFileAsync("GachaRecords_LightCone.ini", CreationCollisionOption.OpenIfExists);
+                    var newbie_gachaFile = await srtoolsFolder.CreateFileAsync("GachaRecords_Newbie.ini", CreationCollisionOption.OpenIfExists);
+                    var regular_gachaFile = await srtoolsFolder.CreateFileAsync("GachaRecords_Regular.ini", CreationCollisionOption.OpenIfExists);
+                    var char_serializedList = JsonConvert.SerializeObject(char_records);//获取到的数据
+                    var light_serializedList = JsonConvert.SerializeObject(light_records);//获取到的数据
+                    var newbie_serializedList = JsonConvert.SerializeObject(newbie_records);//获取到的数据
+                    var regular_serializedList = JsonConvert.SerializeObject(regular_records);//获取到的数据
+                    Logging.Write("正在获取API信息,请不要退出... | 正在获取角色池...", 0);
+                    DataChange(char_serializedList, char_gachaFile);
+                    Logging.Write("正在获取API信息,请不要退出... | 正在获取光锥池...", 0);
+                    DataChange(light_serializedList, light_gachaFile);
+                    Logging.Write("正在获取API信息,请不要退出... | 正在获取新手池...", 0);
+                    DataChange(newbie_serializedList, newbie_gachaFile);
+                    Logging.Write("正在获取API信息,请不要退出... | 正在获取常驻池...", 0);
+                    DataChange(regular_serializedList, regular_gachaFile);
+                }
+            }
+            ProxyButton.IsEnabled = true;
+            ExportSRGF.IsEnabled = true;
         }
 
         private async void DataChange(String serializedList, StorageFile gachaFile) 
@@ -263,7 +374,6 @@ namespace SRTools.Views
             {
                 await FileIO.WriteTextAsync(gachaFile, serializedList);
             }
-            localSettings.Values["Gacha_Data"] = "1";
             GachaLink.IsOpen = false;
             gacha_status.Text = "API获取完成";
             gachaNav.Visibility = Visibility.Visible;
@@ -281,14 +391,13 @@ namespace SRTools.Views
         {
             ImportSRGF importSRGF = new ImportSRGF();
             await importSRGF.Main();
-            gachaNav.Visibility = Visibility.Visible;
             ImportSRGF.IsEnabled = false;
-            localSettings.Values["Gacha_Data"] = "1";
+            LoadData();
         }
 
-        private void Debug1_Click(object sender, RoutedEventArgs e)
+        private void ImportCache_Click(object sender, RoutedEventArgs e)
         {
-
+            CheckProcess(null, null);
         }
 
 

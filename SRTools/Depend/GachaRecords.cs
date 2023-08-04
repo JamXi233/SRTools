@@ -10,6 +10,9 @@ using System.Xml.Linq;
 using Newtonsoft.Json.Linq;
 using static Vanara.PInvoke.User32.RAWINPUT;
 using Newtonsoft.Json;
+using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml;
+using SRTools.Views;
 
 namespace SRTools.Depend
 {

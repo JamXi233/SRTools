@@ -21,10 +21,60 @@
                 </NavigationView.Resources>
 
                 <NavigationView.MenuItems>
-                    <NavigationViewItem Content="首页" Icon="Home" Tag="home" IsSelected="True" />
-                    <NavigationViewItem Content="开始游戏" Icon="Play" Tag="startgame"/>
-                    <NavigationViewItem Content="抽卡记录" Icon="SolidStar" Tag="gacha"/>
+                    <NavigationViewItemHeader Content="启动器"/>
+                    <NavigationViewItem Content="首页" Tag="home" IsSelected="True">
+                        <NavigationViewItem.Icon>
+                            <FontIcon FontFamily="Segoe Fluent Icons" Glyph="&#xE80F;"/>
+                        </NavigationViewItem.Icon>
+                    </NavigationViewItem>
+                    <NavigationViewItem Content="开始游戏" Tag="startgame">
+                        <NavigationViewItem.Icon>
+                            <FontIcon FontFamily="Segoe Fluent Icons" Glyph="&#xE768;"/>
+                        </NavigationViewItem.Icon>
+                    </NavigationViewItem>
+                    <NavigationViewItemHeader Content="工具箱"/>
+                    <NavigationViewItem Content="抽卡记录" Tag="gacha">
+                        <NavigationViewItem.Icon>
+                            <FontIcon FontFamily="Segoe Fluent Icons" Glyph="&#xe734;"/>
+                        </NavigationViewItem.Icon>
+                    </NavigationViewItem>
+                    <NavigationViewItem Content="状态信息(计划中)" Tag="info" SelectsOnInvoked="False" IsEnabled="False">
+                        <NavigationViewItem.Icon>
+                            <FontIcon FontFamily="Segoe Fluent Icons" Glyph="&#xf180;"/>
+                        </NavigationViewItem.Icon>
+                    </NavigationViewItem>
+                    <NavigationViewItem Content="活动时间表(计划中)" Tag="event" SelectsOnInvoked="False" IsEnabled="False">
+                        <NavigationViewItem.Icon>
+                            <FontIcon FontFamily="Segoe Fluent Icons" Glyph="&#xE787;"/>
+                        </NavigationViewItem.Icon>
+                    </NavigationViewItem>
+                    <NavigationViewItem Content="伤害计算器(待定)" Tag="calc" SelectsOnInvoked="False" IsEnabled="False">
+                        <NavigationViewItem.Icon>
+                            <FontIcon FontFamily="Segoe Fluent Icons" Glyph="&#xe8ef;"/>
+                        </NavigationViewItem.Icon>
+                    </NavigationViewItem>
+
                 </NavigationView.MenuItems>
+
+                <NavigationView.FooterMenuItems>
+
+                    <NavigationViewItem Content="账号管理(计划中)" Tag="account" SelectsOnInvoked="False" IsEnabled="False">
+                        <NavigationViewItem.Icon>
+                            <FontIcon FontFamily="Segoe Fluent Icons" Glyph="&#xe77b;"/>
+                        </NavigationViewItem.Icon>
+                    </NavigationViewItem>
+                    <NavigationViewItem Content="帮助文档" Tag="question">
+                        <NavigationViewItem.Icon>
+                            <FontIcon FontFamily="Segoe Fluent Icons" Glyph="&#xe897;" />
+                        </NavigationViewItem.Icon>
+                    </NavigationViewItem>
+                    <NavigationViewItem Content="赞助" Tag="donation">
+                        <NavigationViewItem.Icon>
+                            <ImageIcon Source="ms-appx:///Assets/Don_Icon.gif"/>
+                        </NavigationViewItem.Icon>
+                    </NavigationViewItem>
+                </NavigationView.FooterMenuItems>
+
 
                 <Frame x:Name="MainFrame"/>
 
@@ -108,7 +158,11 @@
             </StackPanel>
 
         </Grid>
-        <InfoBar x:Name="infoBar" IsOpen="False" Severity="Error" Title="" Message="" VerticalAlignment="Top" HorizontalAlignment="Right" Width="400" Height="auto" Margin="0 64 12 0"/>
+        <InfoBar x:Name="infoBar" IsOpen="False" Severity="Error" Title="" Message="" VerticalAlignment="Top" HorizontalAlignment="Right" Width="400" Height="auto" Margin="0 64 12 0">
+            <InfoBar.ActionButton>
+                <Button Content="打开文件夹" Click="ExpectionFolderOpen_Click"/>
+            </InfoBar.ActionButton>
+        </InfoBar>
     </Grid>
 
 </Window>

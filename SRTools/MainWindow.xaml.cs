@@ -21,6 +21,10 @@ using Microsoft.UI.Xaml.Media.Imaging;
 using System.Threading;
 using System.Security.AccessControl;
 using Spectre.Console;
+using Windows.System;
+using Windows.UI.Core;
+using Org.BouncyCastle.Asn1.X509;
+using Windows.Storage.AccessCache;
 
 namespace SRTools
 {
@@ -36,7 +40,7 @@ namespace SRTools
         private AppWindow appWindow;
         private AppWindowTitleBar titleBar;
         private SystemBackdrop backdrop;
-
+        string ExpectionFileName;
         string backgroundUrl = "";
 
         private const string KeyPath = "SRTools";
@@ -66,6 +70,7 @@ namespace SRTools
             InitializeMicaBackground();
             InitializeWindowProperties();
             BackgroundImage();
+            CleanUpdate();
 
             _getNetData = new GetNetData();
         }
@@ -253,7 +258,7 @@ namespace SRTools
             }
             catch (Exception ex)
             {
-                depend_Info.Text = ex.Message;
+                throw new Exception(ex.Message);
             }
 
             if (downloadResult)
@@ -352,7 +357,6 @@ namespace SRTools
         {
             NavigationViewItem item = args.SelectedItem as NavigationViewItem;
             string tag = item.Tag.ToString();
-            Type pageType = null;
             if (args.IsSettingsSelected)
             {
                 MainFrame.Navigate(typeof(AboutView));
@@ -362,22 +366,19 @@ namespace SRTools
                 switch (args.SelectedItemContainer.Tag.ToString())
                 {
                     case "home":
-                        // 导航到主页
                         MainFrame.Navigate(typeof(MainView));
                         break;
                     case "startgame":
-                        // 导航到启动游戏页
                         MainFrame.Navigate(typeof(StartGameView));
                         break;
                     case "gacha":
-                        // 导航到启动游戏页
-                        pageType = typeof(GachaView);
-                        GachaView gachaViewInstance = MainFrame.Content as GachaView;
-                        if (gachaViewInstance == null)
-                        {
-                            gachaViewInstance = new GachaView();
-                        }
-                        MainFrame.Navigate(pageType);
+                        MainFrame.Navigate(typeof(GachaView));
+                        break;
+                    case "question":
+                        MainFrame.Navigate(typeof(QuestionView));
+                        break;
+                    case "donation":
+                        MainFrame.Navigate(typeof(DonationView));
                         break;
                 }
             }
@@ -396,7 +397,13 @@ namespace SRTools
             public Data data { get; set; }
         }
 
-        private void OnUnhandledErrorDetected(object sender, Windows.ApplicationModel.Core.UnhandledErrorDetectedEventArgs e)
+        private void CleanUpdate() 
+        {
+            string folderPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "JSG-LLC", "Updates");
+            if (Directory.Exists(folderPath)) Directory.Delete(folderPath, true);
+        }
+
+        private async void OnUnhandledErrorDetected(object sender, Windows.ApplicationModel.Core.UnhandledErrorDetectedEventArgs e)
         {
             try
             {
@@ -404,13 +411,23 @@ namespace SRTools
             }
             catch (Exception ex)
             {
+                ExpectionFileName = string.Format("SRTools_Panic_{0:yyyyMMdd_HHmmss}.SRToolsPanic", DateTime.Now);
                 infoBar.IsOpen = true;
                 infoBar.Title = "严重错误";
-                infoBar.Message = ex.Message;
-                AnsiConsole.WriteException(ex,
-    ExceptionFormats.ShortenPaths | ExceptionFormats.ShortenTypes |
-    ExceptionFormats.ShortenMethods | ExceptionFormats.ShowLinks);
+                infoBar.Message = ex.Message.Trim()+"\n\n已生成错误报告\n如再次尝试仍会重现错误\n您可以到Github提交Issue";
+                AnsiConsole.WriteException(ex,ExceptionFormats.ShortenPaths | ExceptionFormats.ShortenTypes | ExceptionFormats.ShortenMethods | ExceptionFormats.ShowLinks);
+                await ExceptionSave.Write("应用程序:" + ex.Source+"\n错误标题:"+ex.Message + "\n堆栈跟踪:\n" + ex.StackTrace + "\n结束代码:" + ex.HResult, 1,ExpectionFileName);
             }
+        }
+
+        private async void ExpectionFolderOpen_Click(object sender, RoutedEventArgs e) 
+        {
+            StorageFolder folder = await KnownFolders.DocumentsLibrary.CreateFolderAsync("JSG-LLC\\Panic", CreationCollisionOption.OpenIfExists);
+            // 获取指定文件
+            StorageFile file = await folder.GetFileAsync(ExpectionFileName);
+            // 将文件添加到最近使用列表中
+            StorageApplicationPermissions.MostRecentlyUsedList.Add(file);
+            await Launcher.LaunchFolderAsync(folder, new FolderLauncherOptions { ItemsToSelect = { file } });
         }
     }
 }

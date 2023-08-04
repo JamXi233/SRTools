@@ -5,7 +5,7 @@ namespace SRTools.Depend
 {
     internal class Logging
     {
-        public static void Write(string Info, int Mode, string ProgramName = null)
+        public static void Write(string Info, int Mode = 0, string ProgramName = null)
         {
             if (Mode == 0) { AnsiConsole.Write(new Markup("[bold White][[INFO]][/]"));Console.WriteLine(Info); }
             else if (Mode == 1) { AnsiConsole.Write(new Markup("[bold Yellow][[WARN]][/]")); Console.WriteLine(Info); }
