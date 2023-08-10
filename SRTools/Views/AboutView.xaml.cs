@@ -631,10 +631,14 @@ namespace SRTools.Views
             var hwnd = WinRT.Interop.WindowNative.GetWindowHandle(window);
             WinRT.Interop.InitializeWithWindow.Initialize(picker, hwnd);
             var file = await picker.PickSingleFileAsync();
-            string userDocumentsFolderPath = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
-            Task.Run(() => Clear_AllData_NoClose(null, null)).Wait();
-            Task.Run(() => ZipFile.ExtractToDirectory(file.Path, userDocumentsFolderPath + "\\JSG-LLC\\SRTools\\")).Wait();
-            Application.Current.Exit();
+            if (file != null) 
+            {
+                string userDocumentsFolderPath = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+                Task.Run(() => Clear_AllData_NoClose(null, null)).Wait();
+                Task.Run(() => ZipFile.ExtractToDirectory(file.Path, userDocumentsFolderPath + "\\JSG-LLC\\SRTools\\")).Wait();
+                Application.Current.Exit();
+            }
+            
         }
 
         private void Restore_Data_Cancel(TeachingTip e, object o)

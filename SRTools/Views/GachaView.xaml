@@ -20,8 +20,8 @@
                 <ToggleButton x:Name="ProxyButton" Content="开启代理" Click="ProxyButton_Click" Margin="0 0 0 8"/>
                 <Button x:Name="GetCache"  Content="从缓存导入" Click="ImportCache_Click" IsEnabled="False" Margin="8 0 0 8"/>
                 <Button x:Name="ExportSRGF" Content="导出记录" Click="ExportSRGF_Click" IsEnabled="False" Margin="8 0 0 8"/>
-                <Button x:Name="ImportSRGF" Content="导入记录" Click="ImportSRGF_Click" IsEnabled="true" Margin="8 0 0 8"/>
-
+                <Button x:Name="ImportSRGF" Content="导入记录" Click="ImportSRGF_Click" IsEnabled="False" Margin="8 0 0 8"/>
+                <Button x:Name="ClearGacha" Content="清空记录" FontWeight="Bold" Foreground="Red" Click="ClearGacha_Click" IsEnabled="False" Margin="8 0 0 8"/>
             </StackPanel>
             <StackPanel HorizontalAlignment="Stretch" Orientation="Horizontal">
                 <TextBlock Text="状态:" />
@@ -29,9 +29,16 @@
             </StackPanel>
         </StackPanel>
 
-        <Grid Grid.Row="1" HorizontalAlignment="Stretch">
 
-            <NavigationView x:Name="gachaNav" Grid.Column="0" PaneDisplayMode="Top" IsSettingsVisible="False" IsBackButtonVisible="Collapsed" SelectionChanged="NavView_SelectionChanged" Visibility="Collapsed">
+        <Grid Grid.Row="1" HorizontalAlignment="Stretch">
+            <Grid x:Name="loadGachaProgress" Visibility="Visible" Width="120" Height="120" CornerRadius="12" Background="{ThemeResource SystemControlAcrylicElementMediumHighBrush}">
+                <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+                    <ProgressRing Visibility="Visible" x:Name="loadGachaProgressRing"/>
+                    <FontIcon Visibility="Visible" x:Name="loadGachaFailedIcon" FontFamily="Segoe Fluent Icons" Glyph="&#xeb90;"/>
+                    <TextBlock Visibility="Visible" x:Name="loadGachaText" Text="等待刷新列表" Margin="0 12 0 0"/>
+                </StackPanel>
+            </Grid>
+            <NavigationView x:Name="gachaNav" Grid.Column="0" PaneDisplayMode="Top" IsSettingsVisible="False" IsBackButtonVisible="Collapsed" SelectionChanged="NavView_SelectionChanged" Visibility="Visible">
                 <NavigationView.MenuItems>
                     <NavigationViewItem x:Name="CharacterGachaSelect" Content="角色池" Tag="CharacterGacha" IsEnabled="False" />
                     <NavigationViewItem x:Name="LightConeGachaSelect" Content="光锥池" Tag="LightConeGacha" IsEnabled="False"/>
@@ -54,5 +61,6 @@
             </TeachingTip.IconSource>
         </TeachingTip>
         <InfoBar x:Name="infoBar" IsOpen="False" Severity="Error" Title="" Message="" />
+
     </Grid>
 </Page>

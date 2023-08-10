@@ -126,7 +126,7 @@
                     <TextBlock Style="{ThemeResource BodyStrongTextBlockStyle}" Margin="0,8,0,4" HorizontalAlignment="Left">
       <Hyperlink NavigateUri="https://github.com/JamXi233/SRTools" UnderlineStyle="None"><Run Text="贡献代码"/></Hyperlink>
                     </TextBlock>
-                    <StackPanel x:Name="debug_Mode" Margin="0 12 0 0" Visibility="Visible">
+                    <StackPanel x:Name="debug_Mode" Margin="0 12 0 0" Visibility="Collapsed">
                         <TextBlock Text="Debug设置" FontSize="16" FontWeight="Bold" Margin="0 0 0 10"/>
                         <Button x:Name="debug_Panic" Click="Debug_Panic_Click" Content="Debug_崩溃" Margin="0 0 0 10"/>
                         <TextBlock x:Name="debug_Message" Text="处于Debug模式，控制台无法关闭" Margin="0 0 0 0"/>

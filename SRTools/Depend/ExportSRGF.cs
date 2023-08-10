@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using Windows.Storage.Pickers;
 using Windows.Storage;
 using Windows.ApplicationModel;
+using SRTools.Views;
 
 namespace SRTools.Depend
 {
@@ -67,7 +68,7 @@ namespace SRTools.Depend
             return JsonSerializer.Serialize(this);
         }
 
-        public async void ExportAll() 
+        public async Task<bool> ExportAll() 
         {
             // 定义一个空的列表，用于存储所有的ExportSRGF.OItem对象
             var oitems = new List<ExportSRGF.OItem>();
@@ -75,14 +76,19 @@ namespace SRTools.Depend
             // 读取每个文件的内容，并将其反序列化为一个List<ExportSRGF.OItem>对象
             var srtoolsFolder = await KnownFolders.DocumentsLibrary.GetFolderAsync("JSG-LLC\\SRTools");
             var files = new List<string> { "GachaRecords_Character.ini", "GachaRecords_LightCone.ini", "GachaRecords_Newbie.ini", "GachaRecords_Regular.ini" };
+
             foreach (var fileName in files)
             {
-                var file1 = await srtoolsFolder.GetFileAsync(fileName);
-                var json1 = await FileIO.ReadTextAsync(file1);
-                var list = JsonSerializer.Deserialize<List<ExportSRGF.OItem>>(json1);
+                var file1 = await srtoolsFolder.TryGetItemAsync(fileName) as StorageFile;
 
-                // 将每个List<ExportSRGF.OItem>对象中的所有元素添加到oitems列表中
-                oitems.AddRange(list);
+                if (file1 != null && file1.IsAvailable)
+                {
+                    var json1 = await FileIO.ReadTextAsync(file1);
+                    var list = JsonSerializer.Deserialize<List<ExportSRGF.OItem>>(json1);
+
+                    // 将每个List<ExportSRGF.OItem>对象中的所有元素添加到oitems列表中
+                    oitems.AddRange(list);
+                }
             }
 
             // 序列化oitems列表为JSON字符串
@@ -138,6 +144,11 @@ namespace SRTools.Depend
             {
                 // 将字符串写入文件
                 await FileIO.WriteTextAsync(file, json);
+                return true;
+            }
+            else 
+            {
+                return false;
             }
         }
     }

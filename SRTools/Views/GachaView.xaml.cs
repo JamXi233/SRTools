@@ -26,6 +26,7 @@ namespace SRTools.Views
         public bool isProxyRunning;
         public String GachaLink_String;
         public String GachaLinkCache_String;
+        public bool isClearGachaSaved;
 
         BCCertMaker.BCCertMaker certProvider = new BCCertMaker.BCCertMaker();
         private DispatcherQueueTimer dispatcherTimer;
@@ -45,18 +46,31 @@ namespace SRTools.Views
             GetCacheGacha();
         }
 
-        private void LoadData() 
+        private async void LoadData()
         {
+            gachaNav.Visibility = Visibility.Collapsed;
+            loadGachaProgress.Visibility = Visibility.Visible;
+            loadGachaFailedIcon.Visibility = Visibility.Collapsed;
+            loadGachaProgressRing.Visibility = Visibility.Visible;
+            loadGachaText.Text = "等待刷新列表";
+            CharacterGachaSelect.IsEnabled = false;
+            LightConeGachaSelect.IsEnabled = false;
+            NewbieGachaSelect.IsEnabled = false;
+            RegularGachaSelect.IsEnabled = false;
+            await Task.Delay(200);
             string uDFP = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
             string FileFolder = "\\JSG-LLC\\SRTools\\GachaRecords_Character.ini";
             string FileFolder2 = "\\JSG-LLC\\SRTools\\GachaRecords_LightCone.ini";
             string FileFolder3 = "\\JSG-LLC\\SRTools\\GachaRecords_Newbie.ini";
             string FileFolder4 = "\\JSG-LLC\\SRTools\\GachaRecords_Regular.ini";
+
             if (File.Exists(uDFP + FileFolder) || File.Exists(uDFP + FileFolder2) || File.Exists(uDFP + FileFolder3) || File.Exists(uDFP + FileFolder4))
             {
+                ClearGacha.IsEnabled = true;
                 ExportSRGF.IsEnabled = true;
                 ImportSRGF.IsEnabled = false;
                 gachaNav.Visibility = Visibility.Visible;
+                loadGachaProgress.Visibility = Visibility.Collapsed;
                 localSettings.Values["Gacha_Data"] = "1";
                 if (File.Exists(uDFP + FileFolder)) CharacterGachaSelect.IsEnabled = true;
                 if (File.Exists(uDFP + FileFolder2)) LightConeGachaSelect.IsEnabled = true;
@@ -74,12 +88,20 @@ namespace SRTools.Views
             }
             else
             {
+                loadGachaProgress.Visibility = Visibility.Visible;
+                loadGachaFailedIcon.Visibility = Visibility.Visible;
+                loadGachaProgressRing.Visibility = Visibility.Collapsed;
+                loadGachaText.Text = "无抽卡记录";
+                ClearGacha.IsEnabled = false;
+                ExportSRGF.IsEnabled = false;
+                ImportSRGF.IsEnabled = true;
                 gachaNav.Visibility = Visibility.Collapsed;
                 localSettings.Values["Gacha_Data"] = "0";
+                Logging.Write("无抽卡记录");
             }
         }
 
-        private async void GetCacheGacha() 
+        private async void GetCacheGacha()
         {
             if (localSettings.Values.ContainsKey("Config_GamePath"))
             {
@@ -95,8 +117,8 @@ namespace SRTools.Views
                     HttpResponseMessage response = await client.GetAsync(url);
                     if (response.IsSuccessStatusCode)
                     {
-                        directoryPath = directoryPath+await response.Content.ReadAsStringAsync()+"\\Cache\\Cache_Data\\data_2";
-                        Logging.Write("Getted Version:"+ await response.Content.ReadAsStringAsync(), 0);
+                        directoryPath = directoryPath + await response.Content.ReadAsStringAsync() + "\\Cache\\Cache_Data\\data_2";
+                        Logging.Write("Getted Version:" + await response.Content.ReadAsStringAsync(), 0);
                     }
                     string searchString = "https://api-takumi.mihoyo.com/common/gacha_record/api/getGachaLog";
 
@@ -110,13 +132,21 @@ namespace SRTools.Views
 
                             // Find the search string in the file content
                             int index = fileContent.IndexOf(searchString);
-                            if (index >= 0)
+                            int lastIndex = -1;
+
+                            while (index >= 0)
+                            {
+                                lastIndex = index;
+                                index = fileContent.IndexOf(searchString, index + 1);
+                            }
+
+                            if (lastIndex >= 0)
                             {
                                 // If the search string is found, output the entire string
-                                int endIndex = fileContent.IndexOf("&end_id=0", index);
-                                string result = fileContent.Substring(index, endIndex - index) + "&end_id=0";
+                                int endIndex = fileContent.IndexOf("&end_id=0", lastIndex);
+                                string result = fileContent.Substring(lastIndex, endIndex - lastIndex) + "&end_id=0";
                                 GachaLinkCache_String = result;
-                                Logging.Write("The gacha link was found.", 0);
+                                Logging.Write("The last occurrence of the gacha link was found.", 0);
                                 GetCache.IsEnabled = true;
                             }
                             else
@@ -428,6 +458,50 @@ namespace SRTools.Views
                         gachaFrame.Navigate(typeof(NewbieGachaView));
                         break;
                 }
+            }
+        }
+
+        private async void ClearGacha_Click(object sender, RoutedEventArgs e)
+        {
+            ContentDialog dialog = new ContentDialog();
+
+            // XamlRoot must be set in the case of a ContentDialog running in a Desktop app
+            dialog.XamlRoot = this.XamlRoot;
+            dialog.Style = Application.Current.Resources["DefaultContentDialogStyle"] as Microsoft.UI.Xaml.Style;
+            dialog.Title = "确定要清空您的抽卡记录吗？";
+            dialog.Content = "确保您已经做好SRGF兼容格式或SRTools的备份";
+            dialog.PrimaryButtonText = "备份后删除";
+            dialog.SecondaryButtonText = "直接删除";
+            dialog.CloseButtonText = "取消";
+            dialog.DefaultButton = ContentDialogButton.Primary;
+            // 设置主按钮的点击事件处理程序
+            dialog.PrimaryButtonClick += async (dialogSender, dialogArgs) =>
+            {
+                ExportSRGF exportSRGF = new ExportSRGF();
+                if (await exportSRGF.ExportAll()) { ClearGacha_Run(); LoadData(); }
+            };
+
+            // 设置次要按钮的点击事件处理程序
+            dialog.SecondaryButtonClick += async (dialogSender, dialogArgs) =>
+            {
+                ClearGacha_Run();
+                LoadData();
+            };
+
+            var result = await dialog.ShowAsync();
+        }
+
+        private void ClearGacha_Run()
+        {
+            string directoryPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "JSG-LLC", "SRTools");
+
+            // 获取目录中以 "GachaRecords_" 开头的所有文件
+            string[] filesToDelete = Directory.GetFiles(directoryPath, "GachaRecords_*");
+
+            // 遍历文件列表并删除每个文件
+            foreach (string filePath in filesToDelete)
+            {
+                File.Delete(filePath);
             }
         }
 
