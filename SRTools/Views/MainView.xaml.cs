@@ -77,7 +77,7 @@ namespace SRTools.Views
             }
             BackgroundImage.Source = backgroundImage;
 
-            // 设置按钮图标
+            /*// 设置按钮图标
             Logging.Write("Getting Button Image: " + iconUrl, 0);
             BitmapImage iconImage = new BitmapImage();
             using (var stream = await new HttpClient().GetStreamAsync(iconUrl))
@@ -87,7 +87,7 @@ namespace SRTools.Views
                 memStream.Position = 0;
                 var randomAccessStream = memStream.AsRandomAccessStream();
                 await iconImage.SetSourceAsync(randomAccessStream);
-            }
+            }*/
 
             AboutView aboutView = new AboutView();
             int result = await aboutView.OnGetUpdateLatestReleaseInfo("SRToolsHelper", "Depend");
@@ -99,7 +99,7 @@ namespace SRTools.Views
                 infoBar.IsClosable = false;
             }
 
-            IconImageBrush.ImageSource = iconImage;
+            //IconImageBrush.ImageSource = iconImage;
             loadRing.Visibility = Visibility.Collapsed;
         }
 
