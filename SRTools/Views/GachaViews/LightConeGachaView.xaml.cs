@@ -1,9 +1,29 @@
-﻿using System;
+﻿// Copyright (c) 2021-2024, JamXi JSG-LLC.
+// All rights reserved.
+
+// This file is part of SRTools.
+
+// SRTools is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+
+// SRTools is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+
+// You should have received a copy of the GNU General Public License
+// along with SRTools.  If not, see <http://www.gnu.org/licenses/>.
+
+// For more information, please refer to <https://www.gnu.org/licenses/gpl-3.0.html>
+
+using System;
 using Microsoft.UI.Xaml.Controls;
 using SRTools.Depend;
 using System.Linq;
 using Windows.Storage;
-using System.Diagnostics;
+using SRTools.Views.ToolViews;
 
 namespace SRTools.Views.GachaViews
 {
@@ -19,8 +39,9 @@ namespace SRTools.Views.GachaViews
 
         private async void LoadData()
         {
+            string selectedUID = GachaView.GetSelectedUid();
             var folder = KnownFolders.DocumentsLibrary;
-            var srtoolsFolder = folder.GetFolderAsync("JSG-LLC\\SRTools").AsTask().GetAwaiter().GetResult();
+            var srtoolsFolder = folder.GetFolderAsync("JSG-LLC\\SRTools\\GachaRecords\\" + selectedUID).AsTask().GetAwaiter().GetResult();
             var settingsFile = srtoolsFolder.GetFileAsync("GachaRecords_LightCone.ini").AsTask().GetAwaiter().GetResult();
             var GachaRecords = FileIO.ReadTextAsync(settingsFile).AsTask().GetAwaiter().GetResult();
             var records = await new GachaRecords().GetAllGachaRecordsAsync(null, GachaRecords);
@@ -99,10 +120,32 @@ namespace SRTools.Views.GachaViews
                 };
                 MyStackPanel.Children.Add(textBlock);
             }
-            MyStackPanel.Children.Add(new TextBlock { Text = $"距离上一个5星已经抽了" + RankType5 + "发" });
-            MyStackPanel.Children.Add(new TextBlock { Text = $"距离上一个4星已经抽了" + RankType4 + "发" });
+            // 计算概率
+            double upcomingProbability5 = CalculateProbability(RankType5, 80, 0.8, 1.87);
+            double upcomingProbability4 = CalculateProbability(RankType4, 10, 6.6, 14.8);
+
+
+            MyStackPanel.Children.Add(new TextBlock { Text = $"距离上一个五星已经抽了" + RankType5 + "发" });
+            MyStackPanel.Children.Add(new TextBlock { Text = $"距离上一个四星已经抽了" + RankType4 + "发" });
+            // 显示在 UI 上
+            MyStackPanel.Children.Add(new TextBlock { Text = $"下次五星光锥的概率: {upcomingProbability5:F2}%" });
+            MyStackPanel.Children.Add(new TextBlock { Text = $"下次四星光锥/角色的概率: {upcomingProbability4:F2}%" });
+
+
             MyListView.ItemsSource = records;
             //gacha_status.Text = "已加载本地缓存";
+        }
+
+
+        private double CalculateProbability(int pulls, int maxPulls, double baseRate, double totalRate)
+        {
+            if (pulls >= maxPulls)
+                return 100.0;
+            else
+            {
+                double incrementRate = (totalRate - baseRate) / maxPulls;
+                return baseRate + incrementRate * pulls;
+            }
         }
 
     }

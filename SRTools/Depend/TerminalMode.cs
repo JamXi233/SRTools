@@ -1,16 +1,31 @@
-﻿using Microsoft.UI.Xaml;
-using Microsoft.UI.Xaml.Controls;
+﻿// Copyright (c) 2021-2024, JamXi JSG-LLC.
+// All rights reserved.
+
+// This file is part of SRTools.
+
+// SRTools is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+
+// SRTools is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+
+// You should have received a copy of the GNU General Public License
+// along with SRTools.  If not, see <http://www.gnu.org/licenses/>.
+
+// For more information, please refer to <https://www.gnu.org/licenses/gpl-3.0.html>
+
+using Microsoft.UI.Xaml;
 using Spectre.Console;
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
 using System.Runtime.InteropServices;
-using System.Text;
 using System.Threading.Tasks;
 using Windows.Storage.Pickers;
 using Windows.Storage;
-using SRTools.Views;
 using System.IO;
 
 namespace SRTools.Depend
@@ -24,65 +39,88 @@ namespace SRTools.Depend
         [DllImport("user32.dll")]
         private static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
 
+        [DllImport("user32.dll")]
+        private static extern int GetWindowLong(IntPtr hWnd, int nIndex);
+
+        private const int GWL_STYLE = -16;
+        private const int WS_VISIBLE = 0x10000000;
+
         private const int SW_HIDE = 0;
         private const int SW_SHOW = 5;
 
         private Window m_window;
-
-        ApplicationDataContainer localSettings = ApplicationData.Current.LocalSettings;
+        private ApplicationDataContainer localSettings = ApplicationData.Current.LocalSettings;
 
         public static void ShowConsole()
         {
-            var handle = GetConsoleWindow();
-            ShowWindow(handle, SW_SHOW);
+            IntPtr handle = GetConsoleWindow();
+            if (handle != IntPtr.Zero)
+            {
+                ShowWindow(handle, SW_SHOW);
+            }
         }
 
         public static void HideConsole()
         {
-            var handle = GetConsoleWindow();
-            ShowWindow(handle, SW_HIDE);
+            IntPtr handle = GetConsoleWindow();
+            if (handle != IntPtr.Zero)
+            {
+                ShowWindow(handle, SW_HIDE);
+            }
+        }
+
+        public static bool ConsoleStatus()
+        {
+            IntPtr handle = GetConsoleWindow();
+            if (handle == IntPtr.Zero)
+            {
+                return false;
+            }
+
+            int style = GetWindowLong(handle, GWL_STYLE);
+            return (style & WS_VISIBLE) != 0;
         }
 
         public async Task<bool> Init(int Mode = 0, int SafeMode = 0, String PanicMessage = "Null",String OtherMessage = null)
         {
             var currentProcess = Process.GetCurrentProcess();
             var hWnd = currentProcess.MainWindowHandle;
-            Console.Title = "SRTools TerminalMode";
+            Console.Title = "SRTools 𝑻𝒆𝒓𝒎𝒊𝒏𝒂𝒍";
             Console.Clear();
             if (SafeMode == 0) { 
                 if (Mode == 1)
                 {
-                    var list = new[] { "选择游戏路径", "抽卡分析", "设置", "[red]退出控制台模式[/]", "[bold red]退出SRTools[/]", };
-                    if (localSettings.Values.ContainsKey("Config_GamePath"))
+                    var list = new[] { "选择游戏路径", "抽卡分析", "设置", "[red]退出Terminal模式[/]", "[bold red]退出SRTools[/]", };
+                    if (AppDataController.GetGamePath != null)
                     {
                         var value = localSettings.Values["Config_GamePath"] as string;
                         if (!string.IsNullOrEmpty(value) && value.Contains("Null"))
                         {
-                            list = new[] { "选择游戏路径", "[Cyan]显示主界面[/]", "[red]退出控制台模式[/]", "[bold red]退出SRTools[/]", };
+                            list = new[] { "选择游戏路径", "[Cyan]显示主界面[/]", "[red]退出Terminal模式[/]", "[bold red]退出SRTools[/]", };
                         }
                         else
                         {
-                            list = new[] { "[bold green]开启游戏(120FPS)[/]", "[bold yellow]清除游戏路径[/]", "[Cyan]显示主界面[/]", "[red]退出控制台模式[/]", "[bold red]退出SRTools[/]" };
+                            list = new[] { "[bold green]开启游戏[/]", "[bold yellow]清除游戏路径[/]", "[Cyan]显示主界面[/]", "[red]退出Terminal模式[/]", "[bold red]退出SRTools[/]" };
                         }
                     }
                     else
                     {
-                        list = new[] { "选择游戏路径", "[Cyan]显示主界面[/]", "[red]退出控制台模式[/]", "[bold red]退出SRTools[/]", };
+                        list = new[] { "选择游戏路径", "[Cyan]显示主界面[/]", "[red]退出Terminal模式[/]", "[bold red]退出SRTools[/]", };
                     }
                     var select = AnsiConsole.Prompt(
                             new SelectionPrompt<string>()
-                                .Title("[bold green]SRTools[/] 控制台模式")
+                                .Title("[bold green]SRTools[/] Terminal模式")
                                 .PageSize(10)
                                 .AddChoices(list));
-                    StartGameView startGameView = new StartGameView();
+                    GameStartUtil gameStartUtil = new GameStartUtil();
                     switch (select)
                     {
-                        case "[bold green]开启游戏(120FPS)[/]":
-                            startGameView.StartGame(null, null);
+                        case "[bold green]开启游戏[/]":
+                            gameStartUtil.StartGame();
                             await Init(1);
                             return false;
                         case "[bold yellow]清除游戏路径[/]":
-                            startGameView.RMGameLocation(null, null);
+                            AppDataController.RMGamePath();
                             await Init(1);
                             return false;
                         case "[bold red]退出SRTools[/]":
@@ -91,7 +129,7 @@ namespace SRTools.Depend
                         case "选择游戏路径":
                             SelectGame();
                             return false;
-                        case "[red]退出控制台模式[/]":
+                        case "[red]退出Terminal模式[/]":
                             localSettings.Values["Config_TerminalMode"] = 0;
                             m_window = new MainWindow();
                             m_window.Activate();
@@ -112,7 +150,7 @@ namespace SRTools.Depend
                 Console.Clear();
                 Logging.Write("[red]错误问题：[/]" + PanicMessage,2);
                 Logging.Write("其他信息：" + OtherMessage,2);
-                var list = new[] { "检查本地设置参数", "[red]清空所有配置文件[/]", "[bold red]退出SRTools[/]" };
+                var list = new[] { "[red]清空所有配置文件[/]", "[bold red]退出SRTools[/]" };
                 var select = AnsiConsole.Prompt(
                         new SelectionPrompt<string>()
                             .Title("\n[bold red]SRTools 安全模式[/]")
@@ -120,10 +158,6 @@ namespace SRTools.Depend
                             .AddChoices(list));
                 switch (select)
                 {
-                    case "检查本地设置参数":
-                        CheckLocalSetting();
-                        await Init(0,1, PanicMessage ,"本地设置参数检查完成");
-                        return false;
                     case "[red]清空所有配置文件[/]":
                         Clear_AllData(null,null);
                         return false;
@@ -144,9 +178,10 @@ namespace SRTools.Depend
             var window = new Window();
             var hwnd = WinRT.Interop.WindowNative.GetWindowHandle(window);
             WinRT.Interop.InitializeWithWindow.Initialize(picker, hwnd);
-            Console.Clear();
             var fileselect = 2;
-            Logging.Write("选择游戏文件\n通常位于(游戏根目录\\Game\\StarRail.exe)", 0);
+            Console.Clear();
+            Logging.Write("选择游戏文件", 0);
+            Logging.Write("通常位于(游戏根目录\\Game\\StarRail.exe)", 0);
             await AnsiConsole.Status().StartAsync("等待选择文件...", async ctx =>
             {
                 var file = await picker.PickSingleFileAsync();
@@ -169,44 +204,10 @@ namespace SRTools.Depend
             }
         }
 
-        private void CheckLocalSetting() 
-        {
-            // 检查并设置 Config_GamePath
-            if (!localSettings.Values.ContainsKey("Config_GamePath"))
-            {
-                localSettings.Values["Config_GamePath"] = 0;
-            }
-
-            // 检查并设置 Config_UnlockFPS
-            if (!localSettings.Values.ContainsKey("Config_UnlockFPS"))
-            {
-                localSettings.Values["Config_UnlockFPS"] = 0;
-            }
-
-            // 检查并设置 Config_UpdateService
-            if (!localSettings.Values.ContainsKey("Config_UpdateService"))
-            {
-                localSettings.Values["Config_UpdateService"] = 0;
-            }
-
-            // 检查并设置 Gacha_Data
-            if (!localSettings.Values.ContainsKey("Gacha_Data"))
-            {
-                localSettings.Values["Gacha_Data"] = 0;
-            }
-
-            // 检查并设置 Config_TerminalMode
-            if (!localSettings.Values.ContainsKey("Config_TerminalMode"))
-            {
-                localSettings.Values["Config_TerminalMode"] = 0;
-            }
-        }
-
         public void Clear_AllData(object sender, RoutedEventArgs e)
         {
             string userDocumentsFolderPath = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
-            DeleteFolder(userDocumentsFolderPath + "\\JSG-LLC\\SRTools\\", "1");
-        }
+            DeleteFolder(userDocumentsFolderPath + "\\JSG-LLC\\SRTools\\", "1");        }
 
         private void Clear_AllData_NoClose(object sender, RoutedEventArgs e, string Close = "0")
         {

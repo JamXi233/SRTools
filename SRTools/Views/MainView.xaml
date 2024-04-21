@@ -27,27 +27,30 @@
                         <RowDefinition Height="1*"/>
                     </Grid.RowDefinitions>
 
-                    <Grid x:Name="Notify_Grid" Grid.Row="1" Background="{ThemeResource SystemControlAcrylicElementMediumHighBrush}" Margin="0 18 0 0" CornerRadius="12" Height="160" Width="345" Visibility="Collapsed">
-                        <NavigationView x:Name="NotifyNav" PaneDisplayMode="Top" IsBackButtonVisible="Collapsed" IsSettingsVisible="False" SelectionChanged="Notify_NavView_SelectionChanged">
-                            <NavigationView.MenuItems>
-                                <NavigationViewItem  Content="公告" Tag="Notify_Announce" IsSelected="True">
-                                    <NavigationViewItem.Icon>
-                                        <FontIcon FontFamily="Segoe Fluent Icons" Glyph="&#xe789;"/>
-                                    </NavigationViewItem.Icon>
-                                </NavigationViewItem>
-                                <NavigationViewItem  Content="通知" Tag="Notify_Notification" >
-                                    <NavigationViewItem.Icon>
-                                        <FontIcon FontFamily="Segoe Fluent Icons" Glyph="&#xf580;"/>
-                                    </NavigationViewItem.Icon>
-                                </NavigationViewItem>
-                                <NavigationViewItem  Content="信息" Tag="Notify_Message" >
-                                    <NavigationViewItem.Icon>
-                                        <FontIcon FontFamily="Segoe Fluent Icons" Glyph="&#xe8bd;"/>
-                                    </NavigationViewItem.Icon>
-                                </NavigationViewItem>
-                            </NavigationView.MenuItems>
-                            <Frame x:Name="NotifyFrame" Height="100" Padding="10 0 10 0"/>
-                        </NavigationView>
+                    <Grid x:Name="Notify_Grid" Grid.Row="1" Margin="0 18 0 0" CornerRadius="12" Height="160" Width="345" Background="{ThemeResource SystemControlAcrylicElementBrush}">
+                        <SelectorBar x:Name="NotifyNav" SelectionChanged="Notify_NavView_SelectionChanged" Visibility="Collapsed" Margin="12 0 0 0">
+                            <SelectorBarItem Text="公告" Tag="Notify_Announce">
+                                <SelectorBarItem.Icon>
+                                    <FontIcon FontFamily="Segoe Fluent Icons" Glyph="&#xe789;"/>
+                                </SelectorBarItem.Icon>
+                            </SelectorBarItem>
+                            <SelectorBarItem Text="通知" Tag="Notify_Notification" >
+                                <SelectorBarItem.Icon>
+                                    <FontIcon FontFamily="Segoe Fluent Icons" Glyph="&#xf580;"/>
+                                </SelectorBarItem.Icon>
+                            </SelectorBarItem>
+                            <SelectorBarItem Text="信息" Tag="Notify_Message" >
+                                <SelectorBarItem.Icon>
+                                    <FontIcon FontFamily="Segoe Fluent Icons" Glyph="&#xe8bd;"/>
+                                </SelectorBarItem.Icon>
+                            </SelectorBarItem>
+
+                        </SelectorBar>
+                        <Frame x:Name="NotifyFrame" Padding="8 48 8 0"/>
+                        
+                        <Grid x:Name="NotifyLoad">
+                            <ProgressRing/>
+                        </Grid>
                     </Grid>
 
 
@@ -56,7 +59,11 @@
                         <FlipView x:Name="Gallery" ItemsSource="{x:Bind Pictures}" PointerPressed="Gallery_PointerPressed" Height="160" Width="345" CornerRadius="12" >
                             <FlipView.ItemTemplate>
                                 <DataTemplate x:DataType="x:String">
-                                    <Image Source="{x:Bind Mode=OneTime}" />
+                                    <Image>
+                                        <Image.Source>
+                                            <BitmapImage UriSource="{x:Bind Mode=OneTime}" DecodePixelWidth="345" />
+                                        </Image.Source>
+                                    </Image>
                                 </DataTemplate>
                             </FlipView.ItemTemplate>
                         </FlipView>
@@ -66,7 +73,6 @@
                             <PipsPager x:Name="FlipViewPipsPager"
                                 VerticalAlignment="Center"
                                 HorizontalAlignment="Center"
-                                NumberOfPages="3"
                                 SelectedPageIndex="{x:Bind Path=Gallery.SelectedIndex, Mode=TwoWay}" />
 
                         </Grid>
@@ -111,7 +117,8 @@
         </Grid>
 
         <InfoBar x:Name="infoBar" IsOpen="False" Severity="Error" Title="" Message="" />
-        
+
+
     </Grid>
 
 </Page>

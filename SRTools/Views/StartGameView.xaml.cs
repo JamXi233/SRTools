@@ -1,54 +1,61 @@
-﻿using Microsoft.UI.Xaml;
+﻿// Copyright (c) 2021-2024, JamXi JSG-LLC.
+// All rights reserved.
+
+// This file is part of SRTools.
+
+// SRTools is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+
+// SRTools is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+
+// You should have received a copy of the GNU General Public License
+// along with SRTools.  If not, see <http://www.gnu.org/licenses/>.
+
+// For more information, please refer to <https://www.gnu.org/licenses/gpl-3.0.html>
+
+
+using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using System;
 using Windows.Storage.Pickers;
-using Windows.Storage;
 using System.Diagnostics;
 using Microsoft.UI.Dispatching;
 using SRTools.Depend;
 using Spectre.Console;
 using Microsoft.Win32;
-using Windows.ApplicationModel;
-using SRTools.Views.NotifyViews;
 using SRTools.Views.SGViews;
-using Newtonsoft.Json;
 using System.Net.Http;
+using System.Threading.Tasks;
+using static SRTools.App;
+using Windows.Foundation;
+using SRTools.Views.GachaViews;
 
 namespace SRTools.Views
 {
     public sealed partial class StartGameView : Page
     {
+        private DispatcherQueue dispatcherQueue;
         private DispatcherQueueTimer dispatcherTimer_Launcher;
         private DispatcherQueueTimer dispatcherTimer_Game;
         private DispatcherQueueTimer dispatcherTimer_Graphics;
-        ApplicationDataContainer localSettings = ApplicationData.Current.LocalSettings;
-        string userDocumentsFolderPath = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
 
         public StartGameView()
         {
-            //Windows.ApplicationModel.Core.CoreApplication.UnhandledErrorDetected += OnUnhandledErrorDetected;
             this.InitializeComponent();
             Logging.Write("Switch to StartGameView",0);
-            // 获取UI线程的DispatcherQueue
-            var dispatcherQueue_Launcher = DispatcherQueue.GetForCurrentThread();
-            var dispatcherQueue_Game = DispatcherQueue.GetForCurrentThread();
-            var dispatcherQueue_Graphics = DispatcherQueue.GetForCurrentThread();
+            this.InitializeComponent();
+            this.Loaded += StartGameView_Loaded;
             this.Unloaded += OnUnloaded;
 
-            // 创建定时器，并设置回调函数和时间间隔
-            dispatcherTimer_Launcher = dispatcherQueue_Launcher.CreateTimer();
-            dispatcherTimer_Launcher.Interval = TimeSpan.FromSeconds(2);
-            dispatcherTimer_Launcher.Tick += CheckProcess_Launcher;
-            dispatcherTimer_Launcher.Start();
-            dispatcherTimer_Game = dispatcherQueue_Game.CreateTimer();
-            dispatcherTimer_Game.Interval = TimeSpan.FromSeconds(2);
-            dispatcherTimer_Game.Tick += CheckProcess_Game;
-            dispatcherTimer_Game.Start();
-            dispatcherTimer_Graphics = dispatcherQueue_Graphics.CreateTimer();
-            dispatcherTimer_Graphics.Interval = TimeSpan.FromSeconds(1);
-            dispatcherTimer_Graphics.Tick += CheckProcess_Graphics;
-            dispatcherTimer_Graphics.Start();
-            GetPromptButton_Click(null, null);
+            // 获取UI线程的DispatcherQueue
+            InitializeDispatcherQueue();
+            // 初始化并启动定时器
+            InitializeTimers();
 
             string keyPath = @"Software\miHoYo\崩坏：星穹铁道";
             string valueName = "GraphicsSettings_Model_h2986158309";
@@ -57,9 +64,7 @@ namespace SRTools.Views
             try { valueBytes = (byte[])key.GetValue(valueName); } catch { valueBytes = null; }
             if (key == null || valueBytes == null)
             {
-                infoBar.IsOpen = true;
-                infoBar.Title = "未检测到当前画质的注册表";
-                infoBar.Message = "有可能未手动设置过画质，请进入游戏手动设置一次画质后再试";
+                NotificationManager.RaiseNotification("未检测到当前画质的注册表", "有可能未手动设置过画质\n请进入游戏手动设置一次画质后再试", InfoBarSeverity.Warning);
                 AccountSelect.IsEnabled = true;
                 GraphicSelect.IsEnabled = false;
                 AccountSelect.IsSelected = true;
@@ -71,11 +76,11 @@ namespace SRTools.Views
                 GraphicSelect.IsSelected = true;
             }
 
-            if (localSettings.Values.ContainsKey("Config_GamePath"))
+            if (AppDataController.GetGamePath() != null)
             {
-                var value = localSettings.Values["Config_GamePath"] as string;
-                Logging.Write("GamePath: "+ value,0);
-                if (!string.IsNullOrEmpty(value) && value.Contains("Null"))
+                string GamePath = AppDataController.GetGamePath();
+                Logging.Write("GamePath: "+ GamePath,0);
+                if (!string.IsNullOrEmpty(GamePath) && GamePath.Contains("Null"))
                 {
                     UpdateUIElementsVisibility(0);
                 }
@@ -89,6 +94,39 @@ namespace SRTools.Views
                 UpdateUIElementsVisibility(0);
             }
         }
+
+        private void InitializeDispatcherQueue()
+        {
+            dispatcherQueue = DispatcherQueue.GetForCurrentThread();
+        }
+
+        private void InitializeTimers()
+        {
+            // 创建并配置Launcher检查定时器
+            dispatcherTimer_Launcher = CreateTimer(TimeSpan.FromSeconds(2), CheckProcess_Launcher);
+
+            // 创建并配置Game检查定时器
+            dispatcherTimer_Game = CreateTimer(TimeSpan.FromSeconds(2), CheckProcess_Game);
+
+            // 创建并配置Graphics检查定时器
+            dispatcherTimer_Graphics = CreateTimer(TimeSpan.FromSeconds(1), CheckProcess_Graphics);
+        }
+
+        private DispatcherQueueTimer CreateTimer(TimeSpan interval, TypedEventHandler<DispatcherQueueTimer, object> tickHandler)
+        {
+            var timer = dispatcherQueue.CreateTimer();
+            timer.Interval = interval;
+            timer.Tick += tickHandler;
+            timer.Start();
+            return timer;
+        }
+
+        private async void StartGameView_Loaded(object sender, RoutedEventArgs e)
+        {
+            // 异步调用 GetPromptAsync
+            await GetPromptAsync();
+        }
+
         private async void SelectGame(object sender, RoutedEventArgs e)
         {
             var picker = new FileOpenPicker();
@@ -101,7 +139,8 @@ namespace SRTools.Views
                 var file = await picker.PickSingleFileAsync();
                 if (file != null && file.Name == "StarRail.exe")
                 {
-                    localSettings.Values["Config_GamePath"] = @file.Path;
+                    //更新为新的存储管理机制
+                    AppDataController.SetGamePath(@file.Path);
                     UpdateUIElementsVisibility(1);
                 }
                 else
@@ -114,7 +153,7 @@ namespace SRTools.Views
 
         public void RMGameLocation(object sender, RoutedEventArgs e)
         {
-            localSettings.Values["Config_GamePath"] = @"Null";
+            AppDataController.RMGamePath();
             UpdateUIElementsVisibility(0);
         }
         //启动游戏
@@ -154,24 +193,14 @@ namespace SRTools.Views
 
         public void StartGame(TeachingTip sender, object args)
         {
-            string gamePath = localSettings.Values["Config_GamePath"] as string;
-            var processInfo = new ProcessStartInfo(gamePath);
-            
-            //启动程序
-            processInfo.UseShellExecute = true;
-            processInfo.Verb = "runas"; 
-            Process.Start(processInfo);
+            GameStartUtil gameStartUtil = new GameStartUtil();
+            gameStartUtil.StartGame();
         }
 
         public void StartLauncher(TeachingTip sender, object args)
         {
-            string gamePath = localSettings.Values["Config_GamePath"] as string;
-            var processInfo = new ProcessStartInfo(gamePath.Replace("StarRail.exe","..\\launcher.exe"));
-
-            //启动程序
-            processInfo.UseShellExecute = true;
-            processInfo.Verb = "runas";
-            Process.Start(processInfo);
+            GameStartUtil gameStartUtil = new GameStartUtil();
+            gameStartUtil.StartLauncher();
         }
 
         // 定时器回调函数，检查进程是否正在运行
@@ -200,15 +229,12 @@ namespace SRTools.Views
             try { valueBytes = (byte[])key.GetValue(valueName); } catch { valueBytes = null; }
             if (key == null || valueBytes == null)
             {
-                infoBar.Title = "未检测到当前画质的注册表";
-                infoBar.Message = "有可能未手动设置过画质，请进入游戏手动设置一次画质后再试";
                 AccountSelect.IsEnabled = true;
                 GraphicSelect.IsEnabled = false;
                 AccountSelect.IsSelected = true;
             }
             else
             {
-                infoBar.IsOpen = false;
                 AccountSelect.IsEnabled = true;
                 GraphicSelect.IsEnabled = true;
             }
@@ -230,39 +256,41 @@ namespace SRTools.Views
             }
         }
 
-        private void SGNavView_SelectionChanged(NavigationView sender, NavigationViewSelectionChangedEventArgs args)
+        private void SGNavView_SelectionChanged(SelectorBar sender, SelectorBarSelectionChangedEventArgs args)
         {
-            if (args.IsSettingsSelected)
+            SelectorBarItem selectedItem = sender.SelectedItem;
+            int currentSelectedIndex = sender.Items.IndexOf(selectedItem);
+            switch (currentSelectedIndex)
             {
-                // 处理设置菜单项单击事件
-            }
-            else if (args.SelectedItemContainer != null)
-            {
-                switch (args.SelectedItemContainer.Tag.ToString())
-                {
-                    case "SG_Graphics":
-                        // 导航到画质调节
-                        SGFrame.Navigate(typeof(GraphicSettingView));
-                        break;
-                    case "SG_Account":
-                        // 导航到画质调节
-                        SGFrame.Navigate(typeof(AccountView));
-                        break;
-                }
+                case 0:
+                    SGFrame.Navigate(typeof(GraphicSettingView));
+                    break;
+                case 1:
+                    SGFrame.Navigate(typeof(AccountView));
+                    break;
             }
         }
 
-        private async void GetPromptButton_Click(object sender, RoutedEventArgs e)
+        private async Task GetPromptAsync()
         {
-            HttpClient client = new HttpClient();
-            string url = "https://srtools.jamsg.cn/SRTools_Prompt";
-            HttpResponseMessage response = await client.GetAsync(url);
-            if (response.IsSuccessStatusCode)
+            try
             {
-                string jsonData = await response.Content.ReadAsStringAsync();
-                prompt.Text = jsonData;
+                HttpClient client = new HttpClient();
+                string url = "https://srtools.jamsg.cn/SRTools_Prompt";
+                HttpResponseMessage response = await client.GetAsync(url);
+                if (response.IsSuccessStatusCode)
+                {
+                    string jsonData = await response.Content.ReadAsStringAsync();
+                    prompt.Text = jsonData;
+                }
+            }
+            catch (Exception ex)
+            {
+                // 处理异常，例如记录错误或显示错误消息
+                Logging.Write($"Error fetching prompt: {ex.Message}", 2);
             }
         }
+
 
         private void OnUnloaded(object sender, RoutedEventArgs e)
         {

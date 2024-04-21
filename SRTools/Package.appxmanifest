@@ -7,9 +7,9 @@
   IgnorableNamespaces="uap rescap">
 
   <Identity
-    Name="2305cb6a-348b-48ce-906f-547149ecbd59"
-    Publisher="CN=JamXi"
-    Version="1.2.3.0" />
+    Name="JSG.SRTools"
+    Publisher="CN=JSG-Software, O=JSG-LLC, C=CN"
+    Version="1.3.0.0" />
 
   <Properties>
     <DisplayName>SRTools(星轨工具箱)</DisplayName>
@@ -38,7 +38,7 @@
         Square44x44Logo="Assets\Square44x44Logo.png">
         <uap:DefaultTile Wide310x150Logo="Assets\Wide310x150Logo.png"  Square71x71Logo="Assets\SmallTile.png" Square310x310Logo="Assets\LargeTile.png" ShortName="星轨工具箱">
         </uap:DefaultTile >
-        <uap:SplashScreen Image="Assets\SplashScreen.png" />
+		<uap:SplashScreen Image="Assets\SplashScreen.png" />
         <uap:LockScreen BadgeLogo="Assets\BadgeLogo.png" Notification="badge"/>
       </uap:VisualElements>
     </Application>

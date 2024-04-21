@@ -1,8 +1,27 @@
+Ôªø// Copyright (c) 2021-2024, JamXi JSG-LLC.
+// All rights reserved.
+
+// This file is part of SRTools.
+
+// SRTools is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+
+// SRTools is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+
+// You should have received a copy of the GNU General Public License
+// along with SRTools.  If not, see <http://www.gnu.org/licenses/>.
+
+// For more information, please refer to <https://www.gnu.org/licenses/gpl-3.0.html>
+
 using SRTools.Views;
 using Microsoft.UI;
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
-using Scighost.WinUILib.Helpers;
 using System;
 using System.Runtime.InteropServices;
 using Vanara.PInvoke;
@@ -11,44 +30,33 @@ using WinRT.Interop;
 using Microsoft.UI.Xaml.Controls;
 using Windows.Storage;
 using SRTools.Depend;
-using System.IO.Compression;
 using System.Threading.Tasks;
 using System.IO;
-using System.Diagnostics;
 using System.Net.Http;
 using System.Text.Json;
 using Microsoft.UI.Xaml.Media.Imaging;
-using System.Threading;
-using System.Security.AccessControl;
 using Spectre.Console;
 using Windows.System;
-using Windows.UI.Core;
-using Org.BouncyCastle.Asn1.X509;
 using Windows.Storage.AccessCache;
+using SRTools.Views.ToolViews;
+using SRTools.Views.FirstRunViews;
+using System.Data;
+using Microsoft.UI.Xaml.Media;
+using static SRTools.App;
 
 namespace SRTools
 {
     public partial class MainWindow : Window
     {
-
-        private GetNetData _getNetData;
-        private readonly GetGiteeLatest _getGiteeLatest = new GetGiteeLatest();
-        private readonly GetJSGLatest _getJSGLatest = new GetJSGLatest();
         private static readonly HttpClient httpClient = new HttpClient();
-        private IntPtr hwnd;
-        string fileUrl;
-        private AppWindow appWindow;
+        private IntPtr hwnd = IntPtr.Zero;
+        private OverlappedPresenter presenter;
+        private AppWindow appWindow = null;
         private AppWindowTitleBar titleBar;
-        private SystemBackdrop backdrop;
         string ExpectionFileName;
         string backgroundUrl = "";
 
-        private const string KeyPath = "SRTools";
-        private const string ValueFirstRun = "Config_FirstRun";
-        private const string ValueGamePath = "Config_GamePath";
-        private const string ValueUnlockFPS = "Config_UnlockFPS";
-        private const string ValueUpdateService = "Config_UpdateService";
-        // µº»Î AllocConsole ∫Õ FreeConsole ∫Ø ˝
+        // ÂØºÂÖ• AllocConsole Âíå FreeConsole ÂáΩÊï∞
         [DllImport("kernel32.dll", SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
         private static extern bool AllocConsole();
@@ -56,57 +64,157 @@ namespace SRTools
         [DllImport("kernel32.dll", SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
         private static extern bool FreeConsole();
-
-        private record LocalSettingsData(string FirstRun, string GamePath, string UnlockFPSValue, string UpdateService);
+        // ÂØºÂÖ• GetAsyncKeyState ÂáΩÊï∞
+        [DllImport("User32.dll")]
+        public static extern short GetAsyncKeyState(int vKey);
 
         public NavigationView NavigationView { get; }
 
         public MainWindow()
         {
             Windows.ApplicationModel.Core.CoreApplication.UnhandledErrorDetected += OnUnhandledErrorDetected;
-            Title = "–«πÏπ§æﬂœ‰";
-            InitializeComponent();
-            InitializeAppData();
-            InitializeMicaBackground();
+            Title = "ÊòüËΩ®Â∑•ÂÖ∑ÁÆ±";
+            InitShiftPress();
             InitializeWindowProperties();
-            BackgroundImage();
-            CleanUpdate();
-
-            _getNetData = new GetNetData();
+            InitializeComponent();
+            NotificationManager.OnNotificationRequested += AddNotification;
+            WaitOverlayManager.OnWaitOverlayRequested += ShowWaitOverlay;
+            this.Activated += MainWindow_Activated;
+            this.Closed += MainWindow_Closed;
         }
 
-        private void InitializeAppData()
+        private async void MainWindow_Activated(object sender, WindowActivatedEventArgs args)
         {
-            //”¶”√ ˝æ›ºÏ≤Èø™ º
-            ApplicationDataContainer keyContainer = GetOrCreateContainer(KeyPath);
-            LocalSettingsData defaultValues = new LocalSettingsData("1", "Null", "Null", "Null");
-            LocalSettingsData currentValues = GetCurrentValues(keyContainer, defaultValues);
-            if (currentValues.FirstRun == "1")
+            // Á°Æ‰øùÂàùÂßãÂåñ‰ª£Á†ÅÂè™ÊâßË°å‰∏ÄÊ¨°
+            this.Activated -= MainWindow_Activated;
+            await InitializeAppDataAsync();
+            await BackgroundImageAsync();
+            CleanUpdate();
+        }
+
+        private void InitShiftPress()
+        {
+            bool isShiftPressed = (GetAsyncKeyState(0x10) & 0x8000) != 0;
+
+            if (isShiftPressed)
             {
-                FirstRun.Visibility = Visibility.Visible;
+                Logging.Write("Â∑≤ÈÄöËøáÂø´Êç∑ÈîÆËøõÂÖ•ÊéßÂà∂Âè∞Ê®°Âºè", 1);
+                Console.Title = "üÜÇùêÉùêûùêõùêÆùê†ùêåùê®ùêùùêû:SRTools";
+                TerminalMode.ShowConsole();
+                SDebugMode = true;
+            }
+            else
+            {
+                Logging.Write("NoPressed", 1);
+            }
+        }
+
+        private async Task InitializeAppDataAsync()
+        {
+            AppDataController appDataController = new AppDataController();
+
+            Logo_Progress.Visibility = Visibility.Visible;
+            Logo.Visibility = Visibility.Collapsed;
+            MainNavigationView.Visibility = Visibility.Visible;
+
+            if (AppDataController.GetFirstRun() == 1)
+            {
+                FirstRun_Frame.Navigate(typeof(FirstRunAnimation));
+                await Task.Delay(1000);
+
+                if (appDataController.CheckOldData() == 1)
+                {
+                    FirstRunAnimation.isOldDataExist = true;
+                    StartCheckingFirstRun();
+                }
+                else
+                {
+                    InitFirstRun();
+                }
+
                 MainAPP.Visibility = Visibility.Collapsed;
             }
-            else if (currentValues.FirstRun == "0")
+            else
             {
-                FirstRun.Visibility = Visibility.Collapsed;
-                MainAPP.Visibility = Visibility.Visible;
+                KillFirstUI();
             }
         }
 
-        private void InitializeMicaBackground()
+        private void InitFirstRun()
         {
-            //…Ë÷√±≥æ∞Micaø™ º
-            backdrop = new SystemBackdrop(this);
-            backdrop.TrySetMica(fallbackToAcrylic: true);
+            StartCheckingFirstRun();
+            Logo_Progress.Visibility = Visibility.Collapsed;
+            Logo.Visibility = Visibility.Visible;
+            MainNavigationView.Visibility = Visibility.Visible;
+
+            int firstRunStatus = AppDataController.GetFirstRunStatus();
+
+            switch (firstRunStatus)
+            {
+                case 1:
+                case 0:
+                case -1:
+                    FirstRun_Frame.Navigate(typeof(FirstRunInit));
+                    break;
+                case 2:
+                    FirstRun_Frame.Navigate(typeof(FirstRunTheme));
+                    break;
+                case 3:
+                    FirstRun_Frame.Navigate(typeof(FirstRunSourceSelect));
+                    break;
+                case 4:
+                    FirstRun_Frame.Navigate(typeof(FirstRunGetDepend));
+                    break;
+                case 5:
+                    FirstRun_Frame.Navigate(typeof(FirstRunExtra));
+                    break;
+                default:
+                    Logging.Write($"Unknown FirstRunStatus: {firstRunStatus}", 2);
+                    FirstRun_Frame.Navigate(typeof(FirstRunInit));
+                    break;
+            }
+        }
+
+
+        public void StartCheckingFirstRun()
+        {
+            DispatcherTimer timer = new DispatcherTimer();
+            timer.Interval = TimeSpan.FromSeconds(0.1);
+            timer.Tick += Timer_Tick;
+            timer.Start();
+        }
+
+        private void Timer_Tick(object sender, object e)
+        {
+            if (AppDataController.GetFirstRun() == 0)
+            {
+                KillFirstUI();
+                // ÂÅúÊ≠¢ËÆ°Êó∂Âô®ÔºåÂõ†‰∏∫‰∏çÂÜçÈúÄË¶ÅÊ£ÄÊü•
+                (sender as DispatcherTimer)?.Stop();
+            }
+        }
+
+        public void KillFirstUI()
+        {
+            MainNavigationView.Visibility = Visibility.Collapsed;
+            MainAPP.Visibility = Visibility.Visible;
         }
 
         private void InitializeWindowProperties()
         {
-            //…Ë÷√¥∞ø⁄¥Û–°µ»ø™ º
+            //ËÆæÁΩÆÁ™óÂè£Â§ßÂ∞èÁ≠âÂºÄÂßã
             hwnd = WindowNative.GetWindowHandle(this);
             WindowId id = Win32Interop.GetWindowIdFromWindow(hwnd);
             appWindow = AppWindow.GetFromWindowId(id);
             DisableWindowResize();
+            // ËÆæÁΩÆÁ™óÂè£‰∏∫‰∏çÂèØË∞ÉÊï¥Â§ßÂ∞è
+            presenter = appWindow.Presenter as OverlappedPresenter;
+            if (presenter != null)
+            {
+                // Á¶ÅÁî®ÊúÄÂ§ßÂåñÂíåÂ§ßÂ∞èË∞ÉÊï¥
+                presenter.IsResizable = false;
+                presenter.IsMaximizable = false;
+            }
 
             float scale = (float)User32.GetDpiForWindow(hwnd) / 96;
 
@@ -115,7 +223,7 @@ namespace SRTools
             int windowWidth = (int)(1024 * scale);
             int windowHeight = (int)(584 * scale);
 
-            Logging.Write("MoveAndResize to "+windowWidth+"*"+windowHeight,0);
+            Logging.Write("MoveAndResize to " + windowWidth + "*" + windowHeight, 0);
             appWindow.MoveAndResize(new RectInt32(windowX, windowY, windowWidth, windowHeight));
 
             if (AppWindowTitleBar.IsCustomizationSupported())
@@ -124,17 +232,56 @@ namespace SRTools
                 titleBar.ExtendsContentIntoTitleBar = true;
                 titleBar.ButtonBackgroundColor = Colors.Transparent;
                 titleBar.ButtonInactiveBackgroundColor = Colors.Transparent;
-                titleBar.ButtonForegroundColor = Colors.White;
+                if (App.CurrentTheme == ApplicationTheme.Light) titleBar.ButtonForegroundColor = Colors.Black;
+                else titleBar.ButtonForegroundColor = Colors.White;
 
                 titleBar.SetDragRectangles(new RectInt32[] { new RectInt32((int)(48 * scale), 0, 10000, (int)(48 * scale)) });
-                Logging.Write("SetDragRectangles to "+48 * scale+"*"+ 48 * scale, 0);
+                Logging.Write("SetDragRectangles to " + 48 * scale + "*" + 48 * scale, 0);
             }
             else
             {
                 ExtendsContentIntoTitleBar = true;
                 SetTitleBar(AppTitleBar);
             }
+
+            if (AppDataController.GetDayNight() == 0)
+            {
+                RegisterSystemThemeChangeEvents(id);
+            }
+
         }
+
+        private void RegisterSystemThemeChangeEvents(WindowId id)
+        {
+            var uiSettings = new Windows.UI.ViewManagement.UISettings();
+            uiSettings.ColorValuesChanged += (sender, args) =>
+            {
+                if (appWindow == null) return;
+                UpdateTitleBarColor(appWindow.TitleBar);
+            };
+
+            // ÂàùÂßãÂåñÊó∂‰πüËÆæÁΩÆ‰∏ÄÊ¨°Ê†áÈ¢òÊ†èÈ¢úËâ≤
+            UpdateTitleBarColor(appWindow.TitleBar);
+        }
+
+        private void UpdateTitleBarColor(AppWindowTitleBar titleBar)
+        {
+            if (titleBar == null) return;
+
+            // Â¶ÇÊûú AppDataController.GetDayNight() ËøîÂõû 0, ‰ΩøÁî®Á≥ªÁªü‰∏ªÈ¢òÈ¢úËâ≤
+            if (AppDataController.GetDayNight() == 0)
+            {
+                var uiSettings = new Windows.UI.ViewManagement.UISettings();
+                var foregroundColor = uiSettings.GetColorValue(Windows.UI.ViewManagement.UIColorType.Foreground);
+                titleBar.ButtonForegroundColor = foregroundColor;
+            }
+            else
+            {
+                // Âê¶ÂàôÔºåÊ†πÊçÆ App.CurrentTheme ËÆæÁΩÆÈ¢úËâ≤
+                titleBar.ButtonForegroundColor = App.CurrentTheme == ApplicationTheme.Light ? Colors.Black : Colors.White;
+            }
+        }
+
 
         private void DisableWindowResize()
         {
@@ -144,214 +291,18 @@ namespace SRTools
             style &= ~NativeMethods.WS_SIZEBOX;
             NativeMethods.SetWindowLong(hwnd, NativeMethods.GWL_STYLE, style);
         }
-        
-        private async void BackgroundImage()
+
+        private async Task BackgroundImageAsync()
         {
             string apiUrl = "https://api-launcher-static.mihoyo.com/hkrpg_cn/mdk/launcher/api/content?filter_adv=false&key=6KcVuOkbcqjJomjZ&language=zh-cn&launcher_id=33";
             ApiResponse response = await FetchData(apiUrl);
             backgroundUrl = response.data.adv.background;
-            // …Ë÷√±≥æ∞Õº∆¨
-            Logging.Write("Getting Background: " + backgroundUrl, 0);
-            BitmapImage backgroundImage = new BitmapImage(new Uri(backgroundUrl));
+
+            BitmapImage backgroundImage = new BitmapImage();
+            backgroundImage.UriSource = new Uri(backgroundUrl);
             Background.ImageSource = backgroundImage;
         }
 
-        //”¶”√ ˝æ›ºÏ≤Èø™ º
-        private ApplicationDataContainer GetOrCreateContainer(string keyPath)
-        {
-            ApplicationDataContainer localSettings = ApplicationData.Current.LocalSettings;
-            switch (localSettings.Values["Config_TerminalMode"])
-            {
-                case 0:
-                    TerminalMode.HideConsole();
-                    break;
-                case 1:
-                    TerminalMode.ShowConsole();
-                    break;
-                default:
-                    TerminalMode.HideConsole();
-                    break;
-            }
-            if (localSettings.Containers.ContainsKey(keyPath))
-            {
-                return localSettings.Containers[keyPath];
-            }
-            else
-            {
-                return localSettings.CreateContainer(keyPath, ApplicationDataCreateDisposition.Always);
-            }
-        }
-
-        // ªÒ»°µ±«∞…Ë÷√÷µªÚƒ¨»œ÷µ
-        private LocalSettingsData GetCurrentValues(ApplicationDataContainer keyContainer, LocalSettingsData defaultValues)
-        {
-            string firstRunValue = GetValueOrDefault(keyContainer, ValueFirstRun, defaultValues.FirstRun);
-            string gamePathValue = GetValueOrDefault(keyContainer, ValueGamePath, defaultValues.GamePath);
-            string unlockFPSValue = GetValueOrDefault(keyContainer, ValueUnlockFPS, defaultValues.UnlockFPSValue);
-            string updateService = GetValueOrDefault(keyContainer, ValueUpdateService, defaultValues.UpdateService);
-
-            return new LocalSettingsData(firstRunValue, gamePathValue, unlockFPSValue, updateService);
-        }
-
-        // ªÒ»°º¸÷µ∂‘”¶µƒ÷µ£¨»Áπ˚≤ª¥Ê‘⁄‘Ú π”√ƒ¨»œ÷µ
-        private string GetValueOrDefault(ApplicationDataContainer keyContainer, string key, string defaultValue)
-        {
-            if (keyContainer.Values.ContainsKey(key))
-            {
-                return (string)keyContainer.Values[key];
-            }
-            else
-            {
-                return defaultValue;
-            }
-        }
-
-        //—°‘Òœ¬‘ÿ«˛µ¿ø™ º
-        private void DSerivceChoose_Click(object sender, RoutedEventArgs e)
-        {
-            dservice_panel_left.Visibility = Visibility.Collapsed;
-            dservice_panel_right.Visibility = Visibility.Collapsed;
-            depend_panel_left.Visibility = Visibility.Visible;
-            depend_panel_right.Visibility = Visibility.Visible;
-            OnGetDependLatestReleaseInfo();
-        }
-
-        private void DService_Github_Choose(object sender, RoutedEventArgs e)
-        {
-            ApplicationDataContainer localSettings = ApplicationData.Current.LocalSettings;
-            localSettings.Values["Config_UpdateService"] = 0;
-            dserivce_finish.IsEnabled = true;
-        }
-
-        private void DService_Gitee_Choose(object sender, RoutedEventArgs e)
-        {
-            ApplicationDataContainer localSettings = ApplicationData.Current.LocalSettings;
-            localSettings.Values["Config_UpdateService"] = 1;
-            dserivce_finish.IsEnabled = true;
-        }
-
-        private void DService_JSG_Choose(object sender, RoutedEventArgs e)
-        {
-            ApplicationDataContainer localSettings = ApplicationData.Current.LocalSettings;
-            localSettings.Values["Config_UpdateService"] = 2;
-            dserivce_finish.IsEnabled = true;
-        }
-
-        //“¿¿µœ¬‘ÿø™ º
-
-        private const string FileFolder = "\\JSG-LLC\\SRTools\\Depends";
-        private const string ZipFileName = "SRToolsHelper.zip";
-        private const string ExtractedFolder = "SRToolsHelper";
-
-        private async void DependDownload_Click(object sender, RoutedEventArgs e)
-        {
-            string userDocumentsFolderPath = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
-            string localFilePath = Path.Combine(userDocumentsFolderPath + FileFolder, ZipFileName);
-            Trace.WriteLine(fileUrl);
-            ToggleDependGridVisibility(false);
-            depend_Download.IsEnabled = false;
-            var progress = new Progress<double>(DependReportProgress);
-            bool downloadResult = false;
-            try
-            {
-                downloadResult = await _getNetData.DownloadFileWithProgressAsync(fileUrl, localFilePath, progress);
-            }
-            catch (Exception ex)
-            {
-                throw new Exception(ex.Message);
-            }
-
-            if (downloadResult)
-            {
-                string keyPath = "SRTools";
-                ApplicationDataContainer localSettings = ApplicationData.Current.LocalSettings;
-                ApplicationDataContainer keyContainer = localSettings.Containers[keyPath];
-                string extractionPath = Path.Combine(userDocumentsFolderPath + FileFolder, ExtractedFolder);
-                if (File.Exists(extractionPath+ "\\SRToolsHelper.exe"))
-                {
-                    string valueFirstRun = "Config_FirstRun";
-                    FirstRun.Visibility = Visibility.Collapsed;
-                    MainAPP.Visibility = Visibility.Visible;
-                    keyContainer.Values[valueFirstRun] = "0";
-                }
-                else 
-                {
-                    string valueFirstRun = "Config_FirstRun";
-                    Trace.WriteLine(userDocumentsFolderPath);
-                    Trace.WriteLine(extractionPath);
-                    ZipFile.ExtractToDirectory(localFilePath, extractionPath);
-                    FirstRun.Visibility = Visibility.Collapsed;
-                    MainAPP.Visibility = Visibility.Visible;
-                    keyContainer.Values[valueFirstRun] = "0";
-                }
-            }
-            else
-            {
-                //  π”√Dispatcher‘⁄UIœﬂ≥Ã…œ÷¥––ToggleUpdateGridVisibility∫Ø ˝
-                ToggleDependGridVisibility(true, false);
-            }
-        }
-
-        private void ToggleDependGridVisibility(bool updateGridVisible, bool downloadSuccess = false)
-        {
-            depend_Grid.Visibility = updateGridVisible ? Visibility.Visible : Visibility.Collapsed;
-            depend_Progress_Grid.Visibility = updateGridVisible ? Visibility.Collapsed : Visibility.Visible;
-            depend_Btn_Text.Text = downloadSuccess ? "œ¬‘ÿÕÍ≥…" : "œ¬‘ÿ ß∞‹";
-            depend_Btn_Icon.Glyph = downloadSuccess ? "&#xe73a;" : "&#xe8bb;";
-        }
-
-        private async void OnGetDependLatestReleaseInfo()
-        {
-            depend_Grid.Visibility = Visibility.Collapsed;
-            depend_Progress_Grid.Visibility = Visibility.Visible;
-            var dispatcher = Microsoft.UI.Dispatching.DispatcherQueue.GetForCurrentThread();
-            try
-            {
-                ApplicationDataContainer localSettings = ApplicationData.Current.LocalSettings;
-                var latestReleaseInfo = await _getJSGLatest.GetLatestReleaseInfoAsync("cn.jamsg.srtoolshelper");
-                switch (localSettings.Values["Config_UpdateService"])
-                {
-                    case 0:
-                        //latestReleaseInfo = await _getGithubLatest.GetLatestReleaseInfoAsync("JamXi233", "SRToolsHelper");
-                        break;
-                    case 1:
-                        latestReleaseInfo = await _getGiteeLatest.GetLatestReleaseInfoAsync("JSG-JamXi", "SRToolsHelper");
-                        break;
-                    case 2:
-                        latestReleaseInfo = await _getJSGLatest.GetLatestReleaseInfoAsync("cn.jamsg.srtoolshelper");
-                        break;
-                    default:
-                        throw new InvalidOperationException($"Invalid update service value: {localSettings.Values["Config_UpdateService"]}");
-                }
-
-                fileUrl = latestReleaseInfo.DownloadUrl;
-                dispatcher.TryEnqueue(() =>
-                {
-                    depend_Latest_Name.Text = $"“¿¿µœÓ: {latestReleaseInfo.Name}";
-                    depend_Latest_Version.Text = $"∞Ê±æ∫≈: {latestReleaseInfo.Version}";
-                    depend_Download.IsEnabled = true;
-                    depend_Grid.Visibility = Visibility.Visible;
-                    depend_Progress_Grid.Visibility = Visibility.Collapsed;
-                });
-            }
-            catch (Exception ex)
-            {
-                dispatcher.TryEnqueue(() =>
-                {
-                    depend_Grid.Visibility = Visibility.Visible;
-                    depend_Progress_Grid.Visibility = Visibility.Collapsed;
-                    depend_Btn_Text.Text = "ªÒ»° ß∞‹";
-                    depend_Latest_Version.Text = ex.Message;
-                    depend_Btn_Bar.Visibility = Visibility.Collapsed;
-                    depend_Btn_Icon.Glyph = "&#xe8bb" ;
-                });
-            }
-        }
-
-        private void DependReportProgress(double progressPercentage)
-        {
-            depend_Btn_Bar.Value = progressPercentage;
-        }
 
         private void NavView_SelectionChanged(NavigationView sender, NavigationViewSelectionChangedEventArgs args)
         {
@@ -380,9 +331,16 @@ namespace SRTools
                     case "donation":
                         MainFrame.Navigate(typeof(DonationView));
                         break;
+                    case "account_status":
+                        MainFrame.Navigate(typeof(AccountStatusView));
+                        break;
+                    case "settings":
+                        MainFrame.Navigate(typeof(AboutView));
+                        break;
                 }
             }
         }
+
         public static async Task<ApiResponse> FetchData(string url)
         {
             HttpResponseMessage httpResponse = await httpClient.GetAsync(url);
@@ -390,6 +348,7 @@ namespace SRTools
             string responseBody = await httpResponse.Content.ReadAsStringAsync();
             return JsonSerializer.Deserialize<ApiResponse>(responseBody);
         }
+
         public class ApiResponse
         {
             public int retcode { get; set; }
@@ -412,22 +371,77 @@ namespace SRTools
             catch (Exception ex)
             {
                 ExpectionFileName = string.Format("SRTools_Panic_{0:yyyyMMdd_HHmmss}.SRToolsPanic", DateTime.Now);
-                infoBar.IsOpen = true;
-                infoBar.Title = "—œ÷ÿ¥ÌŒÛ";
-                infoBar.Message = ex.Message.Trim()+"\n\n“—…˙≥…¥ÌŒÛ±®∏Ê\n»Á‘Ÿ¥Œ≥¢ ‘»‘ª·÷ÿœ÷¥ÌŒÛ\nƒ˙ø…“‘µΩGithubÃ·ΩªIssue";
-                AnsiConsole.WriteException(ex,ExceptionFormats.ShortenPaths | ExceptionFormats.ShortenTypes | ExceptionFormats.ShortenMethods | ExceptionFormats.ShowLinks);
-                await ExceptionSave.Write("”¶”√≥Ã–Ú:" + ex.Source+"\n¥ÌŒÛ±ÍÃ‚:"+ex.Message + "\n∂—’ª∏˙◊Ÿ:\n" + ex.StackTrace + "\nΩ· ¯¥˙¬Î:" + ex.HResult, 1,ExpectionFileName);
+
+                // ÊòæÁ§∫InfoBarÈÄöÁü•
+                var errorMessage = ex.Message.Trim() + "\n\nÂ∑≤ÁîüÊàêÈîôËØØÊä•Âëä\nÂ¶ÇÂÜçÊ¨°Â∞ùËØï‰ªç‰ºöÈáçÁé∞ÈîôËØØ\nÊÇ®ÂèØ‰ª•Âà∞GithubÊèê‰∫§Issue";
+                // Ë∞ÉÁî® AddNotification ÊñπÊ≥ïÊù•ÊòæÁ§∫ÈîôËØØ‰ø°ÊÅØÂíåÊìç‰ΩúÊåâÈíÆ
+                AddNotification("‰∏•ÈáçÈîôËØØ", errorMessage, InfoBarSeverity.Error, () =>
+                {
+                    ExpectionFolderOpen_Click();
+                }, "ÊâìÂºÄÊñá‰ª∂Â§π");
+
+                AnsiConsole.WriteException(ex, ExceptionFormats.ShortenPaths | ExceptionFormats.ShortenTypes | ExceptionFormats.ShortenMethods | ExceptionFormats.ShowLinks | ExceptionFormats.Default);
+                await ExceptionSave.Write("Ê∫ê:" + ex.Source + "\nÈîôËØØÊ†áÈ¢ò:" + ex.Message + "\nÂ†ÜÊ†àË∑üË∏™:\n" + ex.StackTrace + "\nÂÜÖÈÉ®ÂºÇÂ∏∏:\n" + ex.InnerException + "\nÁªìÊùü‰ª£Á†Å:" + ex.HResult, 1, ExpectionFileName);
             }
         }
 
-        private async void ExpectionFolderOpen_Click(object sender, RoutedEventArgs e) 
+        private async void ExpectionFolderOpen_Click() 
         {
             StorageFolder folder = await KnownFolders.DocumentsLibrary.CreateFolderAsync("JSG-LLC\\Panic", CreationCollisionOption.OpenIfExists);
-            // ªÒ»°÷∏∂®Œƒº˛
+            // Ëé∑ÂèñÊåáÂÆöÊñá‰ª∂
             StorageFile file = await folder.GetFileAsync(ExpectionFileName);
-            // Ω´Œƒº˛ÃÌº”µΩ◊ÓΩ¸ π”√¡–±Ì÷–
+            // Â∞ÜÊñá‰ª∂Ê∑ªÂä†Âà∞ÊúÄËøë‰ΩøÁî®ÂàóË°®‰∏≠
             StorageApplicationPermissions.MostRecentlyUsedList.Add(file);
             await Launcher.LaunchFolderAsync(folder, new FolderLauncherOptions { ItemsToSelect = { file } });
         }
+
+
+        public void AddNotification(string title, string message, InfoBarSeverity severity, Action actionButtonAction = null, string actionButtonText = null)
+        {
+            var infoBar = new InfoBar
+            {
+                Title = title,
+                Message = message,
+                Severity = severity,
+                IsOpen = true,
+                VerticalAlignment = Microsoft.UI.Xaml.VerticalAlignment.Top,
+                Margin = new Thickness(0, 0, 0, 5),
+            };
+            if (actionButtonText != null)
+            {
+                var actionButton = new Button { Content = actionButtonText };
+                if (actionButtonAction != null)
+                {
+                    actionButton.Click += (sender, args) => actionButtonAction.Invoke();
+                }
+                infoBar.ActionButton = actionButton;
+            }
+            infoBar.CloseButtonClick += (sender, args) =>
+            {
+                InfoBarPanel.Children.Remove(sender as InfoBar);
+            };
+            InfoBarPanel.Children.Add(infoBar);
+            Logging.WriteNotification(title, message);
+        }
+
+        public void ShowWaitOverlay(bool status, bool isProgress = false, string title = null, string subtitle = null)
+        {
+            if (status)
+            {
+                WaitOverlay.Visibility = Visibility.Visible;
+                if (isProgress) WaitOverlay_Progress.Visibility = Visibility.Visible;
+                else WaitOverlay_Success.Visibility = Visibility.Visible;
+                WaitOverlay_Title.Text = title;
+                WaitOverlay_SubTitle.Text = subtitle;
+            }
+            else WaitOverlay.Visibility = Visibility.Collapsed;
+        }
+
+        private void MainWindow_Closed(object sender, WindowEventArgs e)
+        {
+            NotificationManager.OnNotificationRequested -= AddNotification;
+            WaitOverlayManager.OnWaitOverlayRequested -= ShowWaitOverlay;
+        }
+
     }
 }

@@ -1,4 +1,25 @@
-﻿using System;
+﻿// Copyright (c) 2021-2024, JamXi JSG-LLC.
+// All rights reserved.
+
+// This file is part of SRTools.
+
+// SRTools is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+
+// SRTools is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+
+// You should have received a copy of the GNU General Public License
+// along with SRTools.  If not, see <http://www.gnu.org/licenses/>.
+
+// For more information, please refer to <https://www.gnu.org/licenses/gpl-3.0.html>
+
+using Microsoft.Win32;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
@@ -16,57 +37,107 @@ namespace SRTools.Depend
     class InstallFont
     {
 
-        // Import the AddFontResource function from gdi32.dll
-        [DllImport("gdi32.dll", EntryPoint = "AddFontResourceW", SetLastError = true)]
-        public static extern int AddFontResource([In] [MarshalAs(UnmanagedType.LPWStr)]
-                                     string lpFileName);
-
-        // Import the SendMessage function from user32.dll
-        [DllImport("user32.dll", SetLastError = true, CharSet = CharSet.Auto)]
-        public static extern IntPtr SendMessageTimeout(IntPtr hWnd, int Msg, IntPtr wParam,
-            IntPtr lParam, uint fuFlags, uint uTimeout, out IntPtr lpdwResult);
-
-        public static async Task<int> SegoeFluentFontAsync()
+        public static async Task<int> InstallSegoeFluentFontAsync(IProgress<double> progress)
         {
-            GetNetData getNetData;
-            string UpdateFileFolder = "\\JSG-LLC\\Fonts\\";
-            string UpdateFileName = "SegoeFluentIcons.zip";
-            string userDocumentsFolderPath = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
-            string localFilePath = Path.Combine(userDocumentsFolderPath + UpdateFileFolder, UpdateFileName);
-            var progress = new Progress<double>();
-            getNetData = new GetNetData();
+            string updateFileFolder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "JSG-LLC", "Fonts");
+            string updateFileName = "SegoeFluentIcons.zip";
+            string localFilePath = Path.Combine(updateFileFolder, updateFileName);
+            string fontName = "Segoe Fluent Icons.ttf";
+
+            // 确保字体文件夹存在
+            Directory.CreateDirectory(updateFileFolder);
+
+            // 下载字体文件
             try
             {
+                var getNetData = new GetNetData();
                 await getNetData.DownloadFileWithProgressAsync("https://aka.ms/SegoeFluentIcons", localFilePath, progress);
             }
             catch (Exception ex)
             {
-                throw new Exception(ex.Message);
+                Console.WriteLine($"下载字体时出错: {ex.Message}");
+                return 1; // 表示下载失败
             }
 
-            string fontZipFile = Path.Combine(userDocumentsFolderPath + UpdateFileFolder, UpdateFileName);
-            string tempFolder = Path.Combine(userDocumentsFolderPath + UpdateFileFolder, "temp");
-            // 创建临时文件夹
-            if (!Directory.Exists(tempFolder))
+            // 解压字体文件
+            string tempFolder = Path.Combine(updateFileFolder, "temp");
+
+            // 确保临时文件夹不存在，如果存在则删除
+            if (Directory.Exists(tempFolder))
             {
-                Directory.CreateDirectory(tempFolder);
+                Directory.Delete(tempFolder, true);
             }
-            Directory.Delete(tempFolder, true);
-            // 解压 zip 文件到临时文件夹中
-            ZipFile.ExtractToDirectory(fontZipFile, tempFolder);
+
+            // 重新创建临时文件夹
+            Directory.CreateDirectory(tempFolder);
+
+            try
+            {
+                ZipFile.ExtractToDirectory(localFilePath, tempFolder);
+            }
+            catch (IOException ex)
+            {
+                Console.WriteLine($"解压时出错: {ex.Message}");
+                // 可以选择在这里处理错误或返回
+                return 1;
+            }
 
             // 获取字体文件路径
-            StorageFile fontFile = await StorageFile.GetFileFromPathAsync(tempFolder + "\\Segoe Fluent Icons.ttf");
+            string fontFilePath = Path.Combine(tempFolder, fontName);
 
-            if (fontFile != null)
+            if (!File.Exists(fontFilePath))
             {
-                // 启动 Windows 默认的字体查看器
-                Process.Start("fontview", fontFile.Path);
-
-                // 字体已成功安装
-                return 0;
+                Console.WriteLine("字体文件不存在.");
+                return 1; // 字体文件未找到
             }
-            else { return 1; }
+
+            // 安装字体
+            if (StartInstallFont(fontFilePath))
+            {
+                Console.WriteLine("字体安装成功。");
+                return 0; // 安装成功
+            }
+            else
+            {
+                Console.WriteLine("字体安装失败。");
+                return 2; // 安装失败
+            }
+        }
+
+
+        [DllImport("gdi32.dll")]
+        private static extern int AddFontResource(string lpFilename);
+
+        public static bool StartInstallFont(string fontFilePath)
+        {
+            try
+            {
+                string fontName = Path.GetFileNameWithoutExtension(fontFilePath);
+                string fontsPath = Environment.GetFolderPath(Environment.SpecialFolder.Fonts);
+                string destination = Path.Combine(fontsPath, Path.GetFileName(fontFilePath));
+
+                // 复制字体文件到Windows字体目录
+                File.Copy(fontFilePath, destination, true);
+
+                // 将字体注册到注册表中
+                using (RegistryKey fonts = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Microsoft\Windows NT\CurrentVersion\Fonts", true))
+                {
+                    if (fonts == null)
+                    {
+                        Console.WriteLine("无法打开注册表字体项");
+                        return false;
+                    }
+
+                    fonts.SetValue(fontName, Path.GetFileName(fontFilePath));
+                }
+
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"安装字体时出错: {ex.Message}");
+                return false;
+            }
         }
     }
 }

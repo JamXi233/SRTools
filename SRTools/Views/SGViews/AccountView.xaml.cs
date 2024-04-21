@@ -1,11 +1,31 @@
-﻿using Microsoft.UI.Xaml;
+﻿// Copyright (c) 2021-2024, JamXi JSG-LLC.
+// All rights reserved.
+
+// This file is part of SRTools.
+
+// SRTools is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+
+// SRTools is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+
+// You should have received a copy of the GNU General Public License
+// along with SRTools.  If not, see <http://www.gnu.org/licenses/>.
+
+// For more information, please refer to <https://www.gnu.org/licenses/gpl-3.0.html>
+
+using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Newtonsoft.Json;
 using SRTools.Depend;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Security.Principal;
+using System.Threading.Tasks;
 
 namespace SRTools.Views.SGViews
 {
@@ -17,15 +37,19 @@ namespace SRTools.Views.SGViews
         {
             this.InitializeComponent();
             Logging.Write("Switch to AccountView", 0);
-            LoadData(SRToolsHelper("/GetAllBackup"));
-
+            InitData();
         }
 
-        private void LoadData(string jsonData)
+        private async void InitData()
+        {
+            await LoadData(await ProcessRun.SRToolsHelperAsync("/GetAllBackup"));
+        }
+
+        private async Task LoadData(string jsonData)
         {
             var accountexist = false;
             AccountListView.SelectionChanged -= AccountListView_SelectionChanged;
-            var CurrentLoginUID = SRToolsHelper("/GetCurrentLogin");
+            var CurrentLoginUID = await ProcessRun.SRToolsHelperAsync("/GetCurrentLogin");
             List<Account> accounts = JsonConvert.DeserializeObject<List<Account>>(jsonData);
             AccountListView.ItemsSource = accounts;
             if (accounts is not null) 
@@ -59,23 +83,23 @@ namespace SRTools.Views.SGViews
             AccountListView.SelectionChanged += AccountListView_SelectionChanged;
         }
 
-        private void AccountListView_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        private async void AccountListView_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             if (AccountListView.SelectedItem != null)
             {
                 Account selectedAccount = (Account)AccountListView.SelectedItem;
                 string command = $"/RestoreUser {selectedAccount.uid} {selectedAccount.name}";
-                SRToolsHelper(command);
+                await ProcessRun.SRToolsHelperAsync(command);
 
             }
-            LoadData(SRToolsHelper("/GetAllBackup"));
+            await LoadData(await ProcessRun.SRToolsHelperAsync("/GetAllBackup"));
         }
 
 
-        private void SaveAccount(object sender, RoutedEventArgs e)
+        private async void SaveAccount(object sender, RoutedEventArgs e)
         {
-            var CurrentLoginUID = SRToolsHelper("/GetCurrentLogin");
-            List<Account> accounts = JsonConvert.DeserializeObject<List<Account>>(SRToolsHelper("/GetAllBackup"));
+            var CurrentLoginUID = await ProcessRun.SRToolsHelperAsync("/GetCurrentLogin");
+            List<Account> accounts = JsonConvert.DeserializeObject<List<Account>>(await ProcessRun.SRToolsHelperAsync("/GetAllBackup"));
             bool found = false;
             if (accounts != null)
             {
@@ -105,34 +129,34 @@ namespace SRTools.Views.SGViews
             
         }
 
-        private void SaveAccount_C(object sender, RoutedEventArgs e)
+        private async void SaveAccount_C(object sender, RoutedEventArgs e)
         {
             saveAccountName.IsOpen = false;
-            saveAccountSuccess.Subtitle = SRToolsHelper("/BackupUser " + saveAccountNameInput.Text);
+            saveAccountSuccess.Subtitle = await ProcessRun.SRToolsHelperAsync("/BackupUser " + saveAccountNameInput.Text);
             saveAccountSuccess.IsOpen = true;
             renameAccount.IsEnabled = true;
             saveAccount.IsEnabled = false;
             saveAccountNameInput.Text = "";
-            LoadData(SRToolsHelper("/GetAllBackup"));
+            await LoadData(await ProcessRun.SRToolsHelperAsync("/GetAllBackup"));
         }
 
-        private void RenameAccount_C(object sender, RoutedEventArgs e)
+        private async void RenameAccount_C(object sender, RoutedEventArgs e)
         {
             renameAccountTip.IsOpen = false;
             Account selectedAccount = (Account)AccountListView.SelectedItem;
-            renameAccountSuccess.Subtitle = SRToolsHelper($"/RenameUser {selectedAccount.uid} {selectedAccount.name} {renameAccountNameInput.Text}");
+            renameAccountSuccess.Subtitle = await ProcessRun.SRToolsHelperAsync($"/RenameUser {selectedAccount.uid} {selectedAccount.name} {renameAccountNameInput.Text}");
             renameAccountSuccess.IsOpen = true;
-            LoadData(SRToolsHelper("/GetAllBackup"));
+            await LoadData(await ProcessRun.SRToolsHelperAsync("/GetAllBackup"));
         }
 
-        private void RemoveAccount_C(TeachingTip sender, object args)
+        private async void RemoveAccount_C(TeachingTip sender, object args)
         {
             removeAccountCheck.IsOpen = false;
             Account selectedAccount = (Account)AccountListView.SelectedItem;
-            removeAccountSuccess.Subtitle = SRToolsHelper($"/RemoveUser {selectedAccount.uid} {selectedAccount.name}");
+            removeAccountSuccess.Subtitle = await ProcessRun.SRToolsHelperAsync($"/RemoveUser {selectedAccount.uid} {selectedAccount.name}");
             removeAccountSuccess.IsOpen = true;
-            LoadData(SRToolsHelper("/GetAllBackup"));
-            List<Account> accounts = JsonConvert.DeserializeObject<List<Account>>(SRToolsHelper("/GetAllBackup"));
+            await LoadData(await ProcessRun.SRToolsHelperAsync("/GetAllBackup"));
+            List<Account> accounts = JsonConvert.DeserializeObject<List<Account>>(await ProcessRun.SRToolsHelperAsync("/GetAllBackup"));
             AccountListView.ItemsSource = accounts;
             if (accounts is not null)
             {
@@ -140,10 +164,10 @@ namespace SRTools.Views.SGViews
             }
         }
 
-        private void GetCurrentAccount(object sender, RoutedEventArgs e)
+        private async void GetCurrentAccount(object sender, RoutedEventArgs e)
         {
             currentAccountTip.IsOpen = true;
-            currentAccountTip.Subtitle = "当前UID为:"+SRToolsHelper("/GetCurrentLogin");
+            currentAccountTip.Subtitle = "当前UID为:"+ await ProcessRun.SRToolsHelperAsync("/GetCurrentLogin");
         }
 
         private void DeleteAccount(object sender, RoutedEventArgs e)
@@ -156,24 +180,11 @@ namespace SRTools.Views.SGViews
             renameAccountTip.IsOpen = true;
         }
 
-        private void RefreshAccount(object sender, RoutedEventArgs e)
+        private async void RefreshAccount(object sender, RoutedEventArgs e)
         {
-            LoadData(SRToolsHelper("/GetAllBackup"));
+            await LoadData(await ProcessRun.SRToolsHelperAsync("/GetAllBackup"));
         }
 
-        private string SRToolsHelper(string Args)
-        {
-            Process process = new Process();
-            process.StartInfo.UseShellExecute = false;
-            process.StartInfo.RedirectStandardOutput = true;
-            process.StartInfo.FileName = userDocumentsFolderPath + @"\JSG-LLC\SRTools\Depends\SRToolsHelper\SRToolsHelper.exe";
-            process.StartInfo.Arguments = Args;
-            process.Start();
-            string output = process.StandardOutput.ReadToEnd();
-            process.WaitForExit();
-            Logging.Write(output.Trim(), 3,"SRToolsHelper");
-            return output.Trim();
-        }
 
     }
     public class Account

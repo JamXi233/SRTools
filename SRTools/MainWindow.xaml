@@ -6,6 +6,7 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:muxc="using:Microsoft.UI.Xaml.Controls"
+    xmlns:animatedvisuals="using:Microsoft.UI.Xaml.Controls.AnimatedVisuals"
     mc:Ignorable="d">
 
     <Grid>
@@ -38,7 +39,7 @@
                             <FontIcon FontFamily="Segoe Fluent Icons" Glyph="&#xe734;"/>
                         </NavigationViewItem.Icon>
                     </NavigationViewItem>
-                    <NavigationViewItem Content="状态信息(计划中)" Tag="info" SelectsOnInvoked="False" IsEnabled="False">
+                    <NavigationViewItem Content="状态信息(计划中)" Tag="account_status"  SelectsOnInvoked="False" IsEnabled="False">
                         <NavigationViewItem.Icon>
                             <FontIcon FontFamily="Segoe Fluent Icons" Glyph="&#xf180;"/>
                         </NavigationViewItem.Icon>
@@ -46,11 +47,6 @@
                     <NavigationViewItem Content="活动时间表(计划中)" Tag="event" SelectsOnInvoked="False" IsEnabled="False">
                         <NavigationViewItem.Icon>
                             <FontIcon FontFamily="Segoe Fluent Icons" Glyph="&#xE787;"/>
-                        </NavigationViewItem.Icon>
-                    </NavigationViewItem>
-                    <NavigationViewItem Content="伤害计算器(待定)" Tag="calc" SelectsOnInvoked="False" IsEnabled="False">
-                        <NavigationViewItem.Icon>
-                            <FontIcon FontFamily="Segoe Fluent Icons" Glyph="&#xe8ef;"/>
                         </NavigationViewItem.Icon>
                     </NavigationViewItem>
 
@@ -70,7 +66,7 @@
                     </NavigationViewItem>
                     <NavigationViewItem Content="赞助" Tag="donation">
                         <NavigationViewItem.Icon>
-                            <ImageIcon Source="ms-appx:///Assets/Don_Icon.gif"/>
+                            <ImageIcon Source="ms-appx:///Imgs/Don_Icon.gif"/>
                         </NavigationViewItem.Icon>
                     </NavigationViewItem>
                 </NavigationView.FooterMenuItems>
@@ -80,89 +76,63 @@
 
             </NavigationView>
 
-            <Border x:Name="AppTitleBar" Height="48" Margin="48,0,0,0" VerticalAlignment="Top" >
+            <Border x:Name="AppTitleBar" Height="48" Margin="48,0,0,0" VerticalAlignment="Top">
                 <Grid>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto"/>
                         <ColumnDefinition Width="*"/>
                     </Grid.ColumnDefinitions>
-                    <Border CornerRadius="24" Margin="0 0 8 0">
-                        <Image
-                        Grid.Row="0"
-                        Source="ms-appx:///Assets/Logo_Background.png"
-                        Width="24"
-                        Height="24"/>
+                    <Border CornerRadius="18" Margin="0 0 8 0">
+                        <Image Grid.Row="0" Source="ms-appx:///Imgs/Logo_Background.png" Width="24" Height="24"/>
                     </Border>
-                    <TextBlock Grid.Column="1" VerticalAlignment="Center" Foreground="{ThemeResource TextFillColorSecondaryBrush}" Text="星轨工具箱(星穹铁道工具箱)" />
+                    <TextBlock Grid.Column="1" VerticalAlignment="Center" Foreground="{ThemeResource TextFillColorSecondaryBrush}" Text="SRTools(星轨工具箱)" />
                 </Grid>
             </Border>
 
         </Grid>
-        <!-- 首次使用 -->
-        <Grid x:Name="FirstRun" Visibility="Collapsed" Background="{ThemeResource SystemControlAcrylicElementMediumHighBrush}">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="3*"/>
-                <ColumnDefinition Width="2*"/>
-            </Grid.ColumnDefinitions>
 
-            <!-- 依赖文件左侧区域 -->
-            <StackPanel x:Name="depend_panel_left" Grid.Column="0" HorizontalAlignment="Left" Visibility="Collapsed">
-                <StackPanel HorizontalAlignment="Stretch" Margin="38">
-                    <TextBlock Text="首次运行/恢复数据" FontSize="32" FontWeight="Bold"/>
-                    <TextBlock Text="需要先下载依赖文件" Margin="0 12 0 0"/>
-                    <TextBlock x:Name="depend_Latest_Name" Text="依赖项:..." Margin="0 12 0 0"/>
-                    <TextBlock x:Name="depend_Latest_Version" Text="版本号:..."/>
-                </StackPanel>
-            </StackPanel>
+        <Grid x:Name="FirstRun_Grid">
+            <NavigationView x:Name="MainNavigationView"
+                PaneDisplayMode="LeftMinimal"
+                IsPaneToggleButtonVisible="False"
+                IsBackButtonVisible="Collapsed"
+                IsSettingsVisible="False"
+                Background="{ThemeResource SystemControlAcrylicElementMediumHighBrush}"
+                Visibility="Collapsed">
 
-            <!-- 依赖文件右侧区域 -->
-            <StackPanel x:Name="depend_panel_right" Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Bottom" Visibility="Collapsed">
-                <TextBlock x:Name="depend_Info"/>
-                <Button  x:Name="depend_Download" Width="90" Height="84" VerticalAlignment="Bottom" HorizontalAlignment="Right" Margin="32" Click="DependDownload_Click" IsEnabled="False">
-                    <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
-                        <StackPanel x:Name="depend_Grid">
-                            <FontIcon x:Name="depend_Btn_Icon" FontFamily="Segoe Fluent Icons" Glyph="&#xebd3;" Width="32" Height="32"/>
-                            <TextBlock x:Name="depend_Btn_Text" Text="立即下载" FontSize="12"/>
-                        </StackPanel>
-                        <StackPanel x:Name="depend_Progress_Grid"  Visibility="Collapsed">
-                            <ProgressRing x:Name="depend_Btn_Ring" Margin="0 0 0 18"/>
-                            <ProgressBar x:Name="depend_Btn_Bar" Width="130" IsIndeterminate="False" ShowPaused="False" ShowError="False" />
+                <Grid HorizontalAlignment="Stretch" Margin="24">
+                    <StackPanel HorizontalAlignment="Left" Orientation="Vertical">
+                        <StackPanel Orientation="Horizontal" x:Name="TargetLogo">
+                            <Grid CornerRadius="4" HorizontalAlignment="Left">
+                                <Image x:Name="Logo" Source="ms-appx:///Imgs/Logo.png" Width="32" Height="32"/>
+                                <ProgressRing x:Name="Logo_Progress" Width="32" Height="32"/>
+                            </Grid>
+                            <StackPanel Width="4"/>
+                            <TextBlock Text="SRTools" VerticalAlignment="Bottom" FontWeight="Bold" FontSize="20"/>
                         </StackPanel>
                     </StackPanel>
-                </Button>
-            </StackPanel>
-
-            <!-- 选择下载渠道左侧区域 -->
-            <StackPanel x:Name="dservice_panel_left" Grid.Column="0" HorizontalAlignment="Left">
-                <StackPanel HorizontalAlignment="Stretch" Margin="38">
-                    <TextBlock Text="首次运行/恢复数据" FontSize="32" FontWeight="Bold"/>
-                    <RadioButtons Header="选择要更新渠道" Margin="0 12 0 0">
-                        <RadioButton Content="JSG-LLC(JSG-DS) 国内较快" Checked="DService_JSG_Choose"/>
-                        <RadioButton Content="Gitee" Checked="DService_Gitee_Choose" IsEnabled="False"/>
-                        <RadioButton Content="Github" Checked="DService_Github_Choose" IsEnabled="False"/>
-                    </RadioButtons>
-                </StackPanel>
-            </StackPanel>
-
-            <!-- 选择下载渠道右侧区域 -->
-            <StackPanel x:Name="dservice_panel_right" Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Bottom">
-                <TextBlock x:Name="dserivce_Info"/>
-                <Button  x:Name="dserivce_finish" Width="90" Height="84" VerticalAlignment="Bottom" HorizontalAlignment="Right" Margin="32" Click="DSerivceChoose_Click" IsEnabled="False">
-                    <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
-                        <StackPanel x:Name="dserivce_Grid">
-                            <FontIcon FontFamily="Segoe Fluent Icons" Glyph="&#xe73a;" Width="32" Height="32"/>
-                            <TextBlock x:Name="dserivce_Btn_Text" Text="选择完成" FontSize="12"/>
-                        </StackPanel>
-                    </StackPanel>
-                </Button>
-            </StackPanel>
-
+                    <Frame x:Name="FirstRun_Frame"/>
+                </Grid>
+            </NavigationView>
         </Grid>
-        <InfoBar x:Name="infoBar" IsOpen="False" Severity="Error" Title="" Message="" VerticalAlignment="Top" HorizontalAlignment="Right" Width="400" Height="auto" Margin="0 64 12 0">
-            <InfoBar.ActionButton>
-                <Button Content="打开文件夹" Click="ExpectionFolderOpen_Click"/>
-            </InfoBar.ActionButton>
-        </InfoBar>
+
+        <StackPanel x:Name="InfoBarPanel" Orientation="Vertical" VerticalAlignment="Top" HorizontalAlignment="Right" Margin="0 64 12 0"/>
+
+        <Grid x:Name="WaitOverlay" Background="{ThemeResource SystemControlAcrylicElementMediumHighBrush}" Visibility="Collapsed">
+            <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+                <Grid Width="72" Height="72" Background="{ThemeResource SystemControlAcrylicElementMediumHighBrush}" CornerRadius="8">
+                    <ProgressRing x:Name="WaitOverlay_Progress" Visibility="Collapsed"/>
+                    <Image x:Name="WaitOverlay_Image" Grid.Row="0" Source="ms-appx:///Imgs/Logo_Background.png" Width="48" Height="48" Visibility="Collapsed"/>
+                    <FontIcon x:Name="WaitOverlay_Success" FontFamily="Segoe Fluent Icons" Glyph="&#xE73E;" Visibility="Collapsed"/>
+                </Grid>
+                <StackPanel Height="8"/>
+                <StackPanel HorizontalAlignment="Center">
+                    <TextBlock x:Name="WaitOverlay_Title" Text="" FontSize="24" FontWeight="Bold" HorizontalAlignment="Center"/>
+                    <TextBlock x:Name="WaitOverlay_SubTitle" Text="" FontSize="14" HorizontalAlignment="Center"/>
+                </StackPanel>
+            </StackPanel>
+        </Grid>
+            
     </Grid>
 
 </Window>

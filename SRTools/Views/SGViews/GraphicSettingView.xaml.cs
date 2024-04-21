@@ -1,12 +1,30 @@
-﻿using Microsoft.UI.Xaml;
+﻿// Copyright (c) 2021-2024, JamXi JSG-LLC.
+// All rights reserved.
+
+// This file is part of SRTools.
+
+// SRTools is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+
+// SRTools is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+
+// You should have received a copy of the GNU General Public License
+// along with SRTools.  If not, see <http://www.gnu.org/licenses/>.
+
+// For more information, please refer to <https://www.gnu.org/licenses/gpl-3.0.html>
+
+using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
-using Microsoft.UI.Xaml.Media;
-using Microsoft.Win32;
 using Newtonsoft.Json;
 using SRTools.Depend;
 using System;
 using System.Diagnostics;
-using Windows.Devices.Geolocation;
+using System.Threading.Tasks;
 
 namespace SRTools.Views.SGViews
 {
@@ -21,23 +39,10 @@ namespace SRTools.Views.SGViews
 
         }
 
-        private void LoadData()
+        private async void LoadData()
         {
-            string executablePath = userDocumentsFolderPath + @"\JSG-LLC\SRTools\Depends\SRToolsHelper\SRToolsHelper.exe";
-            string arguments = "/GetReg";
-
-            Process process = new Process();
-            process.StartInfo.FileName = executablePath;
-            process.StartInfo.Arguments = arguments;
-            process.StartInfo.UseShellExecute = false;
-            process.StartInfo.RedirectStandardOutput = true;
-            process.Start();
-
-            string output = process.StandardOutput.ReadToEnd();
-            process.WaitForExit();
-            int exitCode = process.ExitCode;
+            string output = await ProcessRun.SRToolsHelperAsync("/GetReg");
             string returnValue = output.Trim(); // 去掉字符串末尾的换行符和空格
-            Logging.Write(returnValue, 3, "SRToolsHelper");
             // 使用 returnValue 变量进行后续处理
             Config config = JsonConvert.DeserializeObject<Config>(returnValue);
 
@@ -271,59 +276,65 @@ namespace SRTools.Views.SGViews
             }
         }
 
-        private void ChangeGraphic(object sender, RoutedEventArgs e)
+        private async void ChangeGraphic(object sender, RoutedEventArgs e)
         {
             MenuFlyoutItem item = sender as MenuFlyoutItem;
             string text = item.Text;
 
-            switch (text.ToString())
+            try
             {
-                //特殊调节
-                case string s when s.Contains("30") || s.Contains("60") || s.Contains("120"):
-                    ProcessRun.RunProcess_Message(userDocumentsFolderPath + "\\JSG-LLC\\SRTools\\Depends\\SRToolsHelper\\SRToolsHelper.exe", "/SetValue FPS " + s);
-                    break;
-                case "FXAA":
-                    ProcessRun.RunProcess_Message(userDocumentsFolderPath + "\\JSG-LLC\\SRTools\\Depends\\SRToolsHelper\\SRToolsHelper.exe", "/SetValue AAMode " + 1);
-                    break;
-                case "TAA":
-                    ProcessRun.RunProcess_Message(userDocumentsFolderPath + "\\JSG-LLC\\SRTools\\Depends\\SRToolsHelper\\SRToolsHelper.exe", "/SetValue AAMode " + 2);
-                    break;
-                //画质调节
-                case "开":
-                    ProcessRun.RunProcess_Message(userDocumentsFolderPath + "\\JSG-LLC\\SRTools\\Depends\\SRToolsHelper\\SRToolsHelper.exe", "/SetValue " + item.Tag + " true");
-                    break;
-                case "关":
-                    if ((String)item.Tag == "EnableVSync")
-                    {
-                        ProcessRun.RunProcess_Message(userDocumentsFolderPath + "\\JSG-LLC\\SRTools\\Depends\\SRToolsHelper\\SRToolsHelper.exe", "/SetValue " + item.Tag + " false");
-                    }
-                    else
-                    {
-                        ProcessRun.RunProcess_Message(userDocumentsFolderPath + "\\JSG-LLC\\SRTools\\Depends\\SRToolsHelper\\SRToolsHelper.exe", "/SetValue " + item.Tag + " " + 0);
-                    }
-                    
-                    break;
-                case "非常低":
-                    ProcessRun.RunProcess_Message(userDocumentsFolderPath + "\\JSG-LLC\\SRTools\\Depends\\SRToolsHelper\\SRToolsHelper.exe", "/SetValue " + item.Tag + " " + 1);
-                    break;
-                case "低":
-                    ProcessRun.RunProcess_Message(userDocumentsFolderPath + "\\JSG-LLC\\SRTools\\Depends\\SRToolsHelper\\SRToolsHelper.exe", "/SetValue " + item.Tag + " " + 2);
-                    break;
-                case "中":
-                    ProcessRun.RunProcess_Message(userDocumentsFolderPath + "\\JSG-LLC\\SRTools\\Depends\\SRToolsHelper\\SRToolsHelper.exe", "/SetValue " + item.Tag + " " + 3);
-                    break;
-                case "高":
-                    ProcessRun.RunProcess_Message(userDocumentsFolderPath + "\\JSG-LLC\\SRTools\\Depends\\SRToolsHelper\\SRToolsHelper.exe", "/SetValue " + item.Tag + " " + 4);
-                    break;
-                case "非常高":
-                    ProcessRun.RunProcess_Message(userDocumentsFolderPath + "\\JSG-LLC\\SRTools\\Depends\\SRToolsHelper\\SRToolsHelper.exe", "/SetValue " + item.Tag + " " + 5);
-                    break;
-                //渲染精度调节
-                case string s when s.Contains("."):
-                    ProcessRun.RunProcess_Message(userDocumentsFolderPath + "\\JSG-LLC\\SRTools\\Depends\\SRToolsHelper\\SRToolsHelper.exe", "/SetValue RenderScale "+s);
-                    break;
+                switch (text)
+                {
+                    // 特殊调节
+                    case string s when s.Contains("30") || s.Contains("60") || s.Contains("120"):
+                        await ProcessRun.SRToolsHelperAsync("/SetValue FPS " + s);
+                        break;
+                    case "FXAA":
+                        await ProcessRun.SRToolsHelperAsync("/SetValue AAMode 1");
+                        break;
+                    case "TAA":
+                        await ProcessRun.SRToolsHelperAsync("/SetValue AAMode 2");
+                        break;
+                    // 画质调节
+                    case "开":
+                        await ProcessRun.SRToolsHelperAsync("/SetValue " + item.Tag + " true");
+                        break;
+                    case "关":
+                        if ((string)item.Tag == "EnableVSync")
+                        {
+                            await ProcessRun.SRToolsHelperAsync("/SetValue " + item.Tag + " false");
+                        }
+                        else
+                        {
+                            await ProcessRun.SRToolsHelperAsync("/SetValue " + item.Tag + " 0");
+                        }
+                        break;
+                    case "非常低":
+                        await ProcessRun.SRToolsHelperAsync("/SetValue " + item.Tag + " 1");
+                        break;
+                    case "低":
+                        await ProcessRun.SRToolsHelperAsync("/SetValue " + item.Tag + " 2");
+                        break;
+                    case "中":
+                        await ProcessRun.SRToolsHelperAsync("/SetValue " + item.Tag + " 3");
+                        break;
+                    case "高":
+                        await ProcessRun.SRToolsHelperAsync("/SetValue " + item.Tag + " 4");
+                        break;
+                    case "非常高":
+                        await ProcessRun.SRToolsHelperAsync("/SetValue " + item.Tag + " 5");
+                        break;
+                    // 渲染精度调节
+                    case string s when s.Contains("."):
+                        await ProcessRun.SRToolsHelperAsync("/SetValue RenderScale " + s);
+                        break;
+                }
+                LoadData();
             }
-            LoadData();
+            catch (Exception ex)
+            {
+                Logging.Write($"Error in ChangeGraphic: {ex.Message}", 2);
+            }
 
         }
     }

@@ -13,11 +13,11 @@
         
         <ScrollViewer HorizontalAlignment="Left" >
             <StackPanel HorizontalAlignment="Left" >
-                <Expander Width="510" IsExpanded="True" ExpandDirection="Down" VerticalAlignment="Top" Header="关于问题反馈" Content="发现问题时，可以将错误日志与系统版本在Github上开启一个issue。"/>
-                <Expander Width="510" ExpandDirection="Down" VerticalAlignment="Top" Header="无法切换账号" Content="检查是否设置游戏路径，如已经设置还是无法切换账号可以尝试备份抽卡记录后清空所有数据"/>
-                <Expander Width="510" ExpandDirection="Down" VerticalAlignment="Top" Header="无法设置画质" Content="检查是否在游戏内手动设置过一次画质(不可使用默认画质)"/>
-                <Expander Width="510" ExpandDirection="Down" VerticalAlignment="Top" Header="从缓存导入抽卡记录失败" Content="可能是缓存的抽卡记录的地址已经过期，需要再次游戏中获取记录"/>
-                <Expander Width="510" ExpandDirection="Down" VerticalAlignment="Top" Header="软件的所有图标均为乱码" Content="尝试使用设置中的[安装图标字体]"/>
+                <Expander Width="580" IsExpanded="True" ExpandDirection="Down" VerticalAlignment="Top" Header="关于问题反馈" Content="发现问题时，可以将错误日志与系统版本在Github上开启一个issue。"/>
+                <Expander Width="580" ExpandDirection="Down" VerticalAlignment="Top" Header="无法切换账号" Content="检查是否设置游戏路径，如已经设置还是无法切换账号可以尝试备份抽卡记录后清空所有数据"/>
+                <Expander Width="580" ExpandDirection="Down" VerticalAlignment="Top" Header="无法设置画质" Content="检查是否在游戏内手动设置过一次画质(不可使用默认画质)"/>
+                <Expander Width="580" ExpandDirection="Down" VerticalAlignment="Top" Header="从缓存导入抽卡记录失败" Content="可能是缓存的抽卡记录的地址已经过期，需要再次游戏中获取记录"/>
+                <Expander Width="580" ExpandDirection="Down" VerticalAlignment="Top" Header="软件的所有图标均为乱码" Content="尝试使用设置中的[安装图标字体]"/>
             </StackPanel>
         </ScrollViewer>
 

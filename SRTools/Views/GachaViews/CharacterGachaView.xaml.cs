@@ -1,20 +1,39 @@
-﻿using System;
+﻿// Copyright (c) 2021-2024, JamXi JSG-LLC.
+// All rights reserved.
+
+// This file is part of SRTools.
+
+// SRTools is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+
+// SRTools is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+
+// You should have received a copy of the GNU General Public License
+// along with SRTools.  If not, see <http://www.gnu.org/licenses/>.
+
+// For more information, please refer to <https://www.gnu.org/licenses/gpl-3.0.html>
+
+using System;
 using Microsoft.UI.Xaml.Controls;
 using SRTools.Depend;
 using System.Linq;
 using Windows.Storage;
-using System.Diagnostics;
-using System.Collections.Generic;
-using System.Text;
-using Microsoft.UI.Xaml;
-using System.Text.Json;
 using Spectre.Console;
-using Windows.Storage.Pickers;
-using static SRTools.Depend.ExportSRGF;
-using System.Text.Encodings.Web;
+using Microsoft.UI.Xaml.Data;
+using Microsoft.UI.Xaml.Media;
+using Microsoft.UI;
+using Microsoft.UI.Xaml;
+using SRTools.Views.ToolViews;
+
 
 namespace SRTools.Views.GachaViews
 {
+
     public sealed partial class CharacterGachaView : Page
     {
 
@@ -28,8 +47,9 @@ namespace SRTools.Views.GachaViews
 
         private async void LoadData()
         {
+            string selectedUID = GachaView.GetSelectedUid();
             var folder = KnownFolders.DocumentsLibrary;
-            var srtoolsFolder = folder.GetFolderAsync("JSG-LLC\\SRTools").AsTask().GetAwaiter().GetResult();
+            var srtoolsFolder = folder.GetFolderAsync("JSG-LLC\\SRTools\\GachaRecords\\"+selectedUID).AsTask().GetAwaiter().GetResult();
             var settingsFile = srtoolsFolder.GetFileAsync("GachaRecords_Character.ini").AsTask().GetAwaiter().GetResult();
             var GachaRecords = FileIO.ReadTextAsync(settingsFile).AsTask().GetAwaiter().GetResult();
             var records = await new GachaRecords().GetAllGachaRecordsAsync(null, GachaRecords);
@@ -105,11 +125,68 @@ namespace SRTools.Views.GachaViews
                 };
                 MyStackPanel.Children.Add(textBlock);
             }
-            MyStackPanel.Children.Add(new TextBlock { Text = $"距离上一个5星已经抽了" + RankType5 + "发" });
-            MyStackPanel.Children.Add(new TextBlock { Text = $"距离上一个4星已经抽了" + RankType4 + "发" });
+            MyStackPanel.Children.Add(new TextBlock { Text = $"距离上一个五星已经抽了" + RankType5 + "发" });
+            MyStackPanel.Children.Add(new TextBlock { Text = $"距离上一个四星已经抽了" + RankType4 + "发" });
+            // 计算概率，基础概率应以小数形式传递
+            double upcomingProbability5 = CalculateProbability(RankType5, 0.006, 89);
+            double upcomingProbability4 = CalculateProbability(RankType4, 0.0255, 9);
+
+            // 显示在 UI 上
+            MyStackPanel.Children.Add(new TextBlock { Text = $"下次五星的概率: {upcomingProbability5:F2}%" });
+            MyStackPanel.Children.Add(new TextBlock { Text = $"下次四星的概率: {upcomingProbability4:F2}%" });
+
             MyListView.ItemsSource = records;
             //gacha_status.Text = "已加载本地缓存";
+
         }
 
+        public double CalculateProbability(int drawsSinceLast, double baseProbability, int pityLimit)
+        {
+            if (drawsSinceLast >= pityLimit)
+                return 100.0;
+
+            double cumulativeProbability = 1.0;
+            for (int i = 0; i < drawsSinceLast; i++)
+            {
+                cumulativeProbability *= (1 - baseProbability);
+            }
+            double probability = (1 - cumulativeProbability) * 100;
+            return probability;
+        }
+
+    }
+
+    public class RankTypeToBackgroundColorConverter : IValueConverter
+    {
+        public object Convert(object value, Type targetType, object parameter, string language)
+        {
+            var rankType = value as string;
+            SolidColorBrush brush;
+
+            switch (rankType)
+            {
+                case "5":
+                    // Gold color: #FFE2AC58
+                    brush = new SolidColorBrush(ColorHelper.FromArgb(0xFF, 0xE2, 0xAC, 0x58));
+                    break;
+                case "4":
+                    // Purple color: #FF7242B3
+                    brush = new SolidColorBrush(ColorHelper.FromArgb(0xFF, 0x72, 0x42, 0xB3));
+                    break;
+                case "3":
+                    // Dark Blue color: #FF3F5992
+                    brush = new SolidColorBrush(ColorHelper.FromArgb(0xFF, 0x3F, 0x59, 0x92));
+                    break;
+                default:
+                    brush = new SolidColorBrush(Colors.Transparent);
+                    break;
+            }
+            return brush;
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, string language)
+        {
+            throw new NotImplementedException("Converting from a SolidColorBrush to a string is not supported.");
+        }
     }
 }

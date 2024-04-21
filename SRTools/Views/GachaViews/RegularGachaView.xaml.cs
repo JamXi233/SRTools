@@ -1,9 +1,29 @@
-﻿using System;
+﻿// Copyright (c) 2021-2024, JamXi JSG-LLC.
+// All rights reserved.
+
+// This file is part of SRTools.
+
+// SRTools is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+
+// SRTools is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+
+// You should have received a copy of the GNU General Public License
+// along with SRTools.  If not, see <http://www.gnu.org/licenses/>.
+
+// For more information, please refer to <https://www.gnu.org/licenses/gpl-3.0.html>
+
+using System;
 using Microsoft.UI.Xaml.Controls;
 using SRTools.Depend;
 using System.Linq;
 using Windows.Storage;
-using System.Diagnostics;
+using SRTools.Views.ToolViews;
 
 namespace SRTools.Views.GachaViews
 {
@@ -19,8 +39,9 @@ namespace SRTools.Views.GachaViews
 
         private async void LoadData()
         {
+            string selectedUID = GachaView.GetSelectedUid();
             var folder = KnownFolders.DocumentsLibrary;
-            var srtoolsFolder = folder.GetFolderAsync("JSG-LLC\\SRTools").AsTask().GetAwaiter().GetResult();
+            var srtoolsFolder = folder.GetFolderAsync("JSG-LLC\\SRTools\\GachaRecords\\" + selectedUID).AsTask().GetAwaiter().GetResult();
             var settingsFile = srtoolsFolder.GetFileAsync("GachaRecords_Regular.ini").AsTask().GetAwaiter().GetResult();
             var GachaRecords = FileIO.ReadTextAsync(settingsFile).AsTask().GetAwaiter().GetResult();
             var records = await new GachaRecords().GetAllGachaRecordsAsync(null, GachaRecords);
@@ -99,8 +120,8 @@ namespace SRTools.Views.GachaViews
                 };
                 MyStackPanel.Children.Add(textBlock);
             }
-            MyStackPanel.Children.Add(new TextBlock { Text = $"距离上一个5星已经抽了" + RankType5 + "发" });
-            MyStackPanel.Children.Add(new TextBlock { Text = $"距离上一个4星已经抽了" + RankType4 + "发" });
+            MyStackPanel.Children.Add(new TextBlock { Text = $"距离上一个五星已经抽了" + RankType5 + "发" });
+            MyStackPanel.Children.Add(new TextBlock { Text = $"距离上一个四星已经抽了" + RankType4 + "发" });
             MyListView.ItemsSource = records;
             //gacha_status.Text = "已加载本地缓存";
         }

@@ -10,7 +10,7 @@
     <Grid>
 
         <!-- 内容区域 -->
-        <Grid  x:Name="MainAPP" Margin="24">
+        <Grid x:Name="MainAPP" Margin="24">
 
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="3*"/>
@@ -19,12 +19,12 @@
 
             <!-- 左侧区域 -->
             <StackPanel Grid.Column="0" HorizontalAlignment="Left">
-                
+
                 <TextBlock Text="程序设置" FontSize="32" FontWeight="Bold" Margin="0 0 0 10"/>
                 <TextBlock Text="程序设置" FontSize="16" FontWeight="Bold" Margin="0 0 0 10"/>
-                
+
                 <Grid>
-                    
+
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="3*"/>
                         <ColumnDefinition Width="2*"/>
@@ -32,7 +32,7 @@
 
                     <StackPanel Grid.Column="0" Margin="0 0 20 0">
                         <ToggleButton x:Name="consoleToggle" Click="Console_Toggle" Content="开启控制台" Margin="0 0 0 10"/>
-                        <Button x:Name="clearAllData" Click="Clear_AllData" Content="清空所有数据" Margin="0 0 0 10"/>
+                        <ToggleButton x:Name="terminalToggle" Click="TerminalMode_Toggle" Content="𝑻𝒆𝒓𝒎𝒊𝒏𝒂𝒍模式" Margin="0 0 0 10"/>
                         <Button x:Name="checkUpdate" Click="Check_Update" Content="检查更新" Margin="0 0 0 10"/>
                         <Button x:Name="checkDependUpdate" Click="Check_Depend_Update" Content="检查依赖更新" Margin="0 0 0 10"/>
                         <RadioButtons Header="更新渠道" FontSize="16" FontWeight="Bold" Margin="0 12 0 0">
@@ -43,9 +43,10 @@
                     </StackPanel>
 
                     <StackPanel Grid.Column="1" Margin="0 0 0 0">
+                        <Button x:Name="clearAllData" Click="Clear_AllData_TipShow" FontWeight="Bold" Foreground="Red" Content="清空所有数据" Margin="0 0 0 10"/>
                         <Button x:Name="backupData" Click="Backup_Data" Content="备份数据" Margin="0 0 0 10"/>
                         <Button x:Name="restoreData" Click="Restore_Data_Click" Content="还原数据" Margin="0 0 0 10"/>
-                        <StackPanel x:Name="other" Margin="0 94 0 10" Visibility="Visible">
+                        <StackPanel x:Name="other" Margin="0 12 0 10" Visibility="Visible">
                             <TextBlock Text="其他依赖" FontSize="16" FontWeight="Bold" Margin="0 0 0 10"/>
                             <StackPanel Orientation="Horizontal">
                                 <Button x:Name="installSFF" Click="Install_Font_Click" Content="安装图标字体" Margin="0 0 10 0"/>
@@ -54,27 +55,13 @@
                         </StackPanel>
                     </StackPanel>
                     
-                </Grid>
 
+                </Grid>
 
             </StackPanel>
 
             <TeachingTip x:Name="UpdateTip"
                 Background="{ThemeResource SystemControlAcrylicElementMediumHighBrush}"
-                Target="{x:Bind checkUpdate}"
-                Title="更新"
-                Subtitle="SubTitle"
-	            CloseButtonContent="关闭">
-                <TeachingTip.IconSource>
-                    <SymbolIconSource Symbol="Admin" />
-                </TeachingTip.IconSource>
-            </TeachingTip>
-
-            <TeachingTip x:Name="DependUpdateTip"
-                Background="{ThemeResource SystemControlAcrylicElementMediumHighBrush}"
-                Target="{x:Bind checkDependUpdate}"
-                Title="更新"
-                Subtitle="SubTitle"
 	            CloseButtonContent="关闭">
                 <TeachingTip.IconSource>
                     <SymbolIconSource Symbol="Admin" />
@@ -83,9 +70,11 @@
 
             <TeachingTip x:Name="TerminalTip"
                 Background="{ThemeResource SystemControlAcrylicElementMediumHighBrush}"
-                Target="{x:Bind consoleToggle}"
-                Title="控制台模式开启"
-                Subtitle="开启控制台关闭软件下次启动会进入控制台模式"
+                Target="{x:Bind terminalToggle}"
+                Title="𝑻𝒆𝒓𝒎𝒊𝒏𝒂𝒍模式开启"
+                Subtitle="软件下次启动会进入控制台模式"
+                ActionButtonContent="立即重启"
+                ActionButtonClick="Restart_App"
 	            CloseButtonContent="关闭">
                 <TeachingTip.IconSource>
                     <SymbolIconSource Symbol="Permissions" />
@@ -99,12 +88,26 @@
                 Subtitle="还原配置文件会清空当前所有配置文件，请小心使用。恢复完成会自动关闭程序。"
                 ActionButtonContent="选择文件"
                 ActionButtonClick="Restore_Data"
-	            CloseButtonContent="关闭"
-                CloseButtonClick="Restore_Data_Cancel">
+	            CloseButtonContent="关闭">
                 <TeachingTip.IconSource>
                     <SymbolIconSource Symbol="Refresh" />
                 </TeachingTip.IconSource>
             </TeachingTip>
+
+            <TeachingTip x:Name="ClearAllDataTip"
+                Background="{ThemeResource SystemControlAcrylicElementMediumHighBrush}"
+                Target="{x:Bind clearAllData}"
+                Title="确定要清空数据吗？"
+                ActionButtonClick="Clear_AllData"
+                CloseButtonContent="取消">
+                <TeachingTip.ActionButtonContent>
+                    <TextBlock Foreground="red" Text="确认清空" FontWeight="ExtraBold"/>
+                </TeachingTip.ActionButtonContent>
+                <TeachingTip.IconSource>
+                    <SymbolIconSource Symbol="Help" />
+                </TeachingTip.IconSource>
+            </TeachingTip>
+
 
             <Grid Grid.Column="1">
                 <Grid.RowDefinitions>
@@ -113,26 +116,31 @@
                 <StackPanel Orientation="Vertical"  HorizontalAlignment="Left">
                     <!-- 应用程序 logo -->
                     <Border CornerRadius="24" HorizontalAlignment="Left">
-                        <Image Grid.Row="0" Source="ms-appx:///Assets/Logo_2.jpg" Width="128" Height="128"/>
+                        <Image Grid.Row="0" Source="ms-appx:///Imgs/Logo_2.jpg" Width="128" Height="128"/>
                     </Border>
-                    <TextBlock Text="Logo from @__QuAn_" FontWeight="Bold" FontSize="12" Margin="0 5 0 0"/>
+                    <TextBlock FontWeight="Bold" FontSize="12" HorizontalAlignment="Left">Logo from 
+                        <Hyperlink NavigateUri="https://weibo.com/u/3190389701" UnderlineStyle="None"><Run Text="@__QuAn_"/></Hyperlink>
+                    </TextBlock>
                     <TextBlock Text="关于" FontSize="18" FontWeight="Bold" Margin="0 12 0 0"/>
-                    <TextBlock x:Name="appName" Text="星轨工具箱(星穹铁道工具箱) Goshawk" FontSize="12" FontWeight="Bold" Margin="0 8 0 0"/>
+                    <TextBlock x:Name="appName" Text="SRTools(星轨工具箱) Goshawk" FontSize="12" FontWeight="Bold" Margin="0 4 0 0"/>
+                    <TextBlock x:Name="appToolName" Text="用于《崩坏：星穹铁道》" FontSize="12" FontWeight="Bold" Margin="0 0 0 0"/>
                     <TextBlock Text="Created by JamXi" FontSize="12" Margin="0 0 0 0"/>
-                    <TextBlock Text="Copyright © JSG-LLC 2017-2023" FontSize="12" FontWeight="Bold" Margin="0 0 0 0"/>
+                    <TextBlock Text="Copyright © JSG-LLC 2017-2024" FontSize="12" FontWeight="Bold" Margin="0 0 0 0"/>
                     <TextBlock Style="{ThemeResource BodyStrongTextBlockStyle}" Margin="0,8,0,4" HorizontalAlignment="Left">
-      <Hyperlink NavigateUri="https://github.com/JamXi233/SRTools/issues" UnderlineStyle="None"><Run Text="报告问题"/></Hyperlink>
+                        <Hyperlink NavigateUri="https://github.com/JamXi233/SRTools/issues" UnderlineStyle="None"><Run Text="报告问题"/></Hyperlink>
                     </TextBlock>
                     <TextBlock Style="{ThemeResource BodyStrongTextBlockStyle}" Margin="0,8,0,4" HorizontalAlignment="Left">
-      <Hyperlink NavigateUri="https://github.com/JamXi233/SRTools" UnderlineStyle="None"><Run Text="贡献代码"/></Hyperlink>
+                        <Hyperlink NavigateUri="https://github.com/JamXi233/SRTools" UnderlineStyle="None"><Run Text="贡献代码"/></Hyperlink>
                     </TextBlock>
                     <StackPanel x:Name="debug_Mode" Margin="0 12 0 0" Visibility="Collapsed">
                         <TextBlock Text="Debug设置" FontSize="16" FontWeight="Bold" Margin="0 0 0 10"/>
                         <Button x:Name="debug_Panic" Click="Debug_Panic_Click" Content="Debug_崩溃" Margin="0 0 0 10"/>
+                        <ToggleButton x:Name="debug_DisableNavBtns" Click="Debug_Disable_NavBtns" Content="禁用所有导航按钮" Margin="0 0 0 10"/>
+                        <Button x:Name="debug_NotificationTest" Click="Debug_Notification_Test" Content="全局通知测试" Margin="0 0 0 10"/>
                         <TextBlock x:Name="debug_Message" Text="处于Debug模式，控制台无法关闭" Margin="0 0 0 0"/>
                     </StackPanel>
-                    <StackPanel Margin="230 120 0 0" VerticalAlignment="Bottom" HorizontalAlignment="Right">
-                        <TextBlock x:Name="appVersion" Text="" FontSize="18" FontWeight="Bold" Foreground="LightGray" HorizontalAlignment="Right"/>
+                    <StackPanel Margin="230 110 0 0" VerticalAlignment="Bottom" HorizontalAlignment="Right">
+                        <TextBlock x:Name="appVersion" Text="" FontSize="18" FontWeight="Bold" HorizontalAlignment="Right"/>
                         <TextBlock x:Name="apiVersion" Text="" FontSize="12" FontWeight="Bold" Foreground="Gray" HorizontalAlignment="Right"/>
                         <TextBlock x:Name="antiCatVersion" Text="" FontSize="12" FontWeight="Bold" Foreground="Gray" HorizontalAlignment="Right"/>
                     </StackPanel>
@@ -141,69 +149,6 @@
 
         </Grid>
 
-        <!-- 更新面板 -->
-        <Grid x:Name="Update" Background="Transparent" Visibility="Collapsed">
-
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="3*"/>
-                <ColumnDefinition Width="2*"/>
-            </Grid.ColumnDefinitions>
-
-            <!-- 左侧区域 -->
-            <StackPanel  Grid.Column="0" HorizontalAlignment="Left">
-                <StackPanel HorizontalAlignment="Stretch" Margin="38">
-                    <TextBlock Text="有可用更新" FontSize="24" FontWeight="Bold"/>
-                    <TextBlock Text="更新日志" Margin="0 12 0 0"/>
-                    <TextBlock x:Name="update_Latest_Name" Text="依赖项:..." Margin="0 12 0 0"/>
-                    <TextBlock x:Name="update_Latest_Version" Text="版本号:..."/>
-                    <TextBlock x:Name="update_Current_Version" Text="当前版本:..."/>
-                    <TextBlock x:Name="update_Latest_Changelog" Text="更新日志:..."/>
-                </StackPanel>
-            </StackPanel>
-
-            <!-- 右侧区域 -->
-            <StackPanel Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Bottom" Orientation="Horizontal">
-                <TextBlock x:Name="update_Info"/>
-                <Button  x:Name="update_ignore" Width="72" Height="32" VerticalAlignment="Bottom" HorizontalAlignment="Right" Margin="12" Click="UpdateDownload_Ignore">
-                    <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
-                        <StackPanel>
-                            <TextBlock Text="暂不更新" FontSize="12"/>
-                        </StackPanel>
-                    </StackPanel>
-                </Button>
-
-                <Button  x:Name="update_Download" Width="90" Height="84" VerticalAlignment="Bottom" HorizontalAlignment="Right" Margin="12" Click="UpdateDownload_Click">
-                    <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
-                        <StackPanel x:Name="update_Grid" Visibility="Collapsed">
-                            <FontIcon x:Name="update_Btn_Icon" FontFamily="Segoe Fluent Icons" Glyph="&#xebd3;" Width="32" Height="32"/>
-                            <TextBlock x:Name="update_Btn_Text" Text="立即更新" FontSize="12"/>
-                        </StackPanel>
-                        <StackPanel x:Name="update_Progress_Grid" >
-                            <ProgressRing x:Name="update_Btn_Ring" Margin="0 0 0 18"/>
-                            <ProgressBar x:Name="update_Btn_Bar" Width="130" IsIndeterminate="False" ShowPaused="False" ShowError="False" />
-                        </StackPanel>
-
-                    </StackPanel>
-                </Button>
-
-                <Button  x:Name="depend_Download" Width="90" Height="84" VerticalAlignment="Bottom" HorizontalAlignment="Right" Margin="12" Click="DependUpdateDownload_Click">
-                    <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
-                        <StackPanel x:Name="depend_Grid">
-                            <FontIcon x:Name="depend_Btn_Icon" FontFamily="Segoe Fluent Icons" Glyph="&#xebd3;" Width="32" Height="32"/>
-                            <TextBlock x:Name="depend_Btn_Text" Text="立即更新" FontSize="12"/>
-                        </StackPanel>
-                        <StackPanel x:Name="depend_Progress_Grid" >
-                            <ProgressRing x:Name="depend_Btn_Ring" Margin="0 0 0 18"/>
-                            <ProgressBar x:Name="depend_Btn_Bar" Width="130" IsIndeterminate="False" ShowPaused="False" ShowError="False" />
-                        </StackPanel>
-                    </StackPanel>
-                </Button>
-
-            </StackPanel>
-            
-        </Grid>
-        
-        <InfoBar x:Name="infoBar" IsOpen="False" Severity="Error" Title="" Message="" />
-        
     </Grid>
+    
 </Page>

@@ -1,71 +1,57 @@
-﻿using Microsoft.UI.Xaml;
+﻿// Copyright (c) 2021-2024, JamXi JSG-LLC.
+// All rights reserved.
+
+// This file is part of SRTools.
+
+// SRTools is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+
+// SRTools is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+
+// You should have received a copy of the GNU General Public License
+// along with SRTools.  If not, see <http://www.gnu.org/licenses/>.
+
+// For more information, please refer to <https://www.gnu.org/licenses/gpl-3.0.html>
+
+using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
-using Microsoft.UI.Xaml.Controls.Primitives;
-using Microsoft.UI.Xaml.Data;
-using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
-using Microsoft.UI.Xaml.Navigation;
-using Microsoft.Win32;
 using SRTools.Depend;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Linq;
 using System.Runtime.InteropServices;
-using System.Runtime.InteropServices.WindowsRuntime;
-using System.Text;
 using System.Threading.Tasks;
 using Windows.ApplicationModel;
-using Windows.Foundation;
-using Windows.Foundation.Collections;
 using Windows.Storage;
-using Windows.System;
 using System.IO.Compression;
-using Org.BouncyCastle.Asn1.X509;
 using Windows.Storage.Pickers;
-using Vanara.PInvoke;
-using Microsoft.Windows.Security.AccessControl;
 using Newtonsoft.Json;
 using System.Net.Http;
-
-// To learn more about WinUI, the WinUI project structure,
-// and more about our project templates, see: http://aka.ms/winui-project-info.
+using static SRTools.App;
 
 namespace SRTools.Views
 {
     public sealed partial class AboutView : Page
     {
-        string fileUrl;
-        private GetNetData _getNetData;
         private readonly GetGiteeLatest _getGiteeLatest = new GetGiteeLatest();
         private readonly GetJSGLatest _getJSGLatest = new GetJSGLatest();
-        // 导入 AllocConsole 和 FreeConsole 函数
-        [DllImport("kernel32.dll", SetLastError = true)]
-        [return: MarshalAs(UnmanagedType.Bool)]
-        private static extern bool AllocConsole();
 
-        [DllImport("kernel32.dll", SetLastError = true)]
-        [return: MarshalAs(UnmanagedType.Bool)]
-        private static extern bool FreeConsole();
-        private const int STD_OUTPUT_HANDLE = -11;
-
-        [DllImport("kernel32.dll", SetLastError = true)]
-        private static extern IntPtr GetStdHandle(int nStdHandle);
-
-        [DllImport("kernel32.dll")]
-        private static extern IntPtr GetConsoleWindow();
-
-        [DllImport("user32.dll")]
-        private static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
+        [DllImport("User32.dll")]
+        public static extern short GetAsyncKeyState(int vKey);
 
         public AboutView()
         {
-            //Windows.ApplicationModel.Core.CoreApplication.UnhandledErrorDetected += OnUnhandledErrorDetected;
             InitializeComponent();
             Logging.Write("Switch to AboutView", 0);
             ApplicationDataContainer localSettings = ApplicationData.Current.LocalSettings;
-            switch (localSettings.Values["Config_UpdateService"])
+            switch (AppDataController.GetUpdateService())
             {
                 case 0:
                     uservice_Github.IsChecked = true;
@@ -79,7 +65,7 @@ namespace SRTools.Views
                 default:
                     throw new InvalidOperationException($"Invalid update service value: {localSettings.Values["Config_UpdateService"]}");
             }
-            switch (localSettings.Values["Config_TerminalMode"])
+            switch (AppDataController.GetConsoleMode())
             {
                 case 0:
                     consoleToggle.IsChecked = false;
@@ -89,6 +75,22 @@ namespace SRTools.Views
                     break;
                 default:
                     consoleToggle.IsChecked = false;
+                    break;
+            }
+
+            if(TerminalMode.ConsoleStatus()) consoleToggle.IsChecked = true;
+            else consoleToggle.IsChecked = false;
+
+            switch (AppDataController.GetTerminalMode())
+            {
+                case 0:
+                    terminalToggle.IsChecked = false;
+                    break;
+                case 1:
+                    terminalToggle.IsChecked = true;
+                    break;
+                default:
+                    terminalToggle.IsChecked = false;
                     break;
             }
             bool SDebugMode = App.SDebugMode;
@@ -130,7 +132,7 @@ namespace SRTools.Views
         private async void GetVersionButton_Click(object sender, RoutedEventArgs e)
         {
             HttpClient client = new HttpClient();
-            string url = "https://api.jamsg.cn/version/";
+            string url = "https://api.jamsg.cn/version";
             HttpResponseMessage response = await client.GetAsync(url);
             if (response.IsSuccessStatusCode)
             {
@@ -147,23 +149,39 @@ namespace SRTools.Views
         {
             var currentProcess = Process.GetCurrentProcess();
             var hWnd = currentProcess.MainWindowHandle;
-            ApplicationDataContainer localSettings = ApplicationData.Current.LocalSettings;
             // 判断是否需要打开控制台
             if (consoleToggle.IsChecked ?? false)
             {
-                TerminalTip.IsOpen = true;
                 TerminalMode.ShowConsole();
-                localSettings.Values["Config_TerminalMode"] = 1;
-                Logging.Write("Console Enabled",1);
+                AppDataController.SetConsoleMode(1);
             }
             else
             {
                 TerminalMode.HideConsole();
-                localSettings.Values["Config_TerminalMode"] = 0;
+                AppDataController.SetConsoleMode(0);
             }
         }
 
-        public void Clear_AllData(object sender, RoutedEventArgs e)
+        private void TerminalMode_Toggle(object sender, RoutedEventArgs e)
+        {
+            // 判断是否需要打开控制台
+            if (terminalToggle.IsChecked ?? false)
+            {
+                TerminalTip.IsOpen = true;
+                AppDataController.SetTerminalMode(1);
+            }
+            else
+            {
+                AppDataController.SetTerminalMode(0);
+            }
+        }
+
+        public void Clear_AllData_TipShow(object sender, RoutedEventArgs e)
+        {
+            ClearAllDataTip.IsOpen = true;
+        }
+
+        public void Clear_AllData(TeachingTip sender, object args)
         {
             string userDocumentsFolderPath = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
             DeleteFolder(userDocumentsFolderPath + "\\JSG-LLC\\SRTools\\", "1");
@@ -187,35 +205,23 @@ namespace SRTools.Views
 
         public async Task ClearLocalDataAsync(String Close)
         {
-            // 获取 LocalData 文件夹的引用
             var localFolder = ApplicationData.Current.LocalFolder;
-
-            // 删除 LocalData 文件夹中的所有子文件夹和文件
             await DeleteFilesAndSubfoldersAsync(localFolder, Close);
-
-            // 需要重新创建删除的 LocalData 文件夹
             await ApplicationData.Current.ClearAsync(ApplicationDataLocality.Local);
         }
 
         private async Task DeleteFilesAndSubfoldersAsync(StorageFolder folder, String Close)
         {
-            // 获取文件夹中的所有文件和子文件夹
             var items = await folder.GetItemsAsync();
-
-            // 遍历所有项目
             foreach (var item in items)
             {
-                // 如果项目是文件，则删除它
                 if (item is StorageFile file)
                 {
                     await file.DeleteAsync();
                 }
-                // 如果项目是文件夹，则递归删除其中所有文件和子文件夹
                 else if (item is StorageFolder subfolder)
                 {
                     await DeleteFilesAndSubfoldersAsync(subfolder, Close);
-
-                    // 删除子文件夹本身
                     await subfolder.DeleteAsync();
                 }
             }
@@ -224,373 +230,148 @@ namespace SRTools.Views
                 Application.Current.Exit();
             }
         }
+
         private async void Check_Update(object sender, RoutedEventArgs e)
         {
-            int result = await OnGetUpdateLatestReleaseInfo("SRTools");
-            if (result == 0)
+            UpdateTip.IsOpen = false;
+            var result = await GetUpdate.GetSRToolsUpdate();
+            var status = result.Status;
+            UpdateTip.Target = checkUpdate;
+            UpdateTip.ActionButtonClick -= DisplayUpdateInfo;
+
+            if (status == 0)
             {
                 UpdateTip.IsOpen = true;
-                UpdateTip.Subtitle = "无可用更新";
-                checkUpdate.IsEnabled = false;
+                UpdateTip.Title = "无可用更新";
+                UpdateTip.Subtitle = null;
+                UpdateTip.ActionButtonContent = null;
+                UpdateTip.CloseButtonContent = "关闭";
             }
-            else if (result == 1)
+            else if (status == 1)
             {
-                Update.Visibility = Visibility.Visible;
-                MainAPP.Visibility = Visibility.Collapsed;
-                update_Download.Visibility = Visibility.Visible;
-                depend_Download.Visibility = Visibility.Collapsed;
+                UpdateTip.IsOpen = true;
+                UpdateTip.Title = "有可用更新";
+                UpdateTip.Subtitle = "新版本:"+result.Version;
+                UpdateTip.ActionButtonContent = "查看详情";
+                UpdateTip.CloseButtonContent = "关闭";
+                UpdateTip.ActionButtonClick += DisplayUpdateInfo;
             }
             else
             {
                 UpdateTip.IsOpen = true;
+                UpdateTip.ActionButtonContent = null;
                 UpdateTip.Subtitle = "网络连接失败，可能是请求次数过多";
             }
         }
 
         private async void Check_Depend_Update(object sender, RoutedEventArgs e)
         {
-            int result = await OnGetUpdateLatestReleaseInfo("SRToolsHelper", "Depend");
-            if (result == 0)
+            UpdateTip.IsOpen = false;
+            var result = await GetUpdate.GetDependUpdate();
+            var status = result.Status;
+            UpdateTip.Target = checkDependUpdate;
+            UpdateTip.ActionButtonClick -= StartDependForceUpdate;
+            UpdateTip.ActionButtonClick -= DisplayUpdateInfo;
+            bool isShiftPressed = (GetAsyncKeyState(0x10) & 0x8000) != 0;
+
+            if (isShiftPressed)
             {
-                DependUpdateTip.IsOpen = true;
-                DependUpdateTip.Subtitle = "无可用更新";
-                checkDependUpdate.IsEnabled = false;
+                UpdateTip.IsOpen = true;
+                UpdateTip.Title = "遇到麻烦了吗";
+                UpdateTip.Subtitle = "尝试重装SRToolsHelper";
+                UpdateTip.ActionButtonContent = "强制重装";
+                UpdateTip.CloseButtonContent = "关闭";
+                UpdateTip.ActionButtonClick += StartDependForceUpdate;
             }
-            else if (result == 1)
+            else if(status == 0)
             {
-                Update.Visibility = Visibility.Visible;
-                MainAPP.Visibility = Visibility.Collapsed;
-                update_Download.Visibility = Visibility.Collapsed;
-                depend_Download.Visibility = Visibility.Visible;
+                UpdateTip.IsOpen = true;
+                UpdateTip.Title = "无可用更新";
+                UpdateTip.Subtitle = null;
+                UpdateTip.ActionButtonContent = null;
+                UpdateTip.CloseButtonContent = "关闭";
+            }
+            else if (status == 1)
+            {
+                UpdateTip.IsOpen = true;
+                UpdateTip.Title = "有可用更新";
+                UpdateTip.Subtitle = "新版本:" + result.Version;
+                UpdateTip.ActionButtonContent = "查看详情";
+                UpdateTip.CloseButtonContent = "关闭";
+                UpdateTip.ActionButtonClick += DisplayUpdateInfo;
+            }
+            else
+            {
+                UpdateTip.IsOpen = true;
+                UpdateTip.ActionButtonContent = null;
+                UpdateTip.Subtitle = "网络连接失败，可能是请求次数过多";
             }
         }
 
-        //选择下载渠道开始
+
+        public async void DisplayUpdateInfo(TeachingTip sender, object args)
+        {
+            UpdateResult updateinfo;
+            string Name;
+            if (UpdateTip.Target != checkDependUpdate) { updateinfo = await GetUpdate.GetSRToolsUpdate();Name = "SRTools"; }
+            else { updateinfo = await GetUpdate.GetDependUpdate(); Name = "Helper"; }
+            var version = updateinfo.Version;
+            var changelog = updateinfo.Changelog;
+            UpdateTip.IsOpen = false;
+            ContentDialog updateDialog = new ContentDialog
+            {
+                Title = Name+":"+version+"版本可用",
+                Content = "更新日志:\n"+changelog,
+                CloseButtonText = "关闭",
+                PrimaryButtonText = "立即更新",
+                DefaultButton = ContentDialogButton.Primary,
+                XamlRoot = sender.XamlRoot,
+            };
+            var result = await updateDialog.ShowAsync();
+            if (result == ContentDialogResult.Primary)
+            {
+                if (UpdateTip.Target != checkDependUpdate) {StartUpdate(); }
+                else {  StartDependUpdate(); }
+            }
+        }
+
+        public async void StartUpdate()
+        {
+            await InstallerHelper.GetInstaller();
+            InstallerHelper.RunInstaller("");
+        }
+
+        public async void StartDependUpdate()
+        {
+            WaitOverlayManager.RaiseWaitOverlay(true, true, "正在更新依赖","请稍等片刻");
+            await InstallerHelper.GetInstaller();
+            InstallerHelper.RunInstaller("/depend");
+            WaitOverlayManager.RaiseWaitOverlay(false);
+        }
+
+        public async void StartDependForceUpdate(TeachingTip sender, object args)
+        {
+            WaitOverlayManager.RaiseWaitOverlay(true, true, "正在强制更新依赖", "请稍等片刻");
+            await InstallerHelper.GetInstaller();
+            InstallerHelper.RunInstaller("/depend /force");
+            WaitOverlayManager.RaiseWaitOverlay(false);
+        }
+
+
+        // 选择下载渠道开始
         private void uservice_Github_Choose(object sender, RoutedEventArgs e)
         {
-            ApplicationDataContainer localSettings = ApplicationData.Current.LocalSettings;
-            localSettings.Values["Config_UpdateService"] = 0;
+            AppDataController.SetUpdateService(1);
         }
 
         private void uservice_Gitee_Choose(object sender, RoutedEventArgs e)
         {
-            ApplicationDataContainer localSettings = ApplicationData.Current.LocalSettings;
-            localSettings.Values["Config_UpdateService"] = 1;
+            AppDataController.SetUpdateService(1);
         }
 
         private void uservice_JSG_Choose(object sender, RoutedEventArgs e)
         {
-            ApplicationDataContainer localSettings = ApplicationData.Current.LocalSettings;
-            localSettings.Values["Config_UpdateService"] = 2;
-        }
-
-        //更新开始
-        public async Task<int> OnGetUpdateLatestReleaseInfo(String PkgName, String Mode = null)
-        {
-            PackageVersion packageVersion = Package.Current.Id.Version;
-            string version = $"{packageVersion.Major}.{packageVersion.Minor}.{packageVersion.Build}.{packageVersion.Revision}";
-            Logging.Write("Current Version:" + version, 0);
-            update_Grid.Visibility = Visibility.Collapsed;
-            update_Progress_Grid.Visibility = Visibility.Visible;
-            var dispatcher = Microsoft.UI.Dispatching.DispatcherQueue.GetForCurrentThread();
-            try
-            {
-                ApplicationDataContainer localSettings = ApplicationData.Current.LocalSettings;
-                var latestReleaseInfo = await _getJSGLatest.GetLatestReleaseInfoAsync("cn.jamsg.SRTools");
-                Logging.Write("Getting Update Info...", 0);
-                switch (localSettings.Values["Config_UpdateService"])
-                {
-                    case 0:
-                        Logging.Write("UService:Github", 0);
-                        //latestReleaseInfo = await _getGithubLatest.GetLatestReleaseInfoAsync("JamXi233", "SRToolsHelper");
-                        break;
-                    case 1:
-                        Logging.Write("UService:Gitee", 0);
-                        latestReleaseInfo = await _getGiteeLatest.GetLatestReleaseInfoAsync("JSG-JamXi", PkgName);
-                        break;
-                    case 2:
-                        Logging.Write("UService:JSG-DS", 0);
-                        latestReleaseInfo = await _getJSGLatest.GetLatestReleaseInfoAsync("cn.jamsg." + PkgName);
-                        break;
-                    default:
-                        Logging.Write($"Invalid update service value: {localSettings.Values["Config_UpdateService"]}", 0);
-                        throw new InvalidOperationException($"Invalid update service value: {localSettings.Values["Config_UpdateService"]}");
-                }
-                Logging.Write("Software Name:" + latestReleaseInfo.Name, 0);
-                Logging.Write("Newer Version:" + latestReleaseInfo.Version, 0);
-                if (Mode == "Depend")
-                {
-                    string content;
-                    string userDocumentsFolderPath = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
-                    string path = userDocumentsFolderPath + "\\JSG-LLC\\SRTools\\Depends\\SRToolsHelper\\SRToolsHelperVersion.ini";
-                    try { content = File.ReadAllText(path); }
-                    catch
-                    {
-                        content = "Null";
-                        if (latestReleaseInfo.Version != content)
-                        {
-                            fileUrl = latestReleaseInfo.DownloadUrl;
-                            update_Latest_Name.Text = $"软件名称: {latestReleaseInfo.Name}";
-                            update_Latest_Version.Text = $"版本号: {latestReleaseInfo.Version}";
-                            update_Current_Version.Text = $"当前版本: {content}";
-                            update_Latest_Changelog.Text = $"更新日志: \n{latestReleaseInfo.Changelog}";
-                            update_Download.IsEnabled = true;
-                            depend_Grid.Visibility = Visibility.Visible;
-                            depend_Progress_Grid.Visibility = Visibility.Collapsed;
-                            return 1;
-                        }
-                        else
-                        {
-                            return 0;
-                        }
-                    }
-                    if (latestReleaseInfo.Version != content)
-                    {
-                        fileUrl = latestReleaseInfo.DownloadUrl;
-                        update_Latest_Name.Text = $"软件名称: {latestReleaseInfo.Name}";
-                        update_Latest_Version.Text = $"版本号: {latestReleaseInfo.Version}";
-                        update_Current_Version.Text = $"当前版本: {content}";
-                        update_Latest_Changelog.Text = $"更新日志: \n{latestReleaseInfo.Changelog}";
-                        update_Download.IsEnabled = true;
-                        depend_Grid.Visibility = Visibility.Visible;
-                        depend_Progress_Grid.Visibility = Visibility.Collapsed;
-                        return 1;
-                    }
-                    else
-                    {
-                        return 0;
-                    }
-                }
-                else
-                {
-                    if (latestReleaseInfo.Version != version)
-                    {
-                        fileUrl = latestReleaseInfo.DownloadUrl;
-                        update_Latest_Name.Text = $"软件名称: {latestReleaseInfo.Name}";
-                        update_Latest_Version.Text = $"版本号: {latestReleaseInfo.Version}";
-                        update_Current_Version.Text = $"当前版本: {version}";
-                        update_Latest_Changelog.Text = $"更新日志: \n{latestReleaseInfo.Changelog}";
-                        update_Download.IsEnabled = true;
-                        update_Grid.Visibility = Visibility.Visible;
-                        update_Progress_Grid.Visibility = Visibility.Collapsed;
-                        return 1;
-                    }
-                    else
-                    {
-                        return 0;
-                    }
-                }
-
-            }
-            catch (Exception ex)
-            {
-                ContentDialog dialog = new ContentDialog();
-                dialog.XamlRoot = this.XamlRoot;
-                dialog.Style = Application.Current.Resources["DefaultContentDialogStyle"] as Style;
-                dialog.Title = "检查更新出现问题";
-                dialog.Content = ex.Message;
-                dialog.PrimaryButtonText = "确定";
-                dialog.DefaultButton = ContentDialogButton.Primary;
-                var result = await dialog.ShowAsync();
-                return 2;
-            }
-        }
-
-        private async void UpdateDownload_Click(object sender, RoutedEventArgs e)
-        {
-            _getNetData = new GetNetData();
-            ApplicationDataContainer localSettings = ApplicationData.Current.LocalSettings;
-            var latestReleaseInfo = await _getJSGLatest.GetLatestReleaseInfoAsync("cn.jamsg.SRTools");
-            switch (localSettings.Values["Config_UpdateService"])
-            {
-                case 0:
-                    Logging.Write("UService:Github", 0);
-                    //latestReleaseInfo = await _getGithubLatest.GetLatestReleaseInfoAsync("JamXi233", "SRToolsHelper");
-                    break;
-                case 1:
-                    Logging.Write("UService:Gitee", 0);
-                    latestReleaseInfo = await _getGiteeLatest.GetLatestReleaseInfoAsync("JSG-JamXi", "SRTools");
-                    break;
-                case 2:
-                    Logging.Write("UService:JSG-DS", 0);
-                    latestReleaseInfo = await _getJSGLatest.GetLatestReleaseInfoAsync("cn.jamsg.SRTools");
-                    break;
-                default:
-                    Logging.Write($"Invalid update service value: {localSettings.Values["Config_UpdateService"]}", 0);
-                    throw new InvalidOperationException($"Invalid update service value: {localSettings.Values["Config_UpdateService"]}");
-            }
-            Trace.WriteLine(fileUrl);
-            string UpdateFileFolder = "\\JSG-LLC\\Updates\\SRTools\\";
-            string UpdateFileName = "SRTools_" + latestReleaseInfo.Version + "_x64.zip";
-            string UpdateExtractedFolder = "SRTools_" + latestReleaseInfo.Version + "_x64";
-            string userDocumentsFolderPath = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
-            string localFilePath = Path.Combine(userDocumentsFolderPath + UpdateFileFolder, UpdateFileName);
-            ToggleUpdateGridVisibility(false);
-            update_Download.IsEnabled = false;
-            var progress = new Progress<double>(UpdateReportProgress);
-            bool downloadResult = false;
-            try
-            {
-                downloadResult = await _getNetData.DownloadFileWithProgressAsync(fileUrl, localFilePath, progress);
-            }
-            catch (Exception ex)
-            {
-                update_Info.Text = ex.Message;
-            }
-
-            if (downloadResult)
-            {
-                Trace.WriteLine(userDocumentsFolderPath);
-                string extractionPath = Path.Combine(userDocumentsFolderPath + UpdateFileFolder, UpdateExtractedFolder);
-                ZipFile.ExtractToDirectory(localFilePath, extractionPath);
-                StorageFile file = await StorageFile.GetFileFromPathAsync(extractionPath + "\\" + UpdateExtractedFolder + ".msix");
-                if (file != null)
-                {
-
-                    await ExecutePowerShellCommandAsync(file);
-                }
-            }
-            else
-            {
-                // 使用Dispatcher在UI线程上执行ToggleUpdateGridVisibility函数
-                ToggleUpdateGridVisibility(true, false);
-            }
-        }
-
-
-        public async Task ExecutePowerShellCommandAsync(IStorageFile file)
-        {
-            // PowerShell 命令
-            string command = $"Add-AppxPackage -Path \"{file.Path}\"";
-
-            // 创建新的进程启动信息
-            ProcessStartInfo startInfo = new ProcessStartInfo
-            {
-                FileName = "powershell.exe",
-                Arguments = $"-NoProfile -Command {command}",
-                UseShellExecute = false,
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-                CreateNoWindow = true
-            };
-
-            // 创建并启动新的进程
-            Process process = new Process
-            {
-                StartInfo = startInfo
-            };
-            process.Start();
-
-            // 异步读取输出和错误信息，以避免挂起进程
-            string output = await process.StandardOutput.ReadToEndAsync();
-            string errors = await process.StandardError.ReadToEndAsync();
-
-            // 等待进程结束
-            process.WaitForExit();
-
-            // 处理结果
-            if (!string.IsNullOrEmpty(errors))
-            {
-                await Launcher.LaunchFileAsync(file);
-                update_Grid.Visibility = Visibility.Visible;
-                update_Progress_Grid.Visibility = Visibility.Collapsed;
-                update_Btn_Text.Text = "请手动安装";
-                update_Btn_Bar.Visibility = Visibility.Collapsed;
-                update_Btn_Icon.Glyph = "\uE001";
-            }
-        }
-
-
-        private async void DependUpdateDownload_Click(object sender, RoutedEventArgs e)
-        {
-            _getNetData = new GetNetData();
-            ApplicationDataContainer localSettings = ApplicationData.Current.LocalSettings;
-            var latestReleaseInfo = await _getJSGLatest.GetLatestReleaseInfoAsync("cn.jamsg.SRTools");
-            switch (localSettings.Values["Config_UpdateService"])
-            {
-                case 0:
-                    Logging.Write("UService:Github", 0);
-                    //latestReleaseInfo = await _getGithubLatest.GetLatestReleaseInfoAsync("JamXi233", "SRToolsHelper");
-                    break;
-                case 1:
-                    Logging.Write("UService:Gitee", 0);
-                    latestReleaseInfo = await _getGiteeLatest.GetLatestReleaseInfoAsync("JSG-JamXi", "SRToolsHelper");
-                    break;
-                case 2:
-                    Logging.Write("UService:JSG-DS", 0);
-                    latestReleaseInfo = await _getJSGLatest.GetLatestReleaseInfoAsync("cn.jamsg.SRToolsHelper");
-                    break;
-                default:
-                    Logging.Write($"Invalid update service value: {localSettings.Values["Config_UpdateService"]}", 0);
-                    throw new InvalidOperationException($"Invalid update service value: {localSettings.Values["Config_UpdateService"]}");
-            }
-            Trace.WriteLine(fileUrl);
-            string UpdateFileFolder = "\\JSG-LLC\\SRTools\\Depends\\";
-            string UpdateFileName = "SRToolsHelper_" + latestReleaseInfo.Version + ".zip";
-            string UpdateExtractedFolder = "SRToolsHelper";
-            string userDocumentsFolderPath = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
-            if (Directory.Exists(userDocumentsFolderPath + "\\JSG-LLC\\SRTools\\Depends\\"))
-            {
-                try { Directory.Delete(userDocumentsFolderPath + "\\JSG-LLC\\SRTools\\Depends\\", true); }
-                catch (IOException) { }
-            }
-            string localFilePath = Path.Combine(userDocumentsFolderPath + UpdateFileFolder, UpdateFileName);
-            ToggleDependUpdateGridVisibility(false);
-            depend_Download.IsEnabled = false;
-            var progress = new Progress<double>(UpdateReportProgress);
-            bool downloadResult = false;
-            try
-            {
-                downloadResult = await _getNetData.DownloadFileWithProgressAsync(fileUrl, localFilePath, progress);
-            }
-            catch (Exception ex)
-            {
-                update_Info.Text = ex.Message;
-            }
-
-            if (downloadResult)
-            {
-                Trace.WriteLine(userDocumentsFolderPath);
-                string extractionPath = Path.Combine(userDocumentsFolderPath + UpdateFileFolder, UpdateExtractedFolder);
-                ZipFile.ExtractToDirectory(localFilePath, extractionPath);
-                MainAPP.Visibility = Visibility.Visible;
-                Update.Visibility = Visibility.Collapsed;
-            }
-            else
-            {
-                // 使用Dispatcher在UI线程上执行ToggleUpdateGridVisibility函数
-                ToggleDependUpdateGridVisibility(true, false);
-            }
-        }
-
-
-        private void UpdateDownload_Ignore(object sender, RoutedEventArgs e)
-        {
-            Update.Visibility = Visibility.Collapsed;
-            MainAPP.Visibility = Visibility.Visible;
-            checkUpdate.IsEnabled = true;
-        }
-
-        private void ToggleUpdateGridVisibility(bool updateGridVisible, bool downloadSuccess = false)
-        {
-            update_Grid.Visibility = updateGridVisible ? Visibility.Visible : Visibility.Collapsed;
-            update_Progress_Grid.Visibility = updateGridVisible ? Visibility.Collapsed : Visibility.Visible;
-            update_Btn_Text.Text = downloadSuccess ? "下载完成" : "下载失败";
-            update_Btn_Icon.Glyph = downloadSuccess ? "&#xe73a;" : "&#xe8bb;";
-        }
-
-        private void ToggleDependUpdateGridVisibility(bool updateGridVisible, bool downloadSuccess = false)
-        {
-            depend_Grid.Visibility = updateGridVisible ? Visibility.Visible : Visibility.Collapsed;
-            depend_Progress_Grid.Visibility = updateGridVisible ? Visibility.Collapsed : Visibility.Visible;
-            depend_Btn_Text.Text = downloadSuccess ? "下载完成" : "下载失败";
-            depend_Btn_Icon.Glyph = downloadSuccess ? "&#xe73a;" : "&#xe8bb;";
-        }
-
-        private void UpdateReportProgress(double progressPercentage)
-        {
-            update_Btn_Bar.Value = progressPercentage;
-            depend_Btn_Bar.Value = progressPercentage;
+            AppDataController.SetUpdateService(2);
         }
 
         private async void Backup_Data(object sender, RoutedEventArgs e)
@@ -641,24 +422,90 @@ namespace SRTools.Views
             
         }
 
-        private void Restore_Data_Cancel(TeachingTip e, object o)
-        {
-
-        }
         private async void Install_Font_Click(object sender, RoutedEventArgs e)
         {
             installSFF.IsEnabled = false;
             installSFF_Progress.Visibility = Visibility.Visible;
-            int result = await InstallFont.SegoeFluentFontAsync();
+            //int result = await InstallFont.InstallSegoeFluentFontAsync();
             installSFF.Content = "安装字体后重启SRTools即生效";
             installSFF_Progress.Visibility = Visibility.Collapsed;
         }
 
+        // 重启程序
+        private async void Restart_App(TeachingTip sender, object args)
+        {
+            await ProcessRun.RestartApp();
+        }
 
-        //Debug_Clicks
+
+        // Debug_Clicks
         private void Debug_Panic_Click(object sender, RoutedEventArgs e) 
         {
             throw new Exception("全局异常处理测试");
         }
+
+        private void Debug_Notification_Test(object sender, RoutedEventArgs e)
+        {
+            NotificationManager.RaiseNotification("测试通知","这是一条测试通知", InfoBarSeverity.Success);
+        }
+
+        // Debug_Disable_NavBtns
+        private void Debug_Disable_NavBtns(object sender, RoutedEventArgs e)
+        {
+            NavigationView parentNavigationView = GetParentNavigationView(this);
+            if (debug_DisableNavBtns.IsChecked == true)
+            {
+                if (parentNavigationView != null)
+                {
+                    foreach (var menuItem in parentNavigationView.MenuItems)
+                    {
+                        if (menuItem is NavigationViewItem navViewItem)
+                        {
+                            navViewItem.IsEnabled = false;
+                        }
+                    }
+                    foreach (var menuItem in parentNavigationView.FooterMenuItems)
+                    {
+                        if (menuItem is NavigationViewItem navViewItem)
+                        {
+                            navViewItem.IsEnabled = false;
+                        }
+                    }
+                }
+            }
+            else
+            {
+                if (parentNavigationView != null)
+                {
+                    foreach (var menuItem in parentNavigationView.MenuItems)
+                    {
+                        if (menuItem is NavigationViewItem navViewItem)
+                        {
+                            navViewItem.IsEnabled = true;
+                        }
+                    }
+                    foreach (var menuItem in parentNavigationView.FooterMenuItems)
+                    {
+                        if (menuItem is NavigationViewItem navViewItem)
+                        {
+                            navViewItem.IsEnabled = true;
+                        }
+                    }
+                }
+            }
+        }
+
+        private NavigationView GetParentNavigationView(FrameworkElement child)
+        {
+            DependencyObject parent = VisualTreeHelper.GetParent(child);
+
+            while (parent != null && !(parent is NavigationView))
+            {
+                parent = VisualTreeHelper.GetParent(parent);
+            }
+
+            return parent as NavigationView;
+        }
+
     }
 }

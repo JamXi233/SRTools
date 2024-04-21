@@ -1,4 +1,24 @@
-﻿using System;
+﻿// Copyright (c) 2021-2024, JamXi JSG-LLC.
+// All rights reserved.
+
+// This file is part of SRTools.
+
+// SRTools is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+
+// SRTools is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+
+// You should have received a copy of the GNU General Public License
+// along with SRTools.  If not, see <http://www.gnu.org/licenses/>.
+
+// For more information, please refer to <https://www.gnu.org/licenses/gpl-3.0.html>
+
+using System;
 using System.IO;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
@@ -15,40 +35,213 @@ using System.Collections.Generic;
 using SRTools.Views.GachaViews;
 using Spectre.Console;
 using Newtonsoft.Json.Linq;
-using Windows.UI.Core;
 using System.Net.Http;
-using Vanara.PInvoke;
+using Microsoft.UI.Xaml.Media;
+using static SRTools.App;
+using System.Collections.ObjectModel;
+using System.ComponentModel;
+using Microsoft.UI.Xaml.Data;
 
-namespace SRTools.Views
+
+namespace SRTools.Views.ToolViews
 {
+    public class GachaViewModel : INotifyPropertyChanged
+    {
+        public event PropertyChangedEventHandler PropertyChanged;
+        public event Action RequestViewUpdate;
+
+        private ObservableCollection<string> _uidList;
+        public ObservableCollection<string> UidList
+        {
+            get => _uidList;
+            set
+            {
+                _uidList = value;
+                OnPropertyChanged(nameof(UidList));
+            }
+        }
+
+        public GachaViewModel()
+        {
+            UidList = new ObservableCollection<string>();
+            LoadUids();
+        }
+
+        private string _selectedUid;
+        public string SelectedUid
+        {
+            get => _selectedUid;
+            set
+            {
+                if (_selectedUid != value)
+                {
+                    _selectedUid = value;
+                    OnPropertyChanged(nameof(SelectedUid));
+                    Logging.Write($"选择UID: {_selectedUid}");
+                }
+            }
+        }
+
+
+
+        public void LoadUids()
+        {
+            var dispatcherQueue = DispatcherQueue.GetForCurrentThread();
+            dispatcherQueue.TryEnqueue(() =>
+            {
+                UidList.Clear();
+                string baseDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "JSG-LLC", "SRTools", "GachaRecords");
+                if (Directory.Exists(baseDir))
+                {
+                    var directories = Directory.GetDirectories(baseDir);
+                    foreach (var dir in directories)
+                    {
+                        string uid = Path.GetFileName(dir); // 这应该只获取目录的最后一部分，即 UID
+                        UidList.Add(uid);
+                    }
+
+                    if (UidList.Count > 0)
+                    {
+                        SelectedUid = UidList[0];  // 默认选择第一个UID
+                    }
+                    else
+                    {
+                        SelectedUid = null;  // 如果没有UID，确保SelectedUid为空
+                    }
+                }
+            });
+        }
+
+
+        public void ReloadData()
+        {
+            LoadUids();  // 假设这是加载或重新加载UIDs的方法
+        }
+
+        protected void OnPropertyChanged(string propertyName)
+        {
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+        }
+    }
+
     public sealed partial class GachaView : Page
     {
+
         public bool isProxyRunning;
+        public static String selectedUid;
         public String GachaLink_String;
         public String GachaLinkCache_String;
         public bool isClearGachaSaved;
+
+        private FiddlerCoreStartupSettings startupSettings;
+        private Proxy oProxy;
 
         BCCertMaker.BCCertMaker certProvider = new BCCertMaker.BCCertMaker();
         private DispatcherQueueTimer dispatcherTimer;
         ApplicationDataContainer localSettings = ApplicationData.Current.LocalSettings;
         public GachaView()
         {
-            //Windows.ApplicationModel.Core.CoreApplication.UnhandledErrorDetected += OnUnhandledErrorDetected;
-            var dispatcherQueue = DispatcherQueue.GetForCurrentThread();
+            this.InitializeComponent();
+            Logging.Write("Switch to GachaView", 0);
+            GachaViewModel viewModel = new GachaViewModel();
+            this.DataContext = viewModel;
 
-            // 创建定时器，并设置回调函数和时间间隔
+            // 订阅 ViewModel 中的视图更新请求事件
+            viewModel.RequestViewUpdate += ViewModel_RequestViewUpdate;
+            InitData();
+        }
+
+        private async void ViewModel_RequestViewUpdate()
+        {
+            // 视图具体更新操作，如调用LoadData等
+            await LoadData(selectedUid);
+        }
+
+        private async void InitData()
+        {
+            InitTimer();
+
+            // 指定文件夹路径
+            string directoryPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "JSG-LLC", "SRTools", "GachaRecords");
+
+            // 检查目录是否存在，如果不存在，则创建它
+            if (Directory.Exists(directoryPath))
+            {
+                // 获取指定路径下的所有子目录
+                string[] subDirectories = Directory.GetDirectories(directoryPath);
+
+                // 检查是否存在任何子目录
+                if (subDirectories.Length > 0)
+                {
+                    await UpdateGachaRecord();
+                }
+                else 
+                {
+                    await UpdateGachaRecord();
+                    if (subDirectories.Length <= 0)
+                    {
+                        gachaView.Visibility = Visibility.Collapsed;
+                        loadGachaProgress.Visibility = Visibility.Visible;
+                        loadGachaFailedIcon.Visibility = Visibility.Visible;
+                        loadGachaProgressRing.Visibility = Visibility.Collapsed;
+                        loadGachaText.Text = "无抽卡记录";
+                        ClearGacha.IsEnabled = false;
+                        ExportSRGF.IsEnabled = false;
+                        ImportSRGF.IsEnabled = true;
+                        localSettings.Values["Gacha_Data"] = "0";
+                        Logging.Write("无抽卡记录");
+                    }
+                    else 
+                    {
+                        await UpdateGachaRecord();
+                    }
+                }
+            }
+
+            
+        }
+
+        private void InitTimer() 
+        {
+            var dispatcherQueue = DispatcherQueue.GetForCurrentThread();
             dispatcherTimer = dispatcherQueue.CreateTimer();
             dispatcherTimer.Interval = TimeSpan.FromSeconds(2);
             dispatcherTimer.Tick += CheckProcess;
-            this.InitializeComponent();
-            Logging.Write("Switch to GachaView", 0);
-            LoadData();
-            GetCacheGacha();
         }
 
-        private async void LoadData()
+        private async void GachaRecordsUID_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            gachaNav.Visibility = Visibility.Collapsed;
+            if (GachaRecordsUID.SelectedItem != null)
+            {
+                selectedUid = GachaRecordsUID.SelectedItem as string;
+                await LoadData(selectedUid);
+            }
+        }
+
+        public static string GetSelectedUid() 
+        {
+            return selectedUid;
+        }
+
+        private async Task UpdateGachaRecord()
+        {
+            string uDFP = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+            string OldFileFolder = "\\JSG-LLC\\SRTools\\GachaRecords_Character.ini";
+            string OldFileFolder2 = "\\JSG-LLC\\SRTools\\GachaRecords_LightCone.ini";
+            string OldFileFolder3 = "\\JSG-LLC\\SRTools\\GachaRecords_Newbie.ini";
+            string OldFileFolder4 = "\\JSG-LLC\\SRTools\\GachaRecords_Regular.ini";
+            if (File.Exists(uDFP + OldFileFolder) || File.Exists(uDFP + OldFileFolder2) || File.Exists(uDFP + OldFileFolder3) || File.Exists(uDFP + OldFileFolder4))
+            {
+                await GachaRecords.UpdateGachaRecordsAsync();
+            }
+
+        }
+
+        public async Task LoadData(string UID)
+        {
+            gachaNav.SelectedItem = null;
+            gachaView.Visibility = Visibility.Collapsed;
+            gachaFrame.Visibility = Visibility.Collapsed;
             loadGachaProgress.Visibility = Visibility.Visible;
             loadGachaFailedIcon.Visibility = Visibility.Collapsed;
             loadGachaProgressRing.Visibility = Visibility.Visible;
@@ -57,19 +250,20 @@ namespace SRTools.Views
             LightConeGachaSelect.IsEnabled = false;
             NewbieGachaSelect.IsEnabled = false;
             RegularGachaSelect.IsEnabled = false;
-            await Task.Delay(200);
             string uDFP = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
-            string FileFolder = "\\JSG-LLC\\SRTools\\GachaRecords_Character.ini";
-            string FileFolder2 = "\\JSG-LLC\\SRTools\\GachaRecords_LightCone.ini";
-            string FileFolder3 = "\\JSG-LLC\\SRTools\\GachaRecords_Newbie.ini";
-            string FileFolder4 = "\\JSG-LLC\\SRTools\\GachaRecords_Regular.ini";
+
+            string FileFolder = "\\JSG-LLC\\SRTools\\GachaRecords\\" + UID + "\\GachaRecords_Character.ini";
+            string FileFolder2 = "\\JSG-LLC\\SRTools\\GachaRecords\\" + UID + "\\GachaRecords_LightCone.ini";
+            string FileFolder3 = "\\JSG-LLC\\SRTools\\GachaRecords\\" + UID + "\\GachaRecords_Newbie.ini";
+            string FileFolder4 = "\\JSG-LLC\\SRTools\\GachaRecords\\" + UID + "\\GachaRecords_Regular.ini";
 
             if (File.Exists(uDFP + FileFolder) || File.Exists(uDFP + FileFolder2) || File.Exists(uDFP + FileFolder3) || File.Exists(uDFP + FileFolder4))
             {
                 ClearGacha.IsEnabled = true;
                 ExportSRGF.IsEnabled = true;
-                ImportSRGF.IsEnabled = false;
-                gachaNav.Visibility = Visibility.Visible;
+                ImportSRGF.IsEnabled = true;
+                gachaView.Visibility = Visibility.Visible;
+                gachaFrame.Visibility = Visibility.Visible;
                 loadGachaProgress.Visibility = Visibility.Collapsed;
                 localSettings.Values["Gacha_Data"] = "1";
                 if (File.Exists(uDFP + FileFolder)) CharacterGachaSelect.IsEnabled = true;
@@ -77,9 +271,9 @@ namespace SRTools.Views
                 if (File.Exists(uDFP + FileFolder3)) NewbieGachaSelect.IsEnabled = true;
                 if (File.Exists(uDFP + FileFolder4)) RegularGachaSelect.IsEnabled = true;
                 // 查找第一个已启用的MenuItem并将其选中
-                foreach (var menuItem in gachaNav.MenuItems)
+                foreach (var menuItem in gachaNav.Items)
                 {
-                    if (menuItem is NavigationViewItem item && item.IsEnabled)
+                    if (menuItem is SelectorBarItem item && item.IsEnabled)
                     {
                         gachaNav.SelectedItem = item;
                         break;
@@ -88,6 +282,7 @@ namespace SRTools.Views
             }
             else
             {
+                gachaView.Visibility = Visibility.Collapsed;
                 loadGachaProgress.Visibility = Visibility.Visible;
                 loadGachaFailedIcon.Visibility = Visibility.Visible;
                 loadGachaProgressRing.Visibility = Visibility.Collapsed;
@@ -95,80 +290,11 @@ namespace SRTools.Views
                 ClearGacha.IsEnabled = false;
                 ExportSRGF.IsEnabled = false;
                 ImportSRGF.IsEnabled = true;
-                gachaNav.Visibility = Visibility.Collapsed;
                 localSettings.Values["Gacha_Data"] = "0";
                 Logging.Write("无抽卡记录");
             }
         }
 
-        private async void GetCacheGacha()
-        {
-            if (localSettings.Values.ContainsKey("Config_GamePath"))
-            {
-                var value = localSettings.Values["Config_GamePath"] as string;
-                Logging.Write("GamePath: " + value, 0);
-                if (!string.IsNullOrEmpty(value) && value.Contains("Null")) { }
-                else
-                {
-                    Logging.Write("Getting CacheVersion From ArrowAPI...", 0);
-                    string directoryPath = value.Replace(@"\StarRail.exe", "") + "\\StarRail_Data\\webCaches\\";
-                    HttpClient client = new HttpClient();
-                    string url = "https://srtools.jamsg.cn/api/getgachacacheversion";
-                    HttpResponseMessage response = await client.GetAsync(url);
-                    if (response.IsSuccessStatusCode)
-                    {
-                        directoryPath = directoryPath + await response.Content.ReadAsStringAsync() + "\\Cache\\Cache_Data\\data_2";
-                        Logging.Write("Getted Version:" + await response.Content.ReadAsStringAsync(), 0);
-                    }
-                    string searchString = "https://api-takumi.mihoyo.com/common/gacha_record/api/getGachaLog";
-
-                    try
-                    {
-                        // Open the file using a StreamReader
-                        using (StreamReader reader = new StreamReader(directoryPath))
-                        {
-                            // Read the entire file as a single string
-                            string fileContent = reader.ReadToEnd();
-
-                            // Find the search string in the file content
-                            int index = fileContent.IndexOf(searchString);
-                            int lastIndex = -1;
-
-                            while (index >= 0)
-                            {
-                                lastIndex = index;
-                                index = fileContent.IndexOf(searchString, index + 1);
-                            }
-
-                            if (lastIndex >= 0)
-                            {
-                                // If the search string is found, output the entire string
-                                int endIndex = fileContent.IndexOf("&end_id=0", lastIndex);
-                                string result = fileContent.Substring(lastIndex, endIndex - lastIndex) + "&end_id=0";
-                                GachaLinkCache_String = result;
-                                Logging.Write("The last occurrence of the gacha link was found.", 0);
-                                GetCache.IsEnabled = true;
-                            }
-                            else
-                            {
-                                Logging.Write("The gacha link was not found.", 1);
-                            }
-                        }
-                    }
-                    catch (FileNotFoundException)
-                    {
-                        Logging.Write("The cache file was not found.", 1);
-                    }
-                    catch (IOException ex)
-                    {
-                        Logging.Write("An error occurred while reading the file: " + ex.Message, 1);
-                    }
-                }
-            }
-        }
-
-        private FiddlerCoreStartupSettings startupSettings;
-        private Proxy oProxy;
 
         public async Task StartAsync()
         {
@@ -196,6 +322,8 @@ namespace SRTools.Views
             {
                 oProxy.Dispose();
                 Logging.Write("Stopped Proxy", 0);
+                gacha_status.Text = "等待操作";
+                Enable_NavBtns();
             }
         }
 
@@ -244,6 +372,7 @@ namespace SRTools.Views
                         }
                         isProxyRunning = true;
                         await StartAsync();
+                        Disable_NavBtns();
                         gacha_status.Text = "正在等待打开抽卡历史记录...";
                         ProxyButton.IsEnabled = true;
                         dispatcherTimer.Start();
@@ -273,34 +402,11 @@ namespace SRTools.Views
             if (isProxyRunning || GachaLinkCache_String != null)
             {
                 ProxyButton.IsChecked = true;
-                if ((GachaLinkCache_String != null && GachaLinkCache_String.Contains("getGachaLog")))
-                { 
-                    // 进程正在运行
-                    gacha_status.Text = GachaLinkCache_String;
-                    GachaLink.Title = "获取到抽卡记录地址";
-                    GachaLink.Subtitle = "正在获取API信息,请不要退出...";
-                    GachaLink.IsOpen = true;
-                    ProxyButton.IsEnabled = false;
-                    Stop();
-                    Logging.Write("Get GachaLink Finish!", 0);
-                    ProxyButton.IsChecked = false;
-                    DataPackage dataPackage = new DataPackage();
-                    dataPackage.SetText(GachaLinkCache_String);
-                    Logging.Write("Writing GachaLink in Clipboard...", 0);
-                    Clipboard.SetContent(dataPackage);
-                    dispatcherTimer.Stop();
-                    Logging.Write("Loading Gacha Data...", 0);
-                    gacha_status.Text = "正在获取API信息,请不要退出...";
-                    LoadDataAsync(GachaLinkCache_String);
-                    GachaLinkCache_String = null;
-                }
-                else if (GachaLink_String != null && GachaLink_String.Contains("getGachaLog"))
+                if (GachaLink_String != null && GachaLink_String.Contains("getGachaLog"))
                 {
                     // 进程正在运行
                     gacha_status.Text = GachaLink_String;
-                    GachaLink.Title = "获取到抽卡记录地址";
-                    GachaLink.Subtitle = "正在获取API信息,请不要退出...";
-                    GachaLink.IsOpen = true;
+                    WaitOverlayManager.RaiseWaitOverlay(true, true, "正在获取API信息,请不要退出", "请稍等片刻");
                     ProxyButton.IsEnabled = false;
                     Stop();
                     Logging.Write("Get GachaLink Finish!", 0);
@@ -311,7 +417,7 @@ namespace SRTools.Views
                     Clipboard.SetContent(dataPackage);
                     dispatcherTimer.Stop();
                     Logging.Write("Loading Gacha Data...", 0);
-                    gacha_status.Text = "正在获取API信息,请不要退出...";
+                    WaitOverlayManager.RaiseWaitOverlay(true, true, "正在获取API信息,请不要退出", "请稍等片刻");
                     LoadDataAsync(GachaLink_String);
                     GachaLink_String = null;
                 }
@@ -325,7 +431,6 @@ namespace SRTools.Views
         private async void LoadDataAsync(String url)
         {
             ProxyButton.IsEnabled = false;
-            GetCache.IsEnabled = false;
             ExportSRGF.IsEnabled = false;
             ImportSRGF.IsEnabled = false;
 
@@ -341,7 +446,7 @@ namespace SRTools.Views
             {
                 if (char_records[0].Uid.Length != 9)
                 {
-                    Logging.Write("GachaLinkUID=" + char_records[0].Uid, 1);
+                    Logging.Write("抽卡链接UID=" + char_records[0].Uid, 1);
                     gacha_status.Text = "获取API信息出现问题，可能是抽卡链接已过期，请重新获取";
                     GachaLink.IsOpen = false;
                 }
@@ -406,7 +511,9 @@ namespace SRTools.Views
             }
             GachaLink.IsOpen = false;
             gacha_status.Text = "API获取完成";
+            await Depend.GachaRecords.UpdateGachaRecordsAsync();
             gachaNav.Visibility = Visibility.Visible;
+            WaitOverlayManager.RaiseWaitOverlay(false);
             gachaFrame.Navigate(typeof(CharacterGachaView));
             ProxyButton.IsEnabled = true;
         }
@@ -414,50 +521,46 @@ namespace SRTools.Views
         private void ExportSRGF_Click(object sender, RoutedEventArgs e)
         {
             ExportSRGF exportSRGF = new ExportSRGF();
-            exportSRGF.ExportAll();
+            _ = exportSRGF.ExportAll();
         }
 
         private async void ImportSRGF_Click(object sender, RoutedEventArgs e)
         {
             ImportSRGF importSRGF = new ImportSRGF();
             await importSRGF.Main();
-            ImportSRGF.IsEnabled = false;
-            LoadData();
-        }
-
-        private void ImportCache_Click(object sender, RoutedEventArgs e)
-        {
-            CheckProcess(null, null);
-        }
-
-
-        private void NavView_SelectionChanged(NavigationView sender, NavigationViewSelectionChangedEventArgs args)
-        {
-            if (args.IsSettingsSelected)
+            await UpdateGachaRecord();
+            GachaViewModel viewModel = this.DataContext as GachaViewModel;
+            if (viewModel != null)
             {
-                // 处理设置菜单项单击事件
-            }
-            else if (args.SelectedItemContainer != null)
-            {
-                switch (args.SelectedItemContainer.Tag.ToString())
+                viewModel.LoadUids();  // 加载数据
+                GachaRecordsUID.DataContext = viewModel;  // 确保DataContext正确
+                GachaRecordsUID.SetBinding(ComboBox.SelectedItemProperty, new Binding
                 {
-                    case "CharacterGacha":
-                        // 导航到主页
-                        gachaFrame.Navigate(typeof(CharacterGachaView));
-                        break;
-                    case "LightConeGacha":
-                        // 导航到启动游戏页
-                        gachaFrame.Navigate(typeof(LightConeGachaView));
-                        break;
-                    case "RegularGacha":
-                        // 导航到启动游戏页
-                        gachaFrame.Navigate(typeof(RegularGachaView));
-                        break;
-                    case "NewbieGacha":
-                        // 导航到启动游戏页
-                        gachaFrame.Navigate(typeof(NewbieGachaView));
-                        break;
-                }
+                    Path = new PropertyPath("SelectedUid"),
+                    Mode = BindingMode.TwoWay
+                });
+            }
+        }
+
+        private void NavView_SelectionChanged(SelectorBar sender, SelectorBarSelectionChangedEventArgs args)
+        {
+            SelectorBarItem selectedItem = sender.SelectedItem;
+            int currentSelectedIndex = sender.Items.IndexOf(selectedItem);
+
+            switch (currentSelectedIndex)
+            {
+                case 0:
+                    gachaFrame.Navigate(typeof(CharacterGachaView));
+                    break;
+                case 1:
+                    gachaFrame.Navigate(typeof(LightConeGachaView));
+                    break;
+                case 2:
+                    gachaFrame.Navigate(typeof(RegularGachaView));
+                    break;
+                case 3:
+                    gachaFrame.Navigate(typeof(NewbieGachaView));
+                    break;
             }
         }
 
@@ -478,31 +581,120 @@ namespace SRTools.Views
             dialog.PrimaryButtonClick += async (dialogSender, dialogArgs) =>
             {
                 ExportSRGF exportSRGF = new ExportSRGF();
-                if (await exportSRGF.ExportAll()) { ClearGacha_Run(); LoadData(); }
+                if (await exportSRGF.ExportAll()) { ClearGacha_Run(); }
             };
 
             // 设置次要按钮的点击事件处理程序
-            dialog.SecondaryButtonClick += async (dialogSender, dialogArgs) =>
+            dialog.SecondaryButtonClick += (dialogSender, dialogArgs) =>
             {
                 ClearGacha_Run();
-                LoadData();
             };
 
             var result = await dialog.ShowAsync();
         }
 
-        private void ClearGacha_Run()
+        private async void ClearGacha_Run()
         {
-            string directoryPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "JSG-LLC", "SRTools");
+            // 构建文件夹路径
+            string directoryPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "JSG-LLC", "SRTools", "GachaRecords", selectedUid);
 
-            // 获取目录中以 "GachaRecords_" 开头的所有文件
-            string[] filesToDelete = Directory.GetFiles(directoryPath, "GachaRecords_*");
-
-            // 遍历文件列表并删除每个文件
-            foreach (string filePath in filesToDelete)
+            // 删除文件夹及其所有内容
+            if (Directory.Exists(directoryPath))
             {
-                File.Delete(filePath);
+                Directory.Delete(directoryPath, true); // true 参数允许递归删除
             }
+
+            // 更新ViewModel
+            GachaViewModel viewModel = this.DataContext as GachaViewModel;
+            if (viewModel != null)
+            {
+                viewModel.LoadUids();  // 重新加载UIDs，这应当自动更新视图
+                GachaRecordsUID.DataContext = viewModel;  // 确保DataContext正确
+                GachaRecordsUID.SetBinding(ComboBox.SelectedItemProperty, new Binding
+                {
+                    Path = new PropertyPath("SelectedUid"),
+                    Mode = BindingMode.TwoWay
+                });
+            }
+            await LoadData(selectedUid);
+        }
+
+
+        private void Disable_NavBtns()
+        {
+            NavigationView parentNavigationView = GetParentNavigationView(this);
+            if (parentNavigationView != null)
+            {
+                var selectedItem = parentNavigationView.SelectedItem;
+                var excludeTags = new HashSet<string> { "account_status", "event", "account" };  // 需要排除的标签
+
+                foreach (var menuItem in parentNavigationView.MenuItems.Concat(parentNavigationView.FooterMenuItems))
+                {
+                    if (menuItem is NavigationViewItem navViewItem && navViewItem != selectedItem && !excludeTags.Contains(navViewItem.Tag as string))
+                    {
+                        navViewItem.IsEnabled = false;
+                    }
+                }
+                // 特别处理设置按钮
+                if (parentNavigationView.SettingsItem is NavigationViewItem settingsItem && settingsItem != selectedItem)
+                {
+                    settingsItem.IsEnabled = false;
+                }
+            }
+        }
+
+        private void Enable_NavBtns()
+        {
+            NavigationView parentNavigationView = GetParentNavigationView(this);
+            if (parentNavigationView != null)
+            {
+                var selectedItem = parentNavigationView.SelectedItem;
+                var excludeTags = new HashSet<string> { "account_status", "event", "account" };  // 需要排除的标签
+
+                foreach (var menuItem in parentNavigationView.MenuItems.Concat(parentNavigationView.FooterMenuItems))
+                {
+                    if (menuItem is NavigationViewItem navViewItem && navViewItem != selectedItem && !excludeTags.Contains(navViewItem.Tag as string))
+                    {
+                        navViewItem.IsEnabled = true;
+                    }
+                }
+                // 特别处理设置按钮
+                if (parentNavigationView.SettingsItem is NavigationViewItem settingsItem && settingsItem != selectedItem)
+                {
+                    settingsItem.IsEnabled = true;
+                }
+            }
+        }
+
+        private void SetButtonsEnabledState(DependencyObject parent, bool isEnabled)
+        {
+            var childrenCount = VisualTreeHelper.GetChildrenCount(parent);
+            for (int i = 0; i < childrenCount; i++)
+            {
+                var child = VisualTreeHelper.GetChild(parent, i);
+                if (child is Button button)
+                {
+                    button.IsEnabled = isEnabled;
+                }
+                else
+                {
+                    SetButtonsEnabledState(child, isEnabled);
+                }
+            }
+        }
+
+
+
+        private NavigationView GetParentNavigationView(FrameworkElement child)
+        {
+            DependencyObject parent = VisualTreeHelper.GetParent(child);
+
+            while (parent != null && !(parent is NavigationView))
+            {
+                parent = VisualTreeHelper.GetParent(parent);
+            }
+
+            return parent as NavigationView;
         }
 
 

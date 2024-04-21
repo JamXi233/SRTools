@@ -13,7 +13,7 @@
         <StackPanel HorizontalAlignment="Left" >
 
             <StackPanel Orientation="Horizontal">
-                <ImageIcon Source="ms-appx:///Assets/Don_Icon.gif" Height="42" Margin="0 0 8 0"/>
+                <ImageIcon Source="ms-appx:///Imgs/Don_Icon.gif" Height="42" Margin="0 0 8 0"/>
                 <TextBlock Text="赞助" Style="{StaticResource TitleTextBlockStyle}"/>
             </StackPanel>
             <TextBlock Text="感谢您支持🧰星轨工具箱(SRTools)的开发" Margin="0 8 0 0"/>
@@ -23,11 +23,11 @@
             <StackPanel Orientation="Horizontal" Margin="0 24 0 0">
 
                 <StackPanel Orientation="Vertical">
-                    <Image Source="ms-appx:///Assets/don_wechat.png" Height="256" Margin="0 0 8 0"/>
+                    <Image Source="ms-appx:///Imgs/don_wechat.png" Height="256" Margin="0 0 8 0"/>
                 </StackPanel>
                 
                 <StackPanel Orientation="Vertical">
-                    <Image Source="ms-appx:///Assets/don_alipay.png" Height="256" Margin="0 0 8 0"/>
+                    <Image Source="ms-appx:///Imgs/don_alipay.png" Height="256" Margin="0 0 8 0"/>
                 </StackPanel>
 
             </StackPanel>
@@ -35,8 +35,8 @@
         </StackPanel>
 
         <StackPanel VerticalAlignment="Bottom" HorizontalAlignment="Right">
-            
-            <ImageIcon Source="ms-appx:///Assets/Don_Hand.gif" Height="84" Margin="0 0 8 12"/>
+
+            <ImageIcon Source="ms-appx:///Imgs/Don_Hand.gif" Height="84" Margin="0 0 8 12"/>
             <TextBlock Text="感谢您的慷慨赞助！" FontWeight="Bold" FontSize="18"/>
 
         </StackPanel>

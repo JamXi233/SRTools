@@ -1,23 +1,41 @@
-﻿using System;
+﻿// Copyright (c) 2021-2024, JamXi JSG-LLC.
+// All rights reserved.
+
+// This file is part of SRTools.
+
+// SRTools is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+
+// SRTools is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+
+// You should have received a copy of the GNU General Public License
+// along with SRTools.  If not, see <http://www.gnu.org/licenses/>.
+
+// For more information, please refer to <https://www.gnu.org/licenses/gpl-3.0.html>
+
+using System;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media.Imaging;
 using System.Diagnostics;
 using Microsoft.UI.Xaml.Media.Animation;
-using Microsoft.Win32;
 using SRTools.Depend;
 using System.Collections.Generic;
-using System.Reflection;
 using System.Threading.Tasks;
 using System.Net.Http;
 using System.Text.Json;
 using System.Collections.ObjectModel;
-using System.Security.Policy;
 using Microsoft.UI.Xaml.Input;
 using SRTools.Views.NotifyViews;
-using Windows.UI.Core;
 using System.IO;
-using Org.BouncyCastle.Utilities.IO;
+using static SRTools.App;
+using Windows.Storage;
+using SRTools.Views.SGViews;
 
 namespace SRTools.Views
 {
@@ -26,6 +44,8 @@ namespace SRTools.Views
         private static readonly HttpClient httpClient = new HttpClient();
         public ObservableCollection<string> Pictures { get; } = new ObservableCollection<string>();
         public ObservableCollection<string> PicturesClick { get; } = new ObservableCollection<string>();
+        static Dictionary<string, BitmapImage> imageCache = new Dictionary<string, BitmapImage>();
+
         private string _url;
         string backgroundUrl = "";
         string iconUrl = "";
@@ -36,14 +56,21 @@ namespace SRTools.Views
         {
             this.InitializeComponent();
             Logging.Write("Switch to MainView", 0);
-            _ = LoadPicturesAsync();
-            try 
-            { 
-                Task.Run(() => getNotify.Get()).Wait();
+            Loaded += MainView_Loaded;  // 订阅 Loaded 事件
+        }
+
+        private async void MainView_Loaded(object sender, RoutedEventArgs e)
+        {
+            await LoadPicturesAsync();  // 异步加载图片
+            await LoadPostAsync();
+
+            try
+            {
+                await getNotify.Get();  // 异步等待 getNotify.Get() 完成
                 Notify_Grid.Visibility = Visibility.Visible;
-            } 
-            catch 
-            { 
+            }
+            catch
+            {
                 loadRing.Visibility = Visibility.Collapsed;
                 loadErr.Visibility = Visibility.Visible;
             }
@@ -56,52 +83,56 @@ namespace SRTools.Views
             backgroundUrl = response.data.adv.background;
             iconUrl = response.data.adv.icon;
             _url = response.data.adv.url;
-            Logging.Write("LoadPopulatePictures...", 0);
-            PopulatePictures(response.data.banner);
-            Logging.Write("LoadAdvertisementData...", 0);
-            LoadAdvertisementData();
+            PopulatePicturesAsync(response.data.banner);
+            await LoadAdvertisementDataAsync();
         }
 
-        private async void LoadAdvertisementData()
+        private async Task LoadPostAsync()
         {
-            // 设置背景图片
-            Logging.Write("Getting Background: " + backgroundUrl, 0);
-            BitmapImage backgroundImage = new BitmapImage();
-            using (var stream = await new HttpClient().GetStreamAsync(backgroundUrl))
-            using (var memStream = new MemoryStream())
+            await getNotify.Get();
+            NotifyLoad.Visibility = Visibility.Collapsed;
+            NotifyNav.Visibility = Visibility.Visible;
+            // 查找第一个已启用的MenuItem并将其选中
+            foreach (var menuItem in NotifyNav.Items)
             {
-                await stream.CopyToAsync(memStream);
-                memStream.Position = 0;
-                var randomAccessStream = memStream.AsRandomAccessStream();
-                await backgroundImage.SetSourceAsync(randomAccessStream);
+                if (menuItem is SelectorBarItem item && item.IsEnabled)
+                {
+                    NotifyNav.SelectedItem = item;
+                    break;
+                }
             }
+        }
+
+        private async Task LoadAdvertisementDataAsync()
+        {
+            Logging.Write("LoadAdvertisementData...", 0);
+            Logging.Write("Getting Background: " + backgroundUrl, 0);
+            BitmapImage backgroundImage = await LoadImageAsync(backgroundUrl);
             BackgroundImage.Source = backgroundImage;
 
-            /*// 设置按钮图标
-            Logging.Write("Getting Button Image: " + iconUrl, 0);
-            BitmapImage iconImage = new BitmapImage();
-            using (var stream = await new HttpClient().GetStreamAsync(iconUrl))
-            using (var memStream = new MemoryStream())
+            // 设置按钮图标
+            try
             {
-                await stream.CopyToAsync(memStream);
-                memStream.Position = 0;
-                var randomAccessStream = memStream.AsRandomAccessStream();
-                await iconImage.SetSourceAsync(randomAccessStream);
-            }*/
-
-            AboutView aboutView = new AboutView();
-            int result = await aboutView.OnGetUpdateLatestReleaseInfo("SRToolsHelper", "Depend");
-            if (result == 1)
+                Logging.Write("Getting Button Image: " + iconUrl, 0);
+                BitmapImage iconImage = await LoadImageAsync(iconUrl);
+                IconImageBrush.ImageSource = iconImage;
+            }
+            catch (Exception e)
             {
-                infoBar.Title = "更新提示";
-                infoBar.Message = "依赖包需要更新，请尽快到[设置-检查依赖更新]进行更新";
-                infoBar.IsOpen = true;
-                infoBar.IsClosable = false;
+                Logging.Write("Getting Button Image Error: " + e.Message, 0);
             }
 
-            //IconImageBrush.ImageSource = iconImage;
+
+            var result = await GetUpdate.GetDependUpdate();
+            var status = result.Status;
+            if (status == 1)
+            {
+                NotificationManager.RaiseNotification("更新提示", "依赖包需要更新\n请尽快到[设置-检查依赖更新]进行更新", InfoBarSeverity.Warning);
+            }
+
             loadRing.Visibility = Visibility.Collapsed;
         }
+
 
         private void OpenUrlButton_Click(object sender, RoutedEventArgs e)
         {
@@ -141,15 +172,17 @@ namespace SRTools.Views
             return JsonSerializer.Deserialize<ApiResponse>(responseBody);
         }
 
-        public void PopulatePictures(List<Banner> banners)
+        public void PopulatePicturesAsync(List<Banner> banners)
         {
             foreach (Banner banner in banners)
             {
-                Pictures.Add(banner.img);
+                Pictures.Add(banner.img);  // 直接添加 URL 到集合
                 list.Add(banner.url);
             }
-            Gallery_Grid.Visibility = Visibility.Visible;
+            FlipViewPipsPager.NumberOfPages = banners.Count;  // 一次性设置总页数
+            Gallery_Grid.Visibility = Visibility.Visible;  // 显示 FlipView
         }
+
 
         private void Gallery_PointerPressed(object sender, PointerRoutedEventArgs e)
         {
@@ -165,31 +198,49 @@ namespace SRTools.Views
             });
         }
 
-        private void Notify_NavView_SelectionChanged(NavigationView sender, NavigationViewSelectionChangedEventArgs args)
+        private void Notify_NavView_SelectionChanged(SelectorBar sender, SelectorBarSelectionChangedEventArgs args)
         {
-            if (args.IsSettingsSelected)
+            SelectorBarItem selectedItem = sender.SelectedItem;
+            int currentSelectedIndex = sender.Items.IndexOf(selectedItem);
+            switch (currentSelectedIndex)
             {
-                // 处理设置菜单项单击事件
-            }
-            else if (args.SelectedItemContainer != null)
-            {
-                switch (args.SelectedItemContainer.Tag.ToString())
-                {
-                    case "Notify_Announce":
-                        // 导航到主页
-                        NotifyFrame.Navigate(typeof(NotifyAnnounceView));
-                        break;
-                    case "Notify_Notification":
-                        // 导航到启动游戏页
-                        NotifyFrame.Navigate(typeof(NotifyNotificationView));
-                        break;
-                    case "Notify_Message":
-                        // 导航到启动游戏页
-                        NotifyFrame.Navigate(typeof(NotifyMessageView));
-                        break;
-                }
+                case 0:
+                    NotifyFrame.Navigate(typeof(NotifyAnnounceView));
+                    break;
+                case 1:
+                    NotifyFrame.Navigate(typeof(NotifyNotificationView));
+                    break;
+                case 2:
+                    NotifyFrame.Navigate(typeof(NotifyMessageView));
+                    break;
             }
         }
+
+        private async Task<BitmapImage> LoadImageAsync(string imageUrl)
+        {
+            // 检查缓存中是否已存在图片
+            if (imageCache.ContainsKey(imageUrl))
+            {
+                return imageCache[imageUrl];
+            }
+
+            // 从网络加载图片
+            BitmapImage bitmapImage = new BitmapImage();
+            using (var stream = await new HttpClient().GetStreamAsync(imageUrl))
+            using (var memStream = new MemoryStream())
+            {
+                await stream.CopyToAsync(memStream);
+                memStream.Position = 0;
+                var randomAccessStream = memStream.AsRandomAccessStream();
+                await bitmapImage.SetSourceAsync(randomAccessStream);
+            }
+
+            // 将加载的图片添加到缓存中
+            imageCache[imageUrl] = bitmapImage;
+
+            return bitmapImage;
+        }
+
     }
 
 
