@@ -30,29 +30,55 @@
                         <ColumnDefinition Width="2*"/>
                     </Grid.ColumnDefinitions>
 
-                    <StackPanel Grid.Column="0" Margin="0 0 20 0">
+                    <StackPanel Grid.Column="0" Margin="0 0 20 0" Width="200">
                         <ToggleButton x:Name="consoleToggle" Click="Console_Toggle" Content="开启控制台" Margin="0 0 0 10"/>
                         <ToggleButton x:Name="terminalToggle" Click="TerminalMode_Toggle" Content="𝑻𝒆𝒓𝒎𝒊𝒏𝒂𝒍模式" Margin="0 0 0 10"/>
                         <Button x:Name="checkUpdate" Click="Check_Update" Content="检查更新" Margin="0 0 0 10"/>
                         <Button x:Name="checkDependUpdate" Click="Check_Depend_Update" Content="检查依赖更新" Margin="0 0 0 10"/>
-                        <RadioButtons Header="更新渠道" FontSize="16" FontWeight="Bold" Margin="0 12 0 0">
-                            <RadioButton x:Name="uservice_JSG" Content="JSG-LLC(JSG-DS) 国内较快" Checked="uservice_JSG_Choose"/>
+                        <RadioButtons x:Name="userviceRadio" Header="更新渠道" FontSize="16" FontWeight="Bold" Margin="0 12 0 0">
+                            <RadioButton x:Name="uservice_JSG" Content="JSG-LLC(JSG-DS)" Checked="uservice_JSG_Choose"/>
                             <RadioButton x:Name="uservice_Gitee" Content="Gitee" Checked="uservice_Gitee_Choose" IsEnabled="False"/>
                             <RadioButton x:Name="uservice_Github" Content="Github" Checked="uservice_Github_Choose" IsEnabled="False"/>
                         </RadioButtons>
                     </StackPanel>
 
-                    <StackPanel Grid.Column="1" Margin="0 0 0 0">
+                    <StackPanel Grid.Column="1" Margin="0 0 0 0" Width="200">
                         <Button x:Name="clearAllData" Click="Clear_AllData_TipShow" FontWeight="Bold" Foreground="Red" Content="清空所有数据" Margin="0 0 0 10"/>
                         <Button x:Name="backupData" Click="Backup_Data" Content="备份数据" Margin="0 0 0 10"/>
                         <Button x:Name="restoreData" Click="Restore_Data_Click" Content="还原数据" Margin="0 0 0 10"/>
-                        <StackPanel x:Name="other" Margin="0 12 0 10" Visibility="Visible">
-                            <TextBlock Text="其他依赖" FontSize="16" FontWeight="Bold" Margin="0 0 0 10"/>
-                            <StackPanel Orientation="Horizontal">
-                                <Button x:Name="installSFF" Click="Install_Font_Click" Content="安装图标字体" Margin="0 0 10 0"/>
-                                <ProgressRing x:Name="installSFF_Progress" Height="20" Width="20" Visibility="Collapsed"/>
-                            </StackPanel>
+                        <StackPanel Orientation="Horizontal">
+                            <Button x:Name="installSFF" Click="Install_Font_Click" Content="安装图标字体" Margin="0 0 10 0"/>
+                            <ProgressRing x:Name="installSFF_Progress" Height="20" Width="20" Visibility="Collapsed"/>
                         </StackPanel>
+                        <StackPanel x:Name="other" Margin="0 12 0 10" Visibility="Visible">
+                            <RadioButtons x:Name="themeRadio" Header="主题设置" FontSize="16" FontWeight="Bold" Margin="0 12 0 0">
+                                <RadioButton x:Name="themeRadio_Follow" Checked="ThemeRadio_Follow">
+                                    <RadioButton.Content>
+                                        <StackPanel Orientation="Horizontal" Spacing="4">
+                                            <FontIcon FontFamily="Segoe Fluent Icons" Glyph="&#xE713;"/>
+                                            <TextBlock Text="跟随系统"/>
+                                        </StackPanel>
+                                    </RadioButton.Content>
+                                </RadioButton>
+                                <RadioButton x:Name="themeRadio_Light" Checked="ThemeRadio_Light">
+                                    <RadioButton.Content>
+                                        <StackPanel Orientation="Horizontal" Spacing="4">
+                                            <FontIcon FontFamily="Segoe Fluent Icons" Glyph="&#xE706;"/>
+                                            <TextBlock Text="浅色模式"/>
+                                        </StackPanel>
+                                    </RadioButton.Content>
+                                </RadioButton>
+                                <RadioButton x:Name="themeRadio_Dark" Checked="ThemeRadio_Dark">
+                                    <RadioButton.Content>
+                                        <StackPanel Orientation="Horizontal" Spacing="4">
+                                            <FontIcon FontFamily="Segoe Fluent Icons" Glyph="&#xE708;"/>
+                                            <TextBlock Text="深色模式"/>
+                                        </StackPanel>
+                                    </RadioButton.Content>
+                                </RadioButton>
+                            </RadioButtons>
+                        </StackPanel>
+
                     </StackPanel>
                     
 
@@ -76,6 +102,18 @@
                 ActionButtonContent="立即重启"
                 ActionButtonClick="Restart_App"
 	            CloseButtonContent="关闭">
+                <TeachingTip.IconSource>
+                    <SymbolIconSource Symbol="Permissions" />
+                </TeachingTip.IconSource>
+            </TeachingTip>
+
+            <TeachingTip x:Name="ThemeTip"
+                Background="{ThemeResource SystemControlAcrylicElementMediumHighBrush}"
+                Target="{x:Bind themeRadio}"
+                Title="主题切换需要重启SRTools"
+                ActionButtonContent="立即重启"
+                ActionButtonClick="Restart_App"
+                CloseButtonContent="关闭">
                 <TeachingTip.IconSource>
                     <SymbolIconSource Symbol="Permissions" />
                 </TeachingTip.IconSource>

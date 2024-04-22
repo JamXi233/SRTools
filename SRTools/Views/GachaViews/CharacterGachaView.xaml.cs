@@ -115,25 +115,84 @@ namespace SRTools.Views.GachaViews
             Gacha4Stars.Children.Clear();
             Gacha5Stars.Children.Add(rank5TextBlock);
             Gacha4Stars.Children.Add(rank4TextBlock);
-            
-            MyStackPanel.Children.Add(new TextBlock { Text = $"UID:" + uid });
+            // 计算概率，基础概率应以小数形式传递
+            double upcomingProbability5 = CalculateProbability(RankType5, 0.006, 89);
+            double upcomingProbability4 = CalculateProbability(RankType4, 0.0255, 9);
+
+            // 创建详情卡片
+            Border borderInfo = new Border
+            {
+                Padding = new Thickness(10),
+                Margin = new Thickness(0, 4, 0, 4), // 添加一些底部间距
+                BorderBrush = new SolidColorBrush(Colors.Gray),
+                BorderThickness = new Thickness(1),
+                CornerRadius = new CornerRadius(8)
+            };
+
+            StackPanel stackPanelInfo = new StackPanel();
+
+            stackPanelInfo.Children.Add(new TextBlock { Text = $"UID:" + uid });
             foreach (var group in groupedRecords)
             {
                 var textBlock = new TextBlock
                 {
                     Text = $"{group.Key}星: {group.Value.Count} (相同的有{group.Value.GroupBy(r => r.Name).Count()}个)"
                 };
-                MyStackPanel.Children.Add(textBlock);
+                stackPanelInfo.Children.Add(textBlock);
             }
-            MyStackPanel.Children.Add(new TextBlock { Text = $"距离上一个五星已经抽了" + RankType5 + "发" });
-            MyStackPanel.Children.Add(new TextBlock { Text = $"距离上一个四星已经抽了" + RankType4 + "发" });
-            // 计算概率，基础概率应以小数形式传递
-            double upcomingProbability5 = CalculateProbability(RankType5, 0.006, 89);
-            double upcomingProbability4 = CalculateProbability(RankType4, 0.0255, 9);
+            borderInfo.Child = stackPanelInfo;
+            MyStackPanel.Children.Add(borderInfo);
 
-            // 显示在 UI 上
-            MyStackPanel.Children.Add(new TextBlock { Text = $"下次五星的概率: {upcomingProbability5:F2}%" });
-            MyStackPanel.Children.Add(new TextBlock { Text = $"下次四星的概率: {upcomingProbability4:F2}%" });
+
+
+            // 创建五星卡片
+            Border borderFiveStar = new Border
+            {
+                Padding = new Thickness(10),
+                Margin = new Thickness(0, 4, 0, 4), // 添加一些底部间距
+                BorderBrush = new SolidColorBrush(Colors.Gray),
+                BorderThickness = new Thickness(1),
+                CornerRadius = new CornerRadius(8)
+            };
+
+            StackPanel stackPanelFiveStar = new StackPanel();
+            stackPanelFiveStar.Children.Add(new TextBlock { Text = $"距离上一个五星已经抽了{RankType5}发" });
+            ProgressBar progressBar5 = new ProgressBar
+            {
+                Minimum = 0,
+                Maximum = 90,
+                Value = RankType5,
+                Height = 12
+            };
+            stackPanelFiveStar.Children.Add(progressBar5);
+            stackPanelFiveStar.Children.Add(new TextBlock { Text = $"保底90发", FontSize = 12, Foreground = new SolidColorBrush(Colors.Gray) });
+            stackPanelFiveStar.Children.Add(new TextBlock { Text = $"[Beta]下次五星的概率: {upcomingProbability5:F2}%", FontSize = 12, Foreground = new SolidColorBrush(Colors.Gray) });
+            borderFiveStar.Child = stackPanelFiveStar;
+            MyStackPanel.Children.Add(borderFiveStar);
+
+            // 创建四星卡片
+            Border borderFourStar = new Border
+            {
+                Padding = new Thickness(10),
+                Margin = new Thickness(0, 4, 0, 4), // 添加一些底部间距
+                BorderBrush = new SolidColorBrush(Colors.Gray),
+                BorderThickness = new Thickness(1),
+                CornerRadius = new CornerRadius(8)
+            };
+            StackPanel stackPanelFourStar = new StackPanel();
+            stackPanelFourStar.Children.Add(new TextBlock { Text = $"距离上一个四星已经抽了{RankType4}发" });
+            ProgressBar progressBar4 = new ProgressBar
+            {
+                Minimum = 0,
+                Maximum = 10,
+                Value = RankType4,
+                Height = 12
+            };
+            stackPanelFourStar.Children.Add(progressBar4);
+            stackPanelFourStar.Children.Add(new TextBlock { Text = $"保底10发", FontSize = 12, Foreground = new SolidColorBrush(Colors.Gray) });
+            stackPanelFourStar.Children.Add(new TextBlock { Text = $"[Beta]下次四星的概率: {upcomingProbability4:F2}%", FontSize = 12, Foreground = new SolidColorBrush(Colors.Gray) });
+            borderFourStar.Child = stackPanelFourStar;
+            MyStackPanel.Children.Add(borderFourStar);
 
             MyListView.ItemsSource = records;
             //gacha_status.Text = "已加载本地缓存";

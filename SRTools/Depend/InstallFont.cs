@@ -91,22 +91,19 @@ namespace SRTools.Depend
                 return 1; // 字体文件未找到
             }
 
-            // 安装字体
-            if (StartInstallFont(fontFilePath))
-            {
-                Console.WriteLine("字体安装成功。");
-                return 0; // 安装成功
-            }
-            else
-            {
-                Console.WriteLine("字体安装失败。");
-                return 2; // 安装失败
-            }
+            // 打开字体文件以供用户安装
+            Process.Start("explorer", fontFilePath);
+
+            App.WaitOverlayManager.RaiseWaitOverlay(true, true, "请点击安装", "安装后需要重启工具箱来生效");
+
+            // 异步等待用户完成安装
+            await Task.Delay(2000); // 10秒后提示重启，可以根据需要调整时间
+
+            // 提示用户重启应用
+            await ProcessRun.RestartApp();
+            return 0; // 表示字体文件已打开等待用户操作
         }
 
-
-        [DllImport("gdi32.dll")]
-        private static extern int AddFontResource(string lpFilename);
 
         public static bool StartInstallFont(string fontFilePath)
         {

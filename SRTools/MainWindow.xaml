@@ -59,9 +59,9 @@
                             <FontIcon FontFamily="Segoe Fluent Icons" Glyph="&#xe77b;"/>
                         </NavigationViewItem.Icon>
                     </NavigationViewItem>
-                    <NavigationViewItem Content="帮助文档" Tag="question">
+                    <NavigationViewItem Content="社区" Tag="flarum">
                         <NavigationViewItem.Icon>
-                            <FontIcon FontFamily="Segoe Fluent Icons" Glyph="&#xe897;" />
+                            <FontIcon FontFamily="Segoe Fluent Icons" Glyph="&#xe8f2;" />
                         </NavigationViewItem.Icon>
                     </NavigationViewItem>
                     <NavigationViewItem Content="赞助" Tag="donation">

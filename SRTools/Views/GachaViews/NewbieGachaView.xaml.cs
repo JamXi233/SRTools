@@ -24,6 +24,9 @@ using SRTools.Depend;
 using System.Linq;
 using Windows.Storage;
 using SRTools.Views.ToolViews;
+using Microsoft.UI.Xaml.Media;
+using Microsoft.UI;
+using Microsoft.UI.Xaml;
 
 namespace SRTools.Views.GachaViews
 {
@@ -111,17 +114,74 @@ namespace SRTools.Views.GachaViews
             Gacha5Stars.Children.Add(rank5TextBlock);
             Gacha4Stars.Children.Add(rank4TextBlock);
 
-            MyStackPanel.Children.Add(new TextBlock { Text = $"UID:" + uid });
+            // 创建详情卡片
+            Border borderInfo = new Border
+            {
+                Padding = new Thickness(10),
+                Margin = new Thickness(0, 4, 0, 4), // 添加一些底部间距
+                BorderBrush = new SolidColorBrush(Colors.Gray),
+                BorderThickness = new Thickness(1),
+                CornerRadius = new CornerRadius(8)
+            };
+
+            StackPanel stackPanelInfo = new StackPanel();
+
+            stackPanelInfo.Children.Add(new TextBlock { Text = $"UID:" + uid });
             foreach (var group in groupedRecords)
             {
                 var textBlock = new TextBlock
                 {
                     Text = $"{group.Key}星: {group.Value.Count} (相同的有{group.Value.GroupBy(r => r.Name).Count()}个)"
                 };
-                MyStackPanel.Children.Add(textBlock);
+                stackPanelInfo.Children.Add(textBlock);
             }
-            MyStackPanel.Children.Add(new TextBlock { Text = $"距离上一个五星已经抽了" + RankType5 + "发" });
-            MyStackPanel.Children.Add(new TextBlock { Text = $"距离上一个四星已经抽了" + RankType4 + "发" });
+            borderInfo.Child = stackPanelInfo;
+            MyStackPanel.Children.Add(borderInfo);
+
+            // 创建五星卡片
+            Border borderFiveStar = new Border
+            {
+                Padding = new Thickness(10),
+                Margin = new Thickness(0, 4, 0, 4), // 添加一些底部间距
+                BorderBrush = new SolidColorBrush(Colors.Gray),
+                BorderThickness = new Thickness(1),
+                CornerRadius = new CornerRadius(8)
+            };
+
+            StackPanel stackPanelFiveStar = new StackPanel();
+            stackPanelFiveStar.Children.Add(new TextBlock { Text = $"距离上一个五星已经抽了{RankType5}发" });
+            ProgressBar progressBar5 = new ProgressBar
+            {
+                Minimum = 0,
+                Maximum = 80,
+                Value = RankType5,
+                Height = 12
+            };
+            stackPanelFiveStar.Children.Add(progressBar5);
+            borderFiveStar.Child = stackPanelFiveStar;
+            MyStackPanel.Children.Add(borderFiveStar);
+
+            // 创建四星卡片
+            Border borderFourStar = new Border
+            {
+                Padding = new Thickness(10),
+                Margin = new Thickness(0, 4, 0, 4), // 添加一些底部间距
+                BorderBrush = new SolidColorBrush(Colors.Gray),
+                BorderThickness = new Thickness(1),
+                CornerRadius = new CornerRadius(8)
+            };
+            StackPanel stackPanelFourStar = new StackPanel();
+            stackPanelFourStar.Children.Add(new TextBlock { Text = $"距离上一个四星已经抽了{RankType4}发" });
+            ProgressBar progressBar4 = new ProgressBar
+            {
+                Minimum = 0,
+                Maximum = 10,
+                Value = RankType4,
+                Height = 12
+            };
+            stackPanelFourStar.Children.Add(progressBar4);
+            borderFourStar.Child = stackPanelFourStar;
+            MyStackPanel.Children.Add(borderFourStar);
             MyListView.ItemsSource = records;
             //gacha_status.Text = "已加载本地缓存";
         }

@@ -23,6 +23,7 @@ namespace SRTools.Depend
             return File.Exists(InstallerFullPath);
         }
 
+        // 检查 Installer 是否存在
         public static async Task GetInstaller()
         {
             using (var httpClient = new HttpClient())
@@ -63,6 +64,7 @@ namespace SRTools.Depend
             }
         }
 
+        // 开始运行 Installer
         public static int RunInstaller(string args = "")
         {
             if (!File.Exists(InstallerFullPath))

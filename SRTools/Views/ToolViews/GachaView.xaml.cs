@@ -45,84 +45,74 @@ using Microsoft.UI.Xaml.Data;
 
 namespace SRTools.Views.ToolViews
 {
-    public class GachaViewModel : INotifyPropertyChanged
+public class GachaViewModel : INotifyPropertyChanged
+{
+    public event PropertyChangedEventHandler PropertyChanged;
+    public event Action RequestViewUpdate;
+
+    private ObservableCollection<string> _uidList;
+    public ObservableCollection<string> UidList
     {
-        public event PropertyChangedEventHandler PropertyChanged;
-        public event Action RequestViewUpdate;
-
-        private ObservableCollection<string> _uidList;
-        public ObservableCollection<string> UidList
+        get => _uidList;
+        set
         {
-            get => _uidList;
-            set
-            {
-                _uidList = value;
-                OnPropertyChanged(nameof(UidList));
-            }
-        }
-
-        public GachaViewModel()
-        {
-            UidList = new ObservableCollection<string>();
-            LoadUids();
-        }
-
-        private string _selectedUid;
-        public string SelectedUid
-        {
-            get => _selectedUid;
-            set
-            {
-                if (_selectedUid != value)
-                {
-                    _selectedUid = value;
-                    OnPropertyChanged(nameof(SelectedUid));
-                    Logging.Write($"选择UID: {_selectedUid}");
-                }
-            }
-        }
-
-
-
-        public void LoadUids()
-        {
-            var dispatcherQueue = DispatcherQueue.GetForCurrentThread();
-            dispatcherQueue.TryEnqueue(() =>
-            {
-                UidList.Clear();
-                string baseDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "JSG-LLC", "SRTools", "GachaRecords");
-                if (Directory.Exists(baseDir))
-                {
-                    var directories = Directory.GetDirectories(baseDir);
-                    foreach (var dir in directories)
-                    {
-                        string uid = Path.GetFileName(dir); // 这应该只获取目录的最后一部分，即 UID
-                        UidList.Add(uid);
-                    }
-
-                    if (UidList.Count > 0)
-                    {
-                        SelectedUid = UidList[0];  // 默认选择第一个UID
-                    }
-                    else
-                    {
-                        SelectedUid = null;  // 如果没有UID，确保SelectedUid为空
-                    }
-                }
-            });
-        }
-
-
-        public void ReloadData()
-        {
-            LoadUids();  // 假设这是加载或重新加载UIDs的方法
-        }
-
-        protected void OnPropertyChanged(string propertyName)
-        {
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+            _uidList = value;
+            OnPropertyChanged(nameof(UidList));
         }
     }
+
+    public GachaViewModel()
+    {
+        UidList = new ObservableCollection<string>();
+        LoadUidsAsync();
+    }
+
+    private string _selectedUid;
+    public string SelectedUid
+    {
+        get => _selectedUid;
+        set
+        {
+            if (_selectedUid != value)
+            {
+                _selectedUid = value;
+                OnPropertyChanged(nameof(SelectedUid));
+                Logging.Write($"选择UID: {_selectedUid}");
+            }
+        }
+    }
+
+    public async Task LoadUidsAsync()
+    {
+        var dispatcherQueue = DispatcherQueue.GetForCurrentThread();
+        dispatcherQueue.TryEnqueue(async () => {
+            UidList.Clear();
+            string baseDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "JSG-LLC", "SRTools", "GachaRecords");
+            if (Directory.Exists(baseDir))
+            {
+                var directories = await Task.Run(() => Directory.GetDirectories(baseDir));
+                foreach (var dir in directories)
+                {
+                    string uid = Path.GetFileName(dir); // 这应该只获取目录的最后一部分，即 UID
+                    UidList.Add(uid);
+                }
+
+                SelectedUid = UidList.Any() ? UidList[0] : null;
+            }
+        });
+    }
+
+    public void ReloadData()
+    {
+        _ = LoadUidsAsync();  // 异步加载UIDs，无需等待完成
+    }
+
+    protected void OnPropertyChanged(string propertyName)
+    {
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+    }
+}
+
 
     public sealed partial class GachaView : Page
     {
@@ -141,20 +131,22 @@ namespace SRTools.Views.ToolViews
         ApplicationDataContainer localSettings = ApplicationData.Current.LocalSettings;
         public GachaView()
         {
-            this.InitializeComponent();
+            InitializeComponent();
             Logging.Write("Switch to GachaView", 0);
-            GachaViewModel viewModel = new GachaViewModel();
-            this.DataContext = viewModel;
+            var viewModel = new GachaViewModel();
+            DataContext = viewModel;
 
-            // 订阅 ViewModel 中的视图更新请求事件
             viewModel.RequestViewUpdate += ViewModel_RequestViewUpdate;
             InitData();
         }
 
         private async void ViewModel_RequestViewUpdate()
         {
-            // 视图具体更新操作，如调用LoadData等
-            await LoadData(selectedUid);
+            // 确保 selectedUid 已正确设置
+            if (!string.IsNullOrEmpty(selectedUid))
+            {
+                await LoadData(selectedUid);
+            }
         }
 
         private async void InitData()
@@ -197,8 +189,6 @@ namespace SRTools.Views.ToolViews
                     }
                 }
             }
-
-            
         }
 
         private void InitTimer() 
@@ -239,7 +229,7 @@ namespace SRTools.Views.ToolViews
 
         public async Task LoadData(string UID)
         {
-            gachaNav.SelectedItem = null;
+            ReloadGachaFrame();
             gachaView.Visibility = Visibility.Collapsed;
             gachaFrame.Visibility = Visibility.Collapsed;
             loadGachaProgress.Visibility = Visibility.Visible;
@@ -270,15 +260,7 @@ namespace SRTools.Views.ToolViews
                 if (File.Exists(uDFP + FileFolder2)) LightConeGachaSelect.IsEnabled = true;
                 if (File.Exists(uDFP + FileFolder3)) NewbieGachaSelect.IsEnabled = true;
                 if (File.Exists(uDFP + FileFolder4)) RegularGachaSelect.IsEnabled = true;
-                // 查找第一个已启用的MenuItem并将其选中
-                foreach (var menuItem in gachaNav.Items)
-                {
-                    if (menuItem is SelectorBarItem item && item.IsEnabled)
-                    {
-                        gachaNav.SelectedItem = item;
-                        break;
-                    }
-                }
+                ReloadGachaFrame();
             }
             else
             {
@@ -532,7 +514,7 @@ namespace SRTools.Views.ToolViews
             GachaViewModel viewModel = this.DataContext as GachaViewModel;
             if (viewModel != null)
             {
-                viewModel.LoadUids();  // 加载数据
+                await viewModel.LoadUidsAsync();  // 加载数据
                 GachaRecordsUID.DataContext = viewModel;  // 确保DataContext正确
                 GachaRecordsUID.SetBinding(ComboBox.SelectedItemProperty, new Binding
                 {
@@ -608,7 +590,7 @@ namespace SRTools.Views.ToolViews
             GachaViewModel viewModel = this.DataContext as GachaViewModel;
             if (viewModel != null)
             {
-                viewModel.LoadUids();  // 重新加载UIDs，这应当自动更新视图
+                await viewModel.LoadUidsAsync();  // 重新加载UIDs，这应当自动更新视图
                 GachaRecordsUID.DataContext = viewModel;  // 确保DataContext正确
                 GachaRecordsUID.SetBinding(ComboBox.SelectedItemProperty, new Binding
                 {
@@ -619,6 +601,19 @@ namespace SRTools.Views.ToolViews
             await LoadData(selectedUid);
         }
 
+        private void ReloadGachaFrame()
+        {
+            gachaNav.SelectedItem = null;
+            // 查找第一个已启用的MenuItem并将其选中
+            foreach (var menuItem in gachaNav.Items)
+            {
+                if (menuItem is SelectorBarItem item && item.IsEnabled)
+                {
+                    gachaNav.SelectedItem = item;
+                    break;
+                }
+            }
+        }
 
         private void Disable_NavBtns()
         {

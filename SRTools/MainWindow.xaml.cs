@@ -251,6 +251,7 @@ namespace SRTools
 
         }
 
+
         private void RegisterSystemThemeChangeEvents(WindowId id)
         {
             var uiSettings = new Windows.UI.ViewManagement.UISettings();
@@ -325,8 +326,8 @@ namespace SRTools
                     case "gacha":
                         MainFrame.Navigate(typeof(GachaView));
                         break;
-                    case "question":
-                        MainFrame.Navigate(typeof(QuestionView));
+                    case "flarum":
+                        MainFrame.Navigate(typeof(FlarumView));
                         break;
                     case "donation":
                         MainFrame.Navigate(typeof(DonationView));

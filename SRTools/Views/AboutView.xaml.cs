@@ -35,6 +35,7 @@ using Windows.Storage.Pickers;
 using Newtonsoft.Json;
 using System.Net.Http;
 using static SRTools.App;
+using Windows.UI.Core;
 
 namespace SRTools.Views
 {
@@ -43,6 +44,8 @@ namespace SRTools.Views
         private readonly GetGiteeLatest _getGiteeLatest = new GetGiteeLatest();
         private readonly GetJSGLatest _getJSGLatest = new GetJSGLatest();
 
+        private bool isProgrammaticChange = false;
+
         [DllImport("User32.dll")]
         public static extern short GetAsyncKeyState(int vKey);
 
@@ -50,131 +53,66 @@ namespace SRTools.Views
         {
             InitializeComponent();
             Logging.Write("Switch to AboutView", 0);
-            ApplicationDataContainer localSettings = ApplicationData.Current.LocalSettings;
-            switch (AppDataController.GetUpdateService())
-            {
-                case 0:
-                    uservice_Github.IsChecked = true;
-                    break;
-                case 1:
-                    uservice_Gitee.IsChecked = true;
-                    break;
-                case 2:
-                    uservice_JSG.IsChecked = true;
-                    break;
-                default:
-                    throw new InvalidOperationException($"Invalid update service value: {localSettings.Values["Config_UpdateService"]}");
-            }
-            switch (AppDataController.GetConsoleMode())
-            {
-                case 0:
-                    consoleToggle.IsChecked = false;
-                    break;
-                case 1:
-                    consoleToggle.IsChecked = true;
-                    break;
-                default:
-                    consoleToggle.IsChecked = false;
-                    break;
-            }
 
-            if(TerminalMode.ConsoleStatus()) consoleToggle.IsChecked = true;
-            else consoleToggle.IsChecked = false;
+            this.Loaded += AboutView_Loaded;
+        }
 
-            switch (AppDataController.GetTerminalMode())
-            {
-                case 0:
-                    terminalToggle.IsChecked = false;
-                    break;
-                case 1:
-                    terminalToggle.IsChecked = true;
-                    break;
-                default:
-                    terminalToggle.IsChecked = false;
-                    break;
-            }
-            bool SDebugMode = App.SDebugMode;
-            bool isDebug = false;
-            #if DEBUG
-            isDebug = true;
-            #else
-            #endif
-            if (isDebug)
-            {
-                consoleToggle.IsEnabled = false;
-                debug_Mode.Visibility = Visibility.Visible;
-            }
-            else if (SDebugMode)
-            {
-                consoleToggle.IsEnabled = false;
-                debug_Mode.Visibility = Visibility.Visible;
-                debug_Message.Text = "您现在处于手动Debug模式";
-            }
-            PackageVersion packageVersion = Package.Current.Id.Version;
-            string version = $"{packageVersion.Major}.{packageVersion.Minor}.{packageVersion.Build}.{packageVersion.Revision}";
-            appVersion.Text = "SRTools "+version;
-            GetVersionButton_Click(null, null);
+        private void AboutView_Loaded(object sender, RoutedEventArgs e)
+        {
+            bool isDebug = System.Diagnostics.Debugger.IsAttached || App.SDebugMode;
+            consoleToggle.IsEnabled = !isDebug;
+            debug_Mode.Visibility = isDebug ? Visibility.Visible : Visibility.Collapsed;
+            debug_Message.Text = App.SDebugMode ? "您现在处于手动Debug模式" : "";
+            appVersion.Text = $"SRTools {Package.Current.Id.Version.Major}.{Package.Current.Id.Version.Minor}.{Package.Current.Id.Version.Build}.{Package.Current.Id.Version.Revision}";
+            GetVersionButton();
             CheckFont();
+            LoadSettings();
         }
 
-        private void CheckFont() 
+        public void LoadSettings()
         {
-            string fontsFolderPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Fonts));
-            string segoeIconsFilePath = Path.Combine(fontsFolderPath, "SegoeIcons.ttf");
-            string segoeIconsFilePath2 = Path.Combine(fontsFolderPath, "Segoe Fluent Icons.ttf");
-            if (Directory.Exists(fontsFolderPath) && (File.Exists(segoeIconsFilePath) || File.Exists(segoeIconsFilePath2)))
-            {
-                installSFF.IsEnabled = false;
-                installSFF.Content = "图标字体正常";
-            }
+            isProgrammaticChange = true;
+            consoleToggle.IsChecked = AppDataController.GetConsoleMode() == 1;
+            terminalToggle.IsChecked = AppDataController.GetTerminalMode() == 1;
+            userviceRadio.SelectedIndex = new[] { 1, 2, 0 }[AppDataController.GetUpdateService()];
+            themeRadio.SelectedIndex = AppDataController.GetDayNight();
+            isProgrammaticChange = false;
         }
 
-        private async void GetVersionButton_Click(object sender, RoutedEventArgs e)
+
+        private void CheckFont()
         {
-            HttpClient client = new HttpClient();
-            string url = "https://api.jamsg.cn/version";
-            HttpResponseMessage response = await client.GetAsync(url);
+            var fontsFolderPath = Environment.GetFolderPath(Environment.SpecialFolder.Fonts);
+            installSFF.IsEnabled = File.Exists(Path.Combine(fontsFolderPath, "SegoeIcons.ttf")) || File.Exists(Path.Combine(fontsFolderPath, "Segoe Fluent Icons.ttf"));
+            installSFF.Content = installSFF.IsEnabled ? "安装图标字体" : "图标字体正常";
+        }
+
+
+        private async void GetVersionButton()
+        {
+            var response = await new HttpClient().GetAsync("https://api.jamsg.cn/version");
             if (response.IsSuccessStatusCode)
             {
-                string jsonData = await response.Content.ReadAsStringAsync();
-                var data = JsonConvert.DeserializeObject<dynamic>(jsonData);
-                string arrowVer = data.arrow_ver;
-                string anticatVer = data.anticat_ver;
-                apiVersion.Text = "ArrowAPI " + arrowVer;
-                antiCatVersion.Text = "AntiCat " + anticatVer;
+                var data = JsonConvert.DeserializeObject<dynamic>(await response.Content.ReadAsStringAsync());
+                apiVersion.Text = "ArrowAPI " + data.arrow_ver;
+                antiCatVersion.Text = "AntiCat " + data.anticat_ver;
             }
         }
+
 
         private void Console_Toggle(object sender, RoutedEventArgs e)
         {
-            var currentProcess = Process.GetCurrentProcess();
-            var hWnd = currentProcess.MainWindowHandle;
-            // 判断是否需要打开控制台
-            if (consoleToggle.IsChecked ?? false)
-            {
-                TerminalMode.ShowConsole();
-                AppDataController.SetConsoleMode(1);
-            }
-            else
-            {
-                TerminalMode.HideConsole();
-                AppDataController.SetConsoleMode(0);
-            }
+            if (consoleToggle.IsChecked ?? false) TerminalMode.ShowConsole(); else TerminalMode.HideConsole();
+            AppDataController.SetConsoleMode(consoleToggle.IsChecked == true ? 1 : 0);
         }
+
 
         private void TerminalMode_Toggle(object sender, RoutedEventArgs e)
         {
-            // 判断是否需要打开控制台
-            if (terminalToggle.IsChecked ?? false)
-            {
-                TerminalTip.IsOpen = true;
-                AppDataController.SetTerminalMode(1);
-            }
-            else
-            {
-                AppDataController.SetTerminalMode(0);
-            }
+            TerminalTip.IsOpen = terminalToggle.IsChecked ?? false;
+            AppDataController.SetTerminalMode(terminalToggle.IsChecked == true ? 1 : 0);
         }
+
 
         public void Clear_AllData_TipShow(object sender, RoutedEventArgs e)
         {
@@ -239,30 +177,16 @@ namespace SRTools.Views
             UpdateTip.Target = checkUpdate;
             UpdateTip.ActionButtonClick -= DisplayUpdateInfo;
 
-            if (status == 0)
-            {
-                UpdateTip.IsOpen = true;
-                UpdateTip.Title = "无可用更新";
-                UpdateTip.Subtitle = null;
-                UpdateTip.ActionButtonContent = null;
-                UpdateTip.CloseButtonContent = "关闭";
-            }
-            else if (status == 1)
-            {
-                UpdateTip.IsOpen = true;
-                UpdateTip.Title = "有可用更新";
-                UpdateTip.Subtitle = "新版本:"+result.Version;
-                UpdateTip.ActionButtonContent = "查看详情";
-                UpdateTip.CloseButtonContent = "关闭";
-                UpdateTip.ActionButtonClick += DisplayUpdateInfo;
-            }
-            else
-            {
-                UpdateTip.IsOpen = true;
-                UpdateTip.ActionButtonContent = null;
-                UpdateTip.Subtitle = "网络连接失败，可能是请求次数过多";
-            }
+            UpdateTip.Title = status == 0 ? "无可用更新" : status == 1 ? "有可用更新" : "网络连接失败，可能是请求次数过多";
+            UpdateTip.Subtitle = status == 1 ? "新版本:" + result.Version : null;
+            UpdateTip.ActionButtonContent = status == 1 ? "查看详情" : null;
+            UpdateTip.CloseButtonContent = "关闭";
+
+            if (status == 1) UpdateTip.ActionButtonClick += DisplayUpdateInfo;
+            UpdateTip.IsOpen = true;
         }
+
+
 
         private async void Check_Depend_Update(object sender, RoutedEventArgs e)
         {
@@ -274,71 +198,44 @@ namespace SRTools.Views
             UpdateTip.ActionButtonClick -= DisplayUpdateInfo;
             bool isShiftPressed = (GetAsyncKeyState(0x10) & 0x8000) != 0;
 
-            if (isShiftPressed)
-            {
-                UpdateTip.IsOpen = true;
-                UpdateTip.Title = "遇到麻烦了吗";
-                UpdateTip.Subtitle = "尝试重装SRToolsHelper";
-                UpdateTip.ActionButtonContent = "强制重装";
-                UpdateTip.CloseButtonContent = "关闭";
-                UpdateTip.ActionButtonClick += StartDependForceUpdate;
-            }
-            else if(status == 0)
-            {
-                UpdateTip.IsOpen = true;
-                UpdateTip.Title = "无可用更新";
-                UpdateTip.Subtitle = null;
-                UpdateTip.ActionButtonContent = null;
-                UpdateTip.CloseButtonContent = "关闭";
-            }
-            else if (status == 1)
-            {
-                UpdateTip.IsOpen = true;
-                UpdateTip.Title = "有可用更新";
-                UpdateTip.Subtitle = "新版本:" + result.Version;
-                UpdateTip.ActionButtonContent = "查看详情";
-                UpdateTip.CloseButtonContent = "关闭";
-                UpdateTip.ActionButtonClick += DisplayUpdateInfo;
-            }
-            else
-            {
-                UpdateTip.IsOpen = true;
-                UpdateTip.ActionButtonContent = null;
-                UpdateTip.Subtitle = "网络连接失败，可能是请求次数过多";
-            }
+            UpdateTip.Title = isShiftPressed ? "遇到麻烦了吗" : status == 0 ? "无可用更新" : status == 1 ? "有可用更新" : "网络连接失败，可能是请求次数过多";
+            UpdateTip.Subtitle = isShiftPressed ? "尝试重装SRToolsHelper" : status == 1 ? "新版本:" + result.Version : null;
+            UpdateTip.ActionButtonContent = isShiftPressed ? "强制重装" : status == 1 ? "查看详情" : null;
+            UpdateTip.CloseButtonContent = "关闭";
+
+            if (isShiftPressed) UpdateTip.ActionButtonClick += StartDependForceUpdate;
+            else if (status == 1) UpdateTip.ActionButtonClick += DisplayUpdateInfo;
+
+            UpdateTip.IsOpen = true;
         }
+
 
 
         public async void DisplayUpdateInfo(TeachingTip sender, object args)
         {
-            UpdateResult updateinfo;
-            string Name;
-            if (UpdateTip.Target != checkDependUpdate) { updateinfo = await GetUpdate.GetSRToolsUpdate();Name = "SRTools"; }
-            else { updateinfo = await GetUpdate.GetDependUpdate(); Name = "Helper"; }
-            var version = updateinfo.Version;
-            var changelog = updateinfo.Changelog;
+            bool isSRTools = UpdateTip.Target != checkDependUpdate;
+            UpdateResult updateinfo = isSRTools ? await GetUpdate.GetSRToolsUpdate() : await GetUpdate.GetDependUpdate();
             UpdateTip.IsOpen = false;
             ContentDialog updateDialog = new ContentDialog
             {
-                Title = Name+":"+version+"版本可用",
-                Content = "更新日志:\n"+changelog,
+                Title = (isSRTools ? "SRTools" : "Helper") + ":" + updateinfo.Version + "版本可用",
+                Content = "更新日志:\n" + updateinfo.Changelog,
                 CloseButtonText = "关闭",
                 PrimaryButtonText = "立即更新",
                 DefaultButton = ContentDialogButton.Primary,
                 XamlRoot = sender.XamlRoot,
             };
-            var result = await updateDialog.ShowAsync();
-            if (result == ContentDialogResult.Primary)
+            if (await updateDialog.ShowAsync() == ContentDialogResult.Primary)
             {
-                if (UpdateTip.Target != checkDependUpdate) {StartUpdate(); }
-                else {  StartDependUpdate(); }
+                if (isSRTools) StartUpdate(); else StartDependUpdate();
             }
         }
+
 
         public async void StartUpdate()
         {
             await InstallerHelper.GetInstaller();
-            InstallerHelper.RunInstaller("");
+            InstallerHelper.RunInstaller();
         }
 
         public async void StartDependUpdate()
@@ -357,22 +254,38 @@ namespace SRTools.Views
             WaitOverlayManager.RaiseWaitOverlay(false);
         }
 
+        // 选择主题开始
+        private void ThemeRadio_Follow(object sender, RoutedEventArgs e)
+        {
+            if (isProgrammaticChange) { ThemeTip.IsOpen = true; AppDataController.SetDayNight(0); }
+        }
+
+        private void ThemeRadio_Light(object sender, RoutedEventArgs e)
+        {
+            if (isProgrammaticChange) { ThemeTip.IsOpen = true; AppDataController.SetDayNight(1); }
+        }
+
+        private void ThemeRadio_Dark(object sender, RoutedEventArgs e)
+        {
+            if (isProgrammaticChange) { ThemeTip.IsOpen = true; AppDataController.SetDayNight(2); }
+        }
 
         // 选择下载渠道开始
         private void uservice_Github_Choose(object sender, RoutedEventArgs e)
         {
-            AppDataController.SetUpdateService(1);
+            if (isProgrammaticChange) { AppDataController.SetUpdateService(0); }
         }
 
         private void uservice_Gitee_Choose(object sender, RoutedEventArgs e)
         {
-            AppDataController.SetUpdateService(1);
+            if (isProgrammaticChange) { AppDataController.SetUpdateService(1); }
         }
 
         private void uservice_JSG_Choose(object sender, RoutedEventArgs e)
         {
-            AppDataController.SetUpdateService(2);
+            if (isProgrammaticChange) { AppDataController.SetUpdateService(2); }
         }
+
 
         private async void Backup_Data(object sender, RoutedEventArgs e)
         {
@@ -417,26 +330,22 @@ namespace SRTools.Views
                 string userDocumentsFolderPath = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
                 Task.Run(() => Clear_AllData_NoClose(null, null)).Wait();
                 Task.Run(() => ZipFile.ExtractToDirectory(file.Path, userDocumentsFolderPath + "\\JSG-LLC\\SRTools\\")).Wait();
-                Application.Current.Exit();
+                await ProcessRun.RestartApp();
             }
-            
         }
 
-        private async void Install_Font_Click(object sender, RoutedEventArgs e)
+        private void Install_Font_Click(object sender, RoutedEventArgs e)
         {
             installSFF.IsEnabled = false;
             installSFF_Progress.Visibility = Visibility.Visible;
-            //int result = await InstallFont.InstallSegoeFluentFontAsync();
             installSFF.Content = "安装字体后重启SRTools即生效";
             installSFF_Progress.Visibility = Visibility.Collapsed;
         }
 
-        // 重启程序
         private async void Restart_App(TeachingTip sender, object args)
         {
             await ProcessRun.RestartApp();
         }
-
 
         // Debug_Clicks
         private void Debug_Panic_Click(object sender, RoutedEventArgs e) 

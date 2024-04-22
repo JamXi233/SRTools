@@ -86,7 +86,7 @@ public class ImportSRGF
         {
             string jsonData = File.ReadAllText(file.Path);
 
-            var srgfData = System.Text.Json.JsonSerializer.Deserialize<ImportSRGF>(jsonData);
+            var srgfData = JsonSerializer.Deserialize<ImportSRGF>(jsonData);
 
             // 获取 uid
             var uid = srgfData.info?.uid;

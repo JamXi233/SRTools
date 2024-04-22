@@ -126,7 +126,7 @@
     <Page Update="Views\FirstRunViews\FirstRunSourceSelect.xaml">
       <XamlRuntime>$(DefaultXamlRuntime)</XamlRuntime>
     </Page>
-    <Page Update="Views\QuestionView.xaml">
+    <Page Update="Views\FlarumView.xaml">
       <XamlRuntime>$(DefaultXamlRuntime)</XamlRuntime>
     </Page>
     <Page Update="Views\SGViews\AccountView.xaml">

@@ -145,11 +145,11 @@ namespace SRTools.Depend
         public static async Task UpdateGachaRecordsAsync()
         {
             string[] gachaFiles = {
-                "GachaRecords_Character.ini",
-                "GachaRecords_LightCone.ini",
-                "GachaRecords_Newbie.ini",
-                "GachaRecords_Regular.ini"
-            };
+        "GachaRecords_Character.ini",
+        "GachaRecords_LightCone.ini",
+        "GachaRecords_Newbie.ini",
+        "GachaRecords_Regular.ini"
+    };
 
             foreach (var fileName in gachaFiles)
             {
@@ -159,14 +159,42 @@ namespace SRTools.Depend
                     try
                     {
                         string fileContent = await File.ReadAllTextAsync(filePath);
-                        var records = JsonConvert.DeserializeObject<GachaRecords[]>(fileContent);
-                        if (records != null && records.Length > 0)
+                        var newRecords = JsonConvert.DeserializeObject<GachaRecords[]>(fileContent);
+                        if (newRecords != null && newRecords.Length > 0)
                         {
-                            string uid = records[0].Uid;
+                            string uid = newRecords[0].Uid;
                             string targetDirectory = Path.Combine(srtoolsBasePath, "GachaRecords", uid);
                             Directory.CreateDirectory(targetDirectory);
                             string targetFilePath = Path.Combine(targetDirectory, fileName);
-                            File.Move(filePath, targetFilePath, true);
+
+                            // 检查目标文件是否存在以决定是合并还是创建新文件
+                            if (File.Exists(targetFilePath))
+                            {
+                                // 读取现有的数据
+                                string existingContent = await File.ReadAllTextAsync(targetFilePath);
+                                var existingRecords = JsonConvert.DeserializeObject<GachaRecords[]>(existingContent);
+
+                                // 创建一个查找集合以快速检查ID是否存在
+                                var existingIds = new HashSet<string>(existingRecords.Select(rec => rec.Id));
+
+                                // 合并新旧数据，只添加不存在的记录
+                                var mergedRecords = existingRecords.ToList();
+                                mergedRecords.AddRange(newRecords.Where(rec => !existingIds.Contains(rec.Id)));
+
+                                // 对合并后的记录按时间降序排序
+                                mergedRecords.Sort((a, b) => b.Time.CompareTo(a.Time));
+
+                                // 序列化合并后的数据
+                                string serializedContent = JsonConvert.SerializeObject(mergedRecords.ToArray());
+                                // 写入合并后的数据到文件
+                                await File.WriteAllTextAsync(targetFilePath, serializedContent);
+                            }
+                            else
+                            {
+                                // 如果目标文件不存在，直接按时间排序后写入新数据
+                                Array.Sort(newRecords, (a, b) => b.Time.CompareTo(a.Time));
+                                await File.WriteAllTextAsync(targetFilePath, JsonConvert.SerializeObject(newRecords));
+                            }
                         }
                     }
                     catch (Exception ex)
@@ -176,5 +204,7 @@ namespace SRTools.Depend
                 }
             }
         }
+
+
     }
 }

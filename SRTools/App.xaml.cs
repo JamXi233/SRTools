@@ -135,7 +135,7 @@ namespace SRTools
                 Logging.Write("Release Mode", 1);
             }
             ApplicationDataContainer localSettings = ApplicationData.Current.LocalSettings;
-            if (localSettings.Values["Config_FirstRun"] == null) { 
+            if (localSettings.Values["Config_FirstRun"] != null) { 
                 switch (AppDataController.GetConsoleMode())
                 {
                     case 0:
