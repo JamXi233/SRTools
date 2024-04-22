@@ -150,14 +150,6 @@ namespace SRTools.Views.GachaViews
 
             StackPanel stackPanelFiveStar = new StackPanel();
             stackPanelFiveStar.Children.Add(new TextBlock { Text = $"距离上一个五星已经抽了{RankType5}发" });
-            ProgressBar progressBar5 = new ProgressBar
-            {
-                Minimum = 0,
-                Maximum = 80,
-                Value = RankType5,
-                Height = 12
-            };
-            stackPanelFiveStar.Children.Add(progressBar5);
             borderFiveStar.Child = stackPanelFiveStar;
             MyStackPanel.Children.Add(borderFiveStar);
 
@@ -172,14 +164,6 @@ namespace SRTools.Views.GachaViews
             };
             StackPanel stackPanelFourStar = new StackPanel();
             stackPanelFourStar.Children.Add(new TextBlock { Text = $"距离上一个四星已经抽了{RankType4}发" });
-            ProgressBar progressBar4 = new ProgressBar
-            {
-                Minimum = 0,
-                Maximum = 10,
-                Value = RankType4,
-                Height = 12
-            };
-            stackPanelFourStar.Children.Add(progressBar4);
             borderFourStar.Child = stackPanelFourStar;
             MyStackPanel.Children.Add(borderFourStar);
             MyListView.ItemsSource = records;
