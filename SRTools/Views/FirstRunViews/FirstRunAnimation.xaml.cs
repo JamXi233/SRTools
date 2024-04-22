@@ -38,8 +38,8 @@ namespace SRTools.Views.FirstRunViews
         private void StartMergeData()
         {
             Frame parentFrame = GetParentFrame(this);
-
-            if (isOldDataExist)
+            AppDataController appDataController = new AppDataController();
+            if (appDataController.CheckOldData() == 1)
             {
                 FirstRunAnimation_Status.Text = "正在合并旧版本配置文件...";
                 AppDataController.SetFirstRun(0);
