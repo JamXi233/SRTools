@@ -160,7 +160,7 @@
                         <Hyperlink NavigateUri="https://weibo.com/u/3190389701" UnderlineStyle="None"><Run Text="@__QuAn_"/></Hyperlink>
                     </TextBlock>
                     <TextBlock Text="关于" FontSize="18" FontWeight="Bold" Margin="0 12 0 0"/>
-                    <TextBlock x:Name="appName" Text="SRTools(星轨工具箱) Goshawk" FontSize="12" FontWeight="Bold" Margin="0 4 0 0"/>
+                    <TextBlock x:Name="appName" Text="SRTools(星轨工具箱) Egret" FontSize="12" FontWeight="Bold" Margin="0 4 0 0"/>
                     <TextBlock x:Name="appToolName" Text="用于《崩坏：星穹铁道》" FontSize="12" FontWeight="Bold" Margin="0 0 0 0"/>
                     <TextBlock Text="Created by JamXi" FontSize="12" Margin="0 0 0 0"/>
                     <TextBlock Text="Copyright © JSG-LLC 2017-2024" FontSize="12" FontWeight="Bold" Margin="0 0 0 0"/>
