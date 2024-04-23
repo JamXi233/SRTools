@@ -135,9 +135,8 @@ public class GachaViewModel : INotifyPropertyChanged
             Logging.Write("Switch to GachaView", 0);
             var viewModel = new GachaViewModel();
             DataContext = viewModel;
-
-            viewModel.RequestViewUpdate += ViewModel_RequestViewUpdate;
             InitData();
+            viewModel.RequestViewUpdate += ViewModel_RequestViewUpdate;
         }
 
         private async void ViewModel_RequestViewUpdate()
@@ -165,11 +164,22 @@ public class GachaViewModel : INotifyPropertyChanged
                 // 检查是否存在任何子目录
                 if (subDirectories.Length > 0)
                 {
-                    await UpdateGachaRecord();
+                    await UpdateAndDeleteGachaRecordsAsync();
                 }
-                else 
+                else
                 {
-                    await UpdateGachaRecord();
+                    await UpdateAndDeleteGachaRecordsAsync();
+                    GachaViewModel viewModel = this.DataContext as GachaViewModel;
+                    if (viewModel != null)
+                    {
+                        await viewModel.LoadUidsAsync();  // 加载数据
+                        GachaRecordsUID.DataContext = viewModel;  // 确保DataContext正确
+                        GachaRecordsUID.SetBinding(ComboBox.SelectedItemProperty, new Binding
+                        {
+                            Path = new PropertyPath("SelectedUid"),
+                            Mode = BindingMode.TwoWay
+                        });
+                    }
                     if (subDirectories.Length <= 0)
                     {
                         gachaView.Visibility = Visibility.Collapsed;
@@ -183,11 +193,16 @@ public class GachaViewModel : INotifyPropertyChanged
                         localSettings.Values["Gacha_Data"] = "0";
                         Logging.Write("无抽卡记录");
                     }
-                    else 
+                    else
                     {
-                        await UpdateGachaRecord();
+                        await UpdateAndDeleteGachaRecordsAsync();
                     }
                 }
+            }
+            else
+            {
+                Directory.CreateDirectory(directoryPath); // CreateDirectory 不会重复创建已存在的目录
+                InitData();
             }
         }
 
@@ -213,19 +228,41 @@ public class GachaViewModel : INotifyPropertyChanged
             return selectedUid;
         }
 
-        private async Task UpdateGachaRecord()
+        private async Task UpdateAndDeleteGachaRecordsAsync()
         {
             string uDFP = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
-            string OldFileFolder = "\\JSG-LLC\\SRTools\\GachaRecords_Character.ini";
-            string OldFileFolder2 = "\\JSG-LLC\\SRTools\\GachaRecords_LightCone.ini";
-            string OldFileFolder3 = "\\JSG-LLC\\SRTools\\GachaRecords_Newbie.ini";
-            string OldFileFolder4 = "\\JSG-LLC\\SRTools\\GachaRecords_Regular.ini";
-            if (File.Exists(uDFP + OldFileFolder) || File.Exists(uDFP + OldFileFolder2) || File.Exists(uDFP + OldFileFolder3) || File.Exists(uDFP + OldFileFolder4))
+            string[] fileNames = { "GachaRecords_Character.ini", "GachaRecords_LightCone.ini",
+                           "GachaRecords_Newbie.ini", "GachaRecords_Regular.ini" };
+
+            List<FileInfo> files = fileNames.Select(name => new FileInfo(Path.Combine(uDFP, "JSG-LLC", "SRTools", name))).ToList();
+
+            if (files.Any(file => file.Exists))
             {
                 await GachaRecords.UpdateGachaRecordsAsync();
-            }
 
+                // Attempt to delete files
+                foreach (var file in files)
+                {
+                    try
+                    {
+                        if (file.Exists)
+                        {
+                            file.Delete();
+                            Console.WriteLine($"已删除旧版本抽卡记录: {file.FullName}");
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"无法删除{file.FullName}: {ex.Message}");
+                    }
+                }
+            }
+            else
+            {
+                Logging.Write("无旧版本抽卡记录更新/删除");
+            }
         }
+
 
         public async Task LoadData(string UID)
         {
@@ -510,7 +547,7 @@ public class GachaViewModel : INotifyPropertyChanged
         {
             ImportSRGF importSRGF = new ImportSRGF();
             await importSRGF.Main();
-            await UpdateGachaRecord();
+            await UpdateAndDeleteGachaRecordsAsync();
             GachaViewModel viewModel = this.DataContext as GachaViewModel;
             if (viewModel != null)
             {
@@ -585,12 +622,13 @@ public class GachaViewModel : INotifyPropertyChanged
             {
                 Directory.Delete(directoryPath, true); // true 参数允许递归删除
             }
-
+            selectedUid = null;
+            ReloadGachaFrame();
             // 更新ViewModel
             GachaViewModel viewModel = this.DataContext as GachaViewModel;
             if (viewModel != null)
             {
-                await viewModel.LoadUidsAsync();  // 重新加载UIDs，这应当自动更新视图
+                await viewModel.LoadUidsAsync();  // 加载数据
                 GachaRecordsUID.DataContext = viewModel;  // 确保DataContext正确
                 GachaRecordsUID.SetBinding(ComboBox.SelectedItemProperty, new Binding
                 {
@@ -599,20 +637,30 @@ public class GachaViewModel : INotifyPropertyChanged
                 });
             }
             await LoadData(selectedUid);
+            ReloadGachaFrame();
         }
 
         private void ReloadGachaFrame()
         {
-            gachaNav.SelectedItem = null;
-            // 查找第一个已启用的MenuItem并将其选中
-            foreach (var menuItem in gachaNav.Items)
+            if (selectedUid != null)
             {
-                if (menuItem is SelectorBarItem item && item.IsEnabled)
+                gachaNav.Visibility = Visibility.Visible;
+                gachaNav.SelectedItem = null;
+                // 查找第一个已启用的MenuItem并将其选中
+                foreach (var menuItem in gachaNav.Items)
                 {
-                    gachaNav.SelectedItem = item;
-                    break;
+                    if (menuItem is SelectorBarItem item && item.IsEnabled)
+                    {
+                        gachaNav.SelectedItem = item;
+                        break;
+                    }
                 }
             }
+            else 
+            {
+                gachaNav.Visibility = Visibility.Collapsed;
+            }
+            
         }
 
         private void Disable_NavBtns()
