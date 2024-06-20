@@ -25,7 +25,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text.Json;
 using System.Threading.Tasks;
-using Windows.Storage;
 using Windows.Storage.Pickers;
 
 public class ImportSRGF
@@ -126,38 +125,42 @@ public class ImportSRGF
                     gachaRegularList.Add(oItem);
             }
 
-            var folder = KnownFolders.DocumentsLibrary;
-            var srtoolsFolder = await folder.CreateFolderAsync("JSG-LLC\\SRTools", CreationCollisionOption.OpenIfExists);
+            string documentsPath = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+            string srtoolsFolderPath = Path.Combine(documentsPath, "JSG-LLC", "SRTools");
+            Directory.CreateDirectory(srtoolsFolderPath);
 
-            // 导出 GachaRecords_Character JSON
-            string gachaCharacterJson = JsonSerializer.Serialize(gachaCharacterList);
-            File.WriteAllText(srtoolsFolder.Path + "\\GachaRecords_Character.ini", gachaCharacterJson);
-            await CheckAndDeleteEmptyFile(srtoolsFolder, "GachaRecords_Character.ini");
-            // 导出 GachaRecords_LightCone JSON
-            string gachaLightConeJson = JsonSerializer.Serialize(gachaLightConeList);
-            File.WriteAllText(srtoolsFolder.Path + "\\GachaRecords_LightCone.ini", gachaLightConeJson);
-            await CheckAndDeleteEmptyFile(srtoolsFolder, "GachaRecords_LightCone.ini");
-            // 导出 GachaRecords_Newbie JSON
-            string gachaNewbieJson = JsonSerializer.Serialize(gachaNewbieList);
-            File.WriteAllText(srtoolsFolder.Path + "\\GachaRecords_Newbie.ini", gachaNewbieJson);
-            await CheckAndDeleteEmptyFile(srtoolsFolder, "GachaRecords_Newbie.ini");
-            // 导出 GachaRecords_Regular JSON
-            string gachaRegularJson = JsonSerializer.Serialize(gachaRegularList);
-            File.WriteAllText(srtoolsFolder.Path + "\\GachaRecords_Regular.ini", gachaRegularJson);
-            await CheckAndDeleteEmptyFile(srtoolsFolder, "GachaRecords_Regular.ini");
+            // 导出 JSON 文件
+            await ExportJsonFile(srtoolsFolderPath, "GachaRecords_Character.ini", gachaCharacterList);
+            await ExportJsonFile(srtoolsFolderPath, "GachaRecords_LightCone.ini", gachaLightConeList);
+            await ExportJsonFile(srtoolsFolderPath, "GachaRecords_Newbie.ini", gachaNewbieList);
+            await ExportJsonFile(srtoolsFolderPath, "GachaRecords_Regular.ini", gachaRegularList);
+
 
             Logging.Write("拆分并导出 JSON 文件完成。");
         }
     }
 
-    private async Task CheckAndDeleteEmptyFile(StorageFolder folder, string fileName)
+    private async Task ExportJsonFile(string folderPath, string fileName, List<OItem> list)
     {
-        var file = await folder.GetFileAsync(fileName);
-        var fileContent = await FileIO.ReadTextAsync(file);
-        if (fileContent == "[]")
+        string filePath = Path.Combine(folderPath, fileName);
+        string jsonContent = JsonSerializer.Serialize(list);
+        await File.WriteAllTextAsync(filePath, jsonContent);
+
+        // 检查并删除空文件
+        CheckAndDeleteEmptyFile(folderPath, fileName);
+    }
+
+    private void CheckAndDeleteEmptyFile(string folderPath, string fileName)
+    {
+        string filePath = Path.Combine(folderPath, fileName);
+        if (File.Exists(filePath))
         {
-            await file.DeleteAsync();
-            Logging.Write($"已删除空文件: {fileName}");
+            string fileContent = File.ReadAllText(filePath);
+            if (fileContent == "[]")
+            {
+                File.Delete(filePath);
+                Logging.Write($"已删除空文件: {fileName}");
+            }
         }
     }
 

@@ -21,11 +21,11 @@
             <TextBlock Text="看得到下面的图标吗" FontWeight="Bold" FontSize="24" HorizontalAlignment="Center"/>
 
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="8">
-                <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE713;" />
-                <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE74E;" />
-                <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE721;" />
-                <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE8D6;" />
-                <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE722;" />
+                <FontIcon FontFamily="Segoe Fluent Icons" Glyph="&#xE713;" />
+                <FontIcon FontFamily="Segoe Fluent Icons" Glyph="&#xE74E;" />
+                <FontIcon FontFamily="Segoe Fluent Icons" Glyph="&#xE721;" />
+                <FontIcon FontFamily="Segoe Fluent Icons" Glyph="&#xE8D6;" />
+                <FontIcon FontFamily="Segoe Fluent Icons" Glyph="&#xE722;" />
             </StackPanel>
 
             <StackPanel Height="1" Width="135" Background="Gray"/>

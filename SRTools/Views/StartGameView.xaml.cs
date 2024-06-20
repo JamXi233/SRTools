@@ -1,25 +1,4 @@
-﻿// Copyright (c) 2021-2024, JamXi JSG-LLC.
-// All rights reserved.
-
-// This file is part of SRTools.
-
-// SRTools is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-
-// SRTools is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
-
-// You should have received a copy of the GNU General Public License
-// along with SRTools.  If not, see <http://www.gnu.org/licenses/>.
-
-// For more information, please refer to <https://www.gnu.org/licenses/gpl-3.0.html>
-
-
-using Microsoft.UI.Xaml;
+﻿using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using System;
 using Windows.Storage.Pickers;
@@ -27,72 +6,31 @@ using System.Diagnostics;
 using Microsoft.UI.Dispatching;
 using SRTools.Depend;
 using Spectre.Console;
-using Microsoft.Win32;
 using SRTools.Views.SGViews;
 using System.Net.Http;
 using System.Threading.Tasks;
 using static SRTools.App;
 using Windows.Foundation;
-using SRTools.Views.GachaViews;
+using Microsoft.UI.Xaml.Navigation;
 
 namespace SRTools.Views
 {
     public sealed partial class StartGameView : Page
     {
+        public static string GameRegion = null;
         private DispatcherQueue dispatcherQueue;
-        private DispatcherQueueTimer dispatcherTimer_Launcher;
         private DispatcherQueueTimer dispatcherTimer_Game;
-        private DispatcherQueueTimer dispatcherTimer_Graphics;
+        public static string GS = null;
 
         public StartGameView()
         {
             this.InitializeComponent();
-            Logging.Write("Switch to StartGameView",0);
-            this.InitializeComponent();
+            Logging.Write("Switch to StartGameView", 0);
             this.Loaded += StartGameView_Loaded;
             this.Unloaded += OnUnloaded;
 
-            // 获取UI线程的DispatcherQueue
             InitializeDispatcherQueue();
-            // 初始化并启动定时器
             InitializeTimers();
-
-            string keyPath = @"Software\miHoYo\崩坏：星穹铁道";
-            string valueName = "GraphicsSettings_Model_h2986158309";
-            RegistryKey key = Registry.CurrentUser.OpenSubKey(keyPath, true);
-            byte[] valueBytes;
-            try { valueBytes = (byte[])key.GetValue(valueName); } catch { valueBytes = null; }
-            if (key == null || valueBytes == null)
-            {
-                NotificationManager.RaiseNotification("未检测到当前画质的注册表", "有可能未手动设置过画质\n请进入游戏手动设置一次画质后再试", InfoBarSeverity.Warning);
-                AccountSelect.IsEnabled = true;
-                GraphicSelect.IsEnabled = false;
-                AccountSelect.IsSelected = true;
-            }
-            else
-            {
-                AccountSelect.IsEnabled = true;
-                GraphicSelect.IsEnabled = true;
-                GraphicSelect.IsSelected = true;
-            }
-
-            if (AppDataController.GetGamePath() != null)
-            {
-                string GamePath = AppDataController.GetGamePath();
-                Logging.Write("GamePath: "+ GamePath,0);
-                if (!string.IsNullOrEmpty(GamePath) && GamePath.Contains("Null"))
-                {
-                    UpdateUIElementsVisibility(0);
-                }
-                else
-                {
-                    UpdateUIElementsVisibility(1);
-                }
-            }
-            else
-            {
-                UpdateUIElementsVisibility(0);
-            }
         }
 
         private void InitializeDispatcherQueue()
@@ -102,14 +40,9 @@ namespace SRTools.Views
 
         private void InitializeTimers()
         {
-            // 创建并配置Launcher检查定时器
-            dispatcherTimer_Launcher = CreateTimer(TimeSpan.FromSeconds(2), CheckProcess_Launcher);
-
-            // 创建并配置Game检查定时器
-            dispatcherTimer_Game = CreateTimer(TimeSpan.FromSeconds(2), CheckProcess_Game);
-
-            // 创建并配置Graphics检查定时器
-            dispatcherTimer_Graphics = CreateTimer(TimeSpan.FromSeconds(1), CheckProcess_Graphics);
+            DownloadManager.DownloadProgressChanged += UpdateProgressChanged;
+            dispatcherTimer_Game = CreateTimer(TimeSpan.FromSeconds(0.2), CheckProcess_Game);
+            dispatcherTimer_Game.Start();
         }
 
         private DispatcherQueueTimer CreateTimer(TimeSpan interval, TypedEventHandler<DispatcherQueueTimer, object> tickHandler)
@@ -123,8 +56,55 @@ namespace SRTools.Views
 
         private async void StartGameView_Loaded(object sender, RoutedEventArgs e)
         {
-            // 异步调用 GetPromptAsync
+            await LoadDataAsync();
             await GetPromptAsync();
+        }
+
+        public async Task LoadDataAsync(string mode = null)
+        {
+            if (AppDataController.GetGamePath() != null)
+            {
+                string GamePath = AppDataController.GetGamePath();
+                Logging.Write("GamePath: " + GamePath, 0);
+                if (!string.IsNullOrEmpty(GamePath) && GamePath.Contains("Null"))
+                {
+                    UpdateUIElementsVisibility(0);
+                }
+                else
+                {
+                    await Depend.Region.GetRegion(false);
+                    UpdateUIElementsVisibility(1);
+                    if (mode == null)
+                    {
+                        CheckProcess_Account();
+                        CheckProcess_Graphics();
+                    }
+                    else if (mode == "Graphics") CheckProcess_Graphics();
+                    else if (mode == "Account") CheckProcess_Account();
+                    // 检查游戏更新
+                    if (GameRegion == "CN") 
+                    {
+                        await GameUpdate.ExtractGameInfo();
+                        bool isGameUpdateRequire = await GameUpdate.CheckAndUpdateGame();
+                        if (isGameUpdateRequire)
+                        {
+                            if (DownloadManager.isPaused) startUpdate.Visibility = Visibility.Visible;
+                            else updateRunning.Visibility = Visibility.Visible;
+                        }
+                        else
+                        {
+                            startGame.Visibility = Visibility.Visible;
+                            updateRunning.Visibility = Visibility.Collapsed;
+                        }
+                    }
+                    
+                }
+            }
+            else
+            {
+                UpdateUIElementsVisibility(0);
+            }
+
         }
 
         private async void SelectGame(object sender, RoutedEventArgs e)
@@ -139,9 +119,12 @@ namespace SRTools.Views
                 var file = await picker.PickSingleFileAsync();
                 if (file != null && file.Name == "StarRail.exe")
                 {
-                    //更新为新的存储管理机制
+                    LoadDataAsync();
                     AppDataController.SetGamePath(@file.Path);
+                    await Depend.Region.GetRegion(true);
                     UpdateUIElementsVisibility(1);
+                    CheckProcess_Graphics();
+                    CheckProcess_Account();
                 }
                 else
                 {
@@ -156,27 +139,85 @@ namespace SRTools.Views
             AppDataController.RMGamePath();
             UpdateUIElementsVisibility(0);
         }
-        //启动游戏
+
+        private void ReloadFrame(object sender, RoutedEventArgs e)
+        {
+            StartGameView_Loaded(sender, e);
+        }
+
         private void StartGame_Click(object sender, RoutedEventArgs e)
         {
             StartGame(null, null);
         }
-        private void StartLauncher_Click(object sender, RoutedEventArgs e)
+
+        private async void StartUpdate_Click(object sender, RoutedEventArgs e)
         {
-            StartLauncher(null, null);
+            bool updateSuccessful = false;
+            if (DownloadManager.isDownloading)
+            {
+                updateSuccessful = await GameUpdate.StartDownload(UpdateProgressChanged);
+            }
+            else if (DownloadManager.isPaused)
+            {
+                GameUpdate.ResumeDownload(UpdateProgressChanged);
+            }
+            await CheckDownloadStatus();
+        }
+
+        private void PauseUpdate_Click(object sender, RoutedEventArgs e)
+        {
+            GameUpdate.PauseDownload();
+        }
+
+        private void UpdateProgressChanged(double progress, string speed, string size)
+        {
+            CheckDownloadStatus();
+            DispatcherQueue.TryEnqueue(() =>
+            {
+                downloadProgressBar.Value = progress;
+                updateRunning_Speed.Text = speed;
+                updateRunning_Size.Text = size;
+                updateRunning_Percent.Text = $"{progress:F0}%";
+            });
+        }
+
+        private async Task CheckDownloadStatus()
+        {
+            while (DownloadManager.isDownloading)
+            {
+                if (!DownloadManager.isPaused)
+                {
+                    startUpdate.Visibility = Visibility.Collapsed;
+                    updateRunning.Visibility = Visibility.Visible;
+                }
+                else
+                {
+                    startUpdate.Visibility = Visibility.Visible;
+                    updateRunning.Visibility = Visibility.Collapsed;
+                }
+                await Task.Delay(100);
+            }
+
+            if (!DownloadManager.isDownloading)
+            {
+                DownloadManager.DownloadProgressChanged -= UpdateProgressChanged;
+                startUpdate.Visibility = Visibility.Collapsed;
+                updateRunning.Visibility = Visibility.Collapsed;
+                startGame.Visibility = Visibility.Visible;
+                LoadDataAsync();
+            }
         }
 
         private void UpdateUIElementsVisibility(int status)
         {
-            if (status == 0) 
+            if (status == 0)
             {
                 selectGame.IsEnabled = true;
                 selectGame.Visibility = Visibility.Visible;
                 rmGame.Visibility = Visibility.Collapsed;
                 rmGame.IsEnabled = false;
                 startGame.IsEnabled = false;
-                startLauncher.IsEnabled = false;
-                SGNav.Visibility = Visibility.Collapsed;
+                SGFrame.Visibility = Visibility.Collapsed;
             }
             else
             {
@@ -185,9 +226,7 @@ namespace SRTools.Views
                 rmGame.Visibility = Visibility.Visible;
                 rmGame.IsEnabled = true;
                 startGame.IsEnabled = true;
-                startLauncher.IsEnabled = true;
-                
-                SGNav.Visibility = Visibility.Visible;
+                SGFrame.Visibility = Visibility.Visible;
             }
         }
 
@@ -197,13 +236,6 @@ namespace SRTools.Views
             gameStartUtil.StartGame();
         }
 
-        public void StartLauncher(TeachingTip sender, object args)
-        {
-            GameStartUtil gameStartUtil = new GameStartUtil();
-            gameStartUtil.StartLauncher();
-        }
-
-        // 定时器回调函数，检查进程是否正在运行
         private void CheckProcess_Game(DispatcherQueueTimer timer, object e)
         {
             if (Process.GetProcessesByName("StarRail").Length > 0)
@@ -211,63 +243,80 @@ namespace SRTools.Views
                 // 进程正在运行
                 startGame.Visibility = Visibility.Collapsed;
                 gameRunning.Visibility = Visibility.Visible;
+                Frame_GraphicSettingView_Launched_Disable.Visibility = Visibility.Visible;
+                Frame_GraphicSettingView_Launched_Disable_Title.Text = "崩坏：星穹铁道正在运行";
+                Frame_GraphicSettingView_Launched_Disable_Subtitle.Text = "游戏运行时无法修改画质";
+                Frame_AccountView_Launched_Disable.Visibility = Visibility.Visible;
+                Frame_AccountView_Launched_Disable_Title.Text = "崩坏：星穹铁道正在运行";
+                Frame_AccountView_Launched_Disable_Subtitle.Text = "游戏运行时无法切换账号";
             }
             else
             {
                 // 进程未运行
                 startGame.Visibility = Visibility.Visible;
                 gameRunning.Visibility = Visibility.Collapsed;
+                Frame_GraphicSettingView_Launched_Disable.Visibility = Visibility.Collapsed;
+                Frame_AccountView_Launched_Disable.Visibility = Visibility.Collapsed;
             }
         }
 
-        private void CheckProcess_Graphics(DispatcherQueueTimer timer, object e)
+        private async Task CheckProcess_Graphics()
         {
-            string keyPath = @"Software\miHoYo\崩坏：星穹铁道";
-            string valueName = "GraphicsSettings_Model_h2986158309";
-            RegistryKey key = Registry.CurrentUser.OpenSubKey(keyPath, true);
-            byte[] valueBytes;
-            try { valueBytes = (byte[])key.GetValue(valueName); } catch { valueBytes = null; }
-            if (key == null || valueBytes == null)
+            Frame_GraphicSettingView_Loading.Visibility = Visibility.Visible;
+            Frame_GraphicSettingView.Content = null;
+
+            if (IsSRToolsHelperRequireUpdate)
+            {
+                Frame_GraphicSettingView_Disable.Visibility = Visibility.Visible;
+                Frame_GraphicSettingView_Disable_Title.Text = "SRToolsHelper需要更新";
+                Frame_GraphicSettingView_Disable_Subtitle.Text = "请更新后再使用";
+            }
+            else
+            {
+                try
+                {
+                    string GSValue = await ProcessRun.SRToolsHelperAsync($"/GetReg");
+                    if (!GSValue.Contains("FPS"))
+                    {
+                        GraphicSelect.IsEnabled = false;
+                        GraphicSelect.IsSelected = false;
+                        Frame_GraphicSettingView_Loading.Visibility = Visibility.Collapsed;
+                        Frame_GraphicSettingView_Disable.Visibility = Visibility.Visible;
+                    }
+                    else
+                    {
+                        GS = GSValue;
+                        GraphicSelect.IsEnabled = true;
+                        GraphicSelect.IsSelected = true;
+                        Frame_GraphicSettingView_Loading.Visibility = Visibility.Collapsed;
+                        Frame_GraphicSettingView.Visibility = Visibility.Visible;
+                        Frame_GraphicSettingView_Disable.Visibility = Visibility.Collapsed;
+                        Frame_GraphicSettingView.Navigate(typeof(GraphicSettingView));
+                    }
+                }
+                catch (Exception ex)
+                {
+                    // 处理异常，记录日志或者显示错误信息
+                    Logging.Write($"Exception in CheckProcess_Graphics: {ex.Message}", 3, "CheckProcess_Graphics");
+                }
+            }
+        }
+
+        private async void CheckProcess_Account()
+        {
+            if (IsSRToolsHelperRequireUpdate)
+            {
+                Frame_AccountView_Disable.Visibility = Visibility.Visible;
+                Frame_AccountView_Disable_Title.Text = "SRToolsHelper需要更新";
+                Frame_AccountView_Disable_Subtitle.Text = "请更新后再使用";
+            }
+            else
             {
                 AccountSelect.IsEnabled = true;
-                GraphicSelect.IsEnabled = false;
                 AccountSelect.IsSelected = true;
-            }
-            else
-            {
-                AccountSelect.IsEnabled = true;
-                GraphicSelect.IsEnabled = true;
-            }
-        }
-
-        private void CheckProcess_Launcher(DispatcherQueueTimer timer, object e)
-        {
-            if (Process.GetProcessesByName("launcher").Length > 0)
-            {
-                // 进程正在运行
-                startLauncher.Visibility = Visibility.Collapsed;
-                launcherRunning.Visibility = Visibility.Visible;
-            }
-            else
-            {
-                // 进程未运行
-                startLauncher.Visibility = Visibility.Visible;
-                launcherRunning.Visibility = Visibility.Collapsed;
-            }
-        }
-
-        private void SGNavView_SelectionChanged(SelectorBar sender, SelectorBarSelectionChangedEventArgs args)
-        {
-            SelectorBarItem selectedItem = sender.SelectedItem;
-            int currentSelectedIndex = sender.Items.IndexOf(selectedItem);
-            switch (currentSelectedIndex)
-            {
-                case 0:
-                    SGFrame.Navigate(typeof(GraphicSettingView));
-                    break;
-                case 1:
-                    SGFrame.Navigate(typeof(AccountView));
-                    break;
+                Frame_AccountView_Loading.Visibility = Visibility.Collapsed;
+                Frame_AccountView.Visibility = Visibility.Visible;
+                Frame_AccountView.Navigate(typeof(AccountView));
             }
         }
 
@@ -286,19 +335,25 @@ namespace SRTools.Views
             }
             catch (Exception ex)
             {
-                // 处理异常，例如记录错误或显示错误消息
                 Logging.Write($"Error fetching prompt: {ex.Message}", 2);
             }
         }
 
-
         private void OnUnloaded(object sender, RoutedEventArgs e)
         {
-            dispatcherTimer_Graphics.Stop();
             dispatcherTimer_Game.Stop();
-            dispatcherTimer_Launcher.Stop();
+            DownloadManager.DownloadProgressChanged -= UpdateProgressChanged;
             Logging.Write("Timer Stopped", 0);
         }
 
+        protected override void OnNavigatedTo(NavigationEventArgs e)
+        {
+            if(DownloadManager.isDownloading == true) UpdateProgressChanged(DownloadManager.CurrentProgress, DownloadManager.CurrentSpeed, DownloadManager.CurrentSize);
+        }
+
+        protected override void OnNavigatedFrom(NavigationEventArgs e)
+        {
+            DownloadManager.DownloadProgressChanged -= UpdateProgressChanged;
+        }
     }
 }

@@ -1,278 +1,121 @@
-﻿// Copyright (c) 2021-2024, JamXi JSG-LLC.
-// All rights reserved.
-
-// This file is part of SRTools.
-
-// SRTools is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-
-// SRTools is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
-
-// You should have received a copy of the GNU General Public License
-// along with SRTools.  If not, see <http://www.gnu.org/licenses/>.
-
-// For more information, please refer to <https://www.gnu.org/licenses/gpl-3.0.html>
-
+﻿using System;
+using System.Collections.Generic;
+using System.IO;
+using Newtonsoft.Json.Linq;
+using System.Threading.Tasks;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
-using Newtonsoft.Json;
 using SRTools.Depend;
-using System;
-using System.Diagnostics;
-using System.Threading.Tasks;
 
 namespace SRTools.Views.SGViews
 {
     public sealed partial class GraphicSettingView : Page
     {
-        string userDocumentsFolderPath = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
         public GraphicSettingView()
         {
             this.InitializeComponent();
             Logging.Write("Switch to GraphicSettingView", 0);
             LoadData();
-
         }
 
         private async void LoadData()
         {
-            string output = await ProcessRun.SRToolsHelperAsync("/GetReg");
-            string returnValue = output.Trim(); // 去掉字符串末尾的换行符和空格
-            // 使用 returnValue 变量进行后续处理
-            Config config = JsonConvert.DeserializeObject<Config>(returnValue);
+            await LoadGraphicsData(false);
+            DDB_Main.Visibility = Visibility.Visible;
+            DDB_Load.Visibility = Visibility.Collapsed;
+        }
 
-            // 将 config.FPS 的值替换为对应的文本
-            switch (config.FPS)
-            {
-                case 30:
-                    DDB_FPS.Content = "30";
-                    break;
-                case 60:
-                    DDB_FPS.Content = "60";
-                    break;
-                case 120:
-                    DDB_FPS.Content = "120";
-                    break;
-                default:
-                    DDB_FPS.Content = config.FPS.ToString();
-                    break;
-            }
+        private async Task LoadGraphicsData(bool isForce)
+        {
+            string output;
+            string returnValue;
 
-            // 将 config.EnableVSync 的值替换为对应的文本
-            if (config.EnableVSync)
+            if (isForce)
             {
-                DDB_EnableVSync.Content = "开";
+                output = await ProcessRun.SRToolsHelperAsync($"/GetReg {StartGameView.GameRegion}");
+                returnValue = output.Trim();
             }
             else
             {
-                DDB_EnableVSync.Content = "关";
+                if (StartGameView.GS is not null)
+                {
+                    returnValue = StartGameView.GS;
+                }
+                else
+                {
+                    output = await ProcessRun.SRToolsHelperAsync($"/GetReg {StartGameView.GameRegion}");
+                    returnValue = output.Trim();
+                }
             }
 
-            // 将 config.AAMode 的值替换为对应的文本
-            switch (config.AAMode)
+            // 使用 returnValue 变量进行后续处理
+            JObject config = JObject.Parse(returnValue);
+
+            // 设置UI控件的值
+            SetUIValue(config, "FPS", DDB_FPS, new Dictionary<int, string> { { 30, "30" }, { 60, "60" }, { 120, "120" } });
+            SetUIValue(config, "EnableVSync", DDB_EnableVSync, new Dictionary<bool, string> { { false, "关" }, { true, "开" } });
+            SetUIValue(config, "AAMode", DDB_AAMode, new Dictionary<int, string> { { 0, "关" }, { 1, "FXAA" }, { 2, "TAA" } });
+            SetUIValue(config, "BloomQuality", DDB_BloomQuality, new Dictionary<int, string> { { 0, "关" }, { 1, "非常低" }, { 2, "低" }, { 3, "中" }, { 4, "高" }, { 5, "非常高" } });
+            SetUIValue(config, "CharacterQuality", DDB_CharacterQuality, new Dictionary<int, string> { { 0, "关" }, { 1, "非常低" }, { 2, "低" }, { 3, "中" }, { 4, "高" }, { 5, "非常高" } });
+            SetUIValue(config, "EnableSelfShadow", DDB_EnableSelfShadow, new Dictionary<int, string> { { 2, "关" }, { 1, "开" } } );
+            SetUIValue(config, "EnvDetailQuality", DDB_EnvDetailQuality, new Dictionary<int, string> { { 0, "关" }, { 1, "非常低" }, { 2, "低" }, { 3, "中" }, { 4, "高" }, { 5, "非常高" } });
+            SetUIValue(config, "LightQuality", DDB_LightQuality, new Dictionary<int, string> { { 0, "关" }, { 1, "非常低" }, { 2, "低" }, { 3, "中" }, { 4, "高" }, { 5, "非常高" } });
+            SetUIValue(config, "ReflectionQuality", DDB_ReflectionQuality, new Dictionary<int, string> { { 0, "关" }, { 1, "非常低" }, { 2, "低" }, { 3, "中" }, { 4, "高" }, { 5, "非常高" } });
+            SetUIValue(config, "RenderScale", DDB_RenderScale);
+            SetUIValue(config, "SFXQuality", DDB_SFXQuality, new Dictionary<int, string> { { 0, "关" }, { 1, "非常低" }, { 2, "低" }, { 3, "中" }, { 4, "高" }});
+            SetUIValue(config, "ShadowQuality", DDB_ShadowQuality, new Dictionary<int, string> { { 0, "关" }, { 1, "非常低" }, { 2, "低" }, { 3, "中" }, { 4, "高" }, { 5, "非常高" } });
+            SetUIValue(config, "EnableMetalFXSU", DDB_EnableMetalFXSU, new Dictionary<bool, string> { { false, "关" }, { true, "开" } });
+        }
+
+        private void SetUIValue(JObject config, string key, DropDownButton button, Dictionary<int, string> map = null)
+        {
+            if (config.TryGetValue(key, out JToken value))
             {
-                case 0:
-                    DDB_AAMode.Content = "关";
-                    break;
-                case 1:
-                    DDB_AAMode.Content = "FXAA";
-                    break;
-                case 2:
-                    DDB_AAMode.Content = "TAA";
-                    break;
-                default:
-                    DDB_AAMode.Content = config.AAMode.ToString();
-                    break;
+                if (map != null && value.Type == JTokenType.Integer)
+                {
+                    if (map.TryGetValue(value.ToObject<int>(), out string text))
+                    {
+                        button.Content = text;
+                    }
+                    else
+                    {
+                        button.Content = value.ToString();
+                    }
+                }
+                else
+                {
+                    button.Content = value.Type == JTokenType.Integer ? value.ToObject<int>().ToString() : value.ToString();
+                }
             }
+        }
 
-            // 将 config.BloomQuality 的值替换为对应的文本
-            switch (config.BloomQuality)
+        private void SetUIValue(JObject config, string key, DropDownButton button, Dictionary<bool, string> map = null)
+        {
+            if (config.TryGetValue(key, out JToken value))
             {
-                case 0:
-                    DDB_BloomQuality.Content = "关";
-                    break;
-                case 1:
-                    DDB_BloomQuality.Content = "非常低";
-                    break;
-                case 2:
-                    DDB_BloomQuality.Content = "低";
-                    break;
-                case 3:
-                    DDB_BloomQuality.Content = "中";
-                    break;
-                case 4:
-                    DDB_BloomQuality.Content = "高";
-                    break;
-                case 5:
-                    DDB_BloomQuality.Content = "非常高";
-                    break;
-                default:
-                    DDB_BloomQuality.Content = config.BloomQuality.ToString();
-                    break;
+                if (map != null && value.Type == JTokenType.Boolean)
+                {
+                    if (map.TryGetValue(value.ToObject<bool>(), out string text))
+                    {
+                        button.Content = text;
+                    }
+                    else
+                    {
+                        button.Content = value.ToString();
+                    }
+                }
+                else
+                {
+                    button.Content = value.Type == JTokenType.Boolean ? value.ToObject<bool>().ToString() : value.ToString();
+                }
             }
+        }
 
-            // 将 config.CharacterQuality 的值替换为对应的文本
-            switch (config.CharacterQuality)
+        private void SetUIValue(JObject config, string key, DropDownButton button)
+        {
+            if (config.TryGetValue(key, out JToken value))
             {
-                case 0:
-                    DDB_CharacterQuality.Content = "关";
-                    break;
-                case 1:
-                    DDB_CharacterQuality.Content = "非常低";
-                    break;
-                case 2:
-                    DDB_CharacterQuality.Content = "低";
-                    break;
-                case 3:
-                    DDB_CharacterQuality.Content = "中";
-                    break;
-                case 4:
-                    DDB_CharacterQuality.Content = "高";
-                    break;
-                case 5:
-                    DDB_CharacterQuality.Content = "非常高";
-                    break;
-                default:
-                    DDB_CharacterQuality.Content = config.CharacterQuality.ToString();
-                    break;
-            }
-
-            // 将 config.EnvDetailQuality 的值替换为对应的文本
-            switch (config.EnvDetailQuality)
-            {
-                case 0:
-                    DDB_EnvDetailQuality.Content = "关";
-                    break;
-                case 1:
-                    DDB_EnvDetailQuality.Content = "非常低";
-                    break;
-                case 2:
-                    DDB_EnvDetailQuality.Content = "低";
-                    break;
-                case 3:
-                    DDB_EnvDetailQuality.Content = "中";
-                    break;
-                case 4:
-                    DDB_EnvDetailQuality.Content = "高";
-                    break;
-                case 5:
-                    DDB_EnvDetailQuality.Content = "非常高";
-                    break;
-                default:
-                    DDB_EnvDetailQuality.Content = config.EnvDetailQuality.ToString();
-                    break;
-            }
-
-            // 将 config.LightQuality 的值替换为对应的文本
-            switch (config.LightQuality)
-            {
-                case 0:
-                    DDB_LightQuality.Content = "关";
-                    break;
-                case 1:
-                    DDB_LightQuality.Content = "非常低";
-                    break;
-                case 2:
-                    DDB_LightQuality.Content = "低";
-                    break;
-                case 3:
-                    DDB_LightQuality.Content = "中";
-                    break;
-                case 4:
-                    DDB_LightQuality.Content = "高";
-                    break;
-                case 5:
-                    DDB_LightQuality.Content = "非常高";
-                    break;
-                default:
-                    DDB_LightQuality.Content = config.LightQuality.ToString();
-                    break;
-            }
-
-            // 将 config.ReflectionQuality 的值替换为对应的文本
-            switch (config.ReflectionQuality)
-            {
-                case 0:
-                    DDB_ReflectionQuality.Content = "关";
-                    break;
-                case 1:
-                    DDB_ReflectionQuality.Content = "非常低";
-                    break;
-                case 2:
-                    DDB_ReflectionQuality.Content = "低";
-                    break;
-                case 3:
-                    DDB_ReflectionQuality.Content = "中";
-                    break;
-                case 4:
-                    DDB_ReflectionQuality.Content = "高";
-                    break;
-                case 5:
-                    DDB_ReflectionQuality.Content = "非常高";
-                    break;
-                default:
-                    DDB_ReflectionQuality.Content = config.ReflectionQuality.ToString();
-                    break;
-            }
-
-            // 将 config.RenderScale 的值替换为对应的文本
-            DDB_RenderScale.Content = config.RenderScale;
-
-            // 将 config.SFXQuality 的值替换为对应的文本
-            switch (config.SFXQuality)
-            {
-                case 0:
-                    DDB_SFXQuality.Content = "关";
-                    break;
-                case 1:
-                    DDB_SFXQuality.Content = "非常低";
-                    break;
-                case 2:
-                    DDB_SFXQuality.Content = "低";
-                    break;
-                case 3:
-                    DDB_SFXQuality.Content = "中";
-                    break;
-                case 4:
-                    DDB_SFXQuality.Content = "高";
-                    break;
-                case 5:
-                    DDB_SFXQuality.Content = "非常高";
-                    break;
-                default:
-                    DDB_SFXQuality.Content = config.SFXQuality.ToString();
-                    break;
-            }
-
-            // 将 config.ShadowQuality 的值替换为对应的文本
-            switch (config.ShadowQuality)
-            {
-                case 0:
-                    DDB_ShadowQuality.Content = "关";
-                    break;
-                case 1:
-                    DDB_ShadowQuality.Content = "非常低";
-                    break;
-                case 2:
-                    DDB_ShadowQuality.Content = "低";
-                    break;
-                case 3:
-                    DDB_ShadowQuality.Content = "中";
-                    break;
-                case 4:
-                    DDB_ShadowQuality.Content = "高";
-                    break;
-                case 5:
-                    DDB_ShadowQuality.Content = "非常高";
-                    break;
-                default:
-                    DDB_ShadowQuality.Content = config.ShadowQuality.ToString();
-                    break;
+                button.Content = value.Type == JTokenType.Integer ? value.ToObject<int>().ToString() : value.ToString();
             }
         }
 
@@ -280,78 +123,107 @@ namespace SRTools.Views.SGViews
         {
             MenuFlyoutItem item = sender as MenuFlyoutItem;
             string text = item.Text;
+            string tag = item.Tag.ToString();
 
             try
             {
-                switch (text)
+                // 先应用用户选择
+                ApplyUserChoice(text, tag);
+
+                // 异步更新画质设置
+                var settingsMap = new Dictionary<string, Dictionary<string, int>>
                 {
-                    // 特殊调节
-                    case string s when s.Contains("30") || s.Contains("60") || s.Contains("120"):
-                        await ProcessRun.SRToolsHelperAsync("/SetValue FPS " + s);
-                        break;
-                    case "FXAA":
-                        await ProcessRun.SRToolsHelperAsync("/SetValue AAMode 1");
-                        break;
-                    case "TAA":
-                        await ProcessRun.SRToolsHelperAsync("/SetValue AAMode 2");
-                        break;
-                    // 画质调节
-                    case "开":
-                        await ProcessRun.SRToolsHelperAsync("/SetValue " + item.Tag + " true");
-                        break;
-                    case "关":
-                        if ((string)item.Tag == "EnableVSync")
-                        {
-                            await ProcessRun.SRToolsHelperAsync("/SetValue " + item.Tag + " false");
-                        }
-                        else
-                        {
-                            await ProcessRun.SRToolsHelperAsync("/SetValue " + item.Tag + " 0");
-                        }
-                        break;
-                    case "非常低":
-                        await ProcessRun.SRToolsHelperAsync("/SetValue " + item.Tag + " 1");
-                        break;
-                    case "低":
-                        await ProcessRun.SRToolsHelperAsync("/SetValue " + item.Tag + " 2");
-                        break;
-                    case "中":
-                        await ProcessRun.SRToolsHelperAsync("/SetValue " + item.Tag + " 3");
-                        break;
-                    case "高":
-                        await ProcessRun.SRToolsHelperAsync("/SetValue " + item.Tag + " 4");
-                        break;
-                    case "非常高":
-                        await ProcessRun.SRToolsHelperAsync("/SetValue " + item.Tag + " 5");
-                        break;
-                    // 渲染精度调节
-                    case string s when s.Contains("."):
-                        await ProcessRun.SRToolsHelperAsync("/SetValue RenderScale " + s);
-                        break;
+                    { "FPS", new Dictionary<string, int> { { "30", 30 }, { "60", 60 }, { "120", 120 } } },
+                    { "AAMode", new Dictionary<string, int> { { "关", 0 }, { "FXAA", 1 }, { "TAA", 2 } } },
+                    { "BloomQuality", new Dictionary<string, int> { { "关", 0 }, { "非常低", 1 }, { "低", 2 }, { "中", 3 }, { "高", 4 }, { "非常高", 5 } } },
+                    { "CharacterQuality", new Dictionary<string, int> { { "关", 0 }, { "非常低", 1 }, { "低", 2 }, { "中", 3 }, { "高", 4 }, { "非常高", 5 } } },
+                    { "EnableSelfShadow", new Dictionary<string, int> { { "关", 2 }, { "开", 1 } } },
+                    { "EnvDetailQuality", new Dictionary<string, int> { { "关", 0 }, { "非常低", 1 }, { "低", 2 }, { "中", 3 }, { "高", 4 }, { "非常高", 5 } } },
+                    { "LightQuality", new Dictionary<string, int> { { "关", 0 }, { "非常低", 1 }, { "低", 2 }, { "中", 3 }, { "高", 4 }, { "非常高", 5 } } },
+                    { "ReflectionQuality", new Dictionary<string, int> { { "关", 0 }, { "非常低", 1 }, { "低", 2 }, { "中", 3 }, { "高", 4 }, { "非常高", 5 } } },
+                    { "SFXQuality", new Dictionary<string, int> { { "关", 0 }, { "非常低", 1 }, { "低", 2 }, { "中", 3 }, { "高", 4 } } },
+                    { "ShadowQuality", new Dictionary<string, int> { { "关", 0 }, { "非常低", 1 }, { "低", 2 }, { "中", 3 }, { "高", 4 }, { "非常高", 5 } } }
+                };
+
+                var booleanSettingsMap = new Dictionary<string, Dictionary<string, bool>>
+                {
+                    { "EnableVSync", new Dictionary<string, bool> { { "关", false }, { "开", true } } },
+                    { "EnableMetalFXSU", new Dictionary<string, bool> { { "关", false }, { "开", true } } }
+                };
+
+                if (settingsMap.ContainsKey(tag) && settingsMap[tag].ContainsKey(text))
+                {
+                    int value = settingsMap[tag][text];
+                    await ProcessRun.SRToolsHelperAsync($"/SetValue {StartGameView.GameRegion} {tag} {value}");
                 }
-                LoadData();
+                else if (booleanSettingsMap.ContainsKey(tag) && booleanSettingsMap[tag].ContainsKey(text))
+                {
+                    bool value = booleanSettingsMap[tag][text];
+                    await ProcessRun.SRToolsHelperAsync($"/SetValue {StartGameView.GameRegion} {tag} {value.ToString().ToLower()}");
+                }
+                else if (double.TryParse(text, out double scaleValue) && tag == "RenderScale")
+                {
+                    await ProcessRun.SRToolsHelperAsync($"/SetValue {StartGameView.GameRegion} {tag} {scaleValue}");
+                }
+                else if (text.Contains("30") || text.Contains("60") || text.Contains("120"))
+                {
+                    await ProcessRun.SRToolsHelperAsync($"/SetValue FPS {StartGameView.GameRegion} {text}");
+                }
+
+                // 确保设置完成后重新加载数据
+                await LoadGraphicsData(true);
             }
             catch (Exception ex)
             {
                 Logging.Write($"Error in ChangeGraphic: {ex.Message}", 2);
             }
-
         }
-    }
 
-    public class Config
-    {
-        public int FPS { get; set; }
-        public bool EnableVSync { get; set; }
-        public float RenderScale { get; set; }
-        public int ResolutionQuality { get; set; }
-        public int ShadowQuality { get; set; }
-        public int LightQuality { get; set; }
-        public int CharacterQuality { get; set; }
-        public int EnvDetailQuality { get; set; }
-        public int ReflectionQuality { get; set; }
-        public int SFXQuality { get; set; }
-        public int BloomQuality { get; set; }
-        public int AAMode { get; set; }
+        private void ApplyUserChoice(string text, string tag)
+        {
+            // 根据选择直接更新UI
+            switch (tag)
+            {
+                case "FPS":
+                    DDB_FPS.Content = text;
+                    break;
+                case "EnableVSync":
+                    DDB_EnableVSync.Content = text;
+                    break;
+                case "AAMode":
+                    DDB_AAMode.Content = text;
+                    break;
+                case "BloomQuality":
+                    DDB_BloomQuality.Content = text;
+                    break;
+                case "CharacterQuality":
+                    DDB_CharacterQuality.Content = text;
+                    break;
+                case "EnableSelfShadow":
+                    DDB_EnableSelfShadow.Content = text;
+                    break;
+                case "EnvDetailQuality":
+                    DDB_EnvDetailQuality.Content = text;
+                    break;
+                case "LightQuality":
+                    DDB_LightQuality.Content = text;
+                    break;
+                case "ReflectionQuality":
+                    DDB_ReflectionQuality.Content = text;
+                    break;
+                case "RenderScale":
+                    DDB_RenderScale.Content = text;
+                    break;
+                case "SFXQuality":
+                    DDB_SFXQuality.Content = text;
+                    break;
+                case "ShadowQuality":
+                    DDB_ShadowQuality.Content = text;
+                    break;
+                case "EnableMetalFXSU":
+                    DDB_EnableMetalFXSU.Content = text;
+                    break;
+            }
+        }
     }
 }

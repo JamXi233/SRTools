@@ -35,7 +35,6 @@ using Windows.Storage.Pickers;
 using Newtonsoft.Json;
 using System.Net.Http;
 using static SRTools.App;
-using Windows.UI.Core;
 
 namespace SRTools.Views
 {
@@ -48,6 +47,7 @@ namespace SRTools.Views
 
         [DllImport("User32.dll")]
         public static extern short GetAsyncKeyState(int vKey);
+        private static int Notification_Test_Count = 0;
 
         public AboutView()
         {
@@ -57,9 +57,10 @@ namespace SRTools.Views
             this.Loaded += AboutView_Loaded;
         }
 
-        private void AboutView_Loaded(object sender, RoutedEventArgs e)
+        private async void AboutView_Loaded(object sender, RoutedEventArgs e)
         {
-            bool isDebug = System.Diagnostics.Debugger.IsAttached || App.SDebugMode;
+            isProgrammaticChange = true;
+            bool isDebug = Debugger.IsAttached || App.SDebugMode;
             consoleToggle.IsEnabled = !isDebug;
             debug_Mode.Visibility = isDebug ? Visibility.Visible : Visibility.Collapsed;
             debug_Message.Text = App.SDebugMode ? "您现在处于手动Debug模式" : "";
@@ -67,23 +68,23 @@ namespace SRTools.Views
             GetVersionButton();
             CheckFont();
             LoadSettings();
+            await Task.Delay(200);
+            isProgrammaticChange = false;
         }
 
         public void LoadSettings()
         {
-            isProgrammaticChange = true;
             consoleToggle.IsChecked = AppDataController.GetConsoleMode() == 1;
             terminalToggle.IsChecked = AppDataController.GetTerminalMode() == 1;
             userviceRadio.SelectedIndex = new[] { 1, 2, 0 }[AppDataController.GetUpdateService()];
             themeRadio.SelectedIndex = AppDataController.GetDayNight();
-            isProgrammaticChange = false;
         }
 
 
         private void CheckFont()
         {
             var fontsFolderPath = Environment.GetFolderPath(Environment.SpecialFolder.Fonts);
-            installSFF.IsEnabled = File.Exists(Path.Combine(fontsFolderPath, "SegoeIcons.ttf")) || File.Exists(Path.Combine(fontsFolderPath, "Segoe Fluent Icons.ttf"));
+            installSFF.IsEnabled = !File.Exists(Path.Combine(fontsFolderPath, "SegoeIcons.ttf")) || !File.Exists(Path.Combine(fontsFolderPath, "Segoe Fluent Icons.ttf"));
             installSFF.Content = installSFF.IsEnabled ? "安装图标字体" : "图标字体正常";
         }
 
@@ -175,18 +176,20 @@ namespace SRTools.Views
             var result = await GetUpdate.GetSRToolsUpdate();
             var status = result.Status;
             UpdateTip.Target = checkUpdate;
+            UpdateTip.ActionButtonClick -= StartDependForceUpdate;
+            UpdateTip.ActionButtonClick -= StartForceUpdate;
             UpdateTip.ActionButtonClick -= DisplayUpdateInfo;
+            bool isShiftPressed = (GetAsyncKeyState(0x10) & 0x8000) != 0;
 
-            UpdateTip.Title = status == 0 ? "无可用更新" : status == 1 ? "有可用更新" : "网络连接失败，可能是请求次数过多";
-            UpdateTip.Subtitle = status == 1 ? "新版本:" + result.Version : null;
-            UpdateTip.ActionButtonContent = status == 1 ? "查看详情" : null;
+            UpdateTip.Title = isShiftPressed ? "遇到麻烦了吗" : status == 0 ? "无可用更新" : status == 1 ? "有可用更新" : "网络连接失败，可能是请求次数过多";
+            UpdateTip.Subtitle = isShiftPressed ? "尝试重装SRTools" : status == 1 ? "新版本:" + result.Version : null;
+            UpdateTip.ActionButtonContent = isShiftPressed ? "强制重装" : status == 1 ? "查看详情" : null;
             UpdateTip.CloseButtonContent = "关闭";
 
+            if (isShiftPressed) UpdateTip.ActionButtonClick += StartForceUpdate;
             if (status == 1) UpdateTip.ActionButtonClick += DisplayUpdateInfo;
             UpdateTip.IsOpen = true;
         }
-
-
 
         private async void Check_Depend_Update(object sender, RoutedEventArgs e)
         {
@@ -195,6 +198,7 @@ namespace SRTools.Views
             var status = result.Status;
             UpdateTip.Target = checkDependUpdate;
             UpdateTip.ActionButtonClick -= StartDependForceUpdate;
+            UpdateTip.ActionButtonClick -= StartForceUpdate;
             UpdateTip.ActionButtonClick -= DisplayUpdateInfo;
             bool isShiftPressed = (GetAsyncKeyState(0x10) & 0x8000) != 0;
 
@@ -208,8 +212,6 @@ namespace SRTools.Views
 
             UpdateTip.IsOpen = true;
         }
-
-
 
         public async void DisplayUpdateInfo(TeachingTip sender, object args)
         {
@@ -234,13 +236,32 @@ namespace SRTools.Views
 
         public async void StartUpdate()
         {
+            UpdateTip.IsOpen = false;
+            WaitOverlayManager.RaiseWaitOverlay(true, "正在更新", "请稍等片刻", true, 0);
             await InstallerHelper.GetInstaller();
-            InstallerHelper.RunInstaller();
+            if (InstallerHelper.RunInstaller() != 0)
+            {
+                NotificationManager.RaiseNotification("更新失败", "", InfoBarSeverity.Error, true, 3);
+            }
+            WaitOverlayManager.RaiseWaitOverlay(false);
+        }
+
+        public async void StartForceUpdate(TeachingTip sender, object args)
+        {
+            UpdateTip.IsOpen = false;
+            WaitOverlayManager.RaiseWaitOverlay(true, "正在强制重装SRTools", "请稍等片刻", true, 0);
+            await InstallerHelper.GetInstaller();
+            if (InstallerHelper.RunInstaller("/force") != 0)
+            {
+                NotificationManager.RaiseNotification("更新失败", "", InfoBarSeverity.Error, true, 3);
+            }
+            WaitOverlayManager.RaiseWaitOverlay(false);
         }
 
         public async void StartDependUpdate()
         {
-            WaitOverlayManager.RaiseWaitOverlay(true, true, "正在更新依赖","请稍等片刻");
+            UpdateTip.IsOpen = false;
+            WaitOverlayManager.RaiseWaitOverlay(true, "正在更新依赖", "请稍等片刻", true, 0);
             await InstallerHelper.GetInstaller();
             InstallerHelper.RunInstaller("/depend");
             WaitOverlayManager.RaiseWaitOverlay(false);
@@ -248,42 +269,46 @@ namespace SRTools.Views
 
         public async void StartDependForceUpdate(TeachingTip sender, object args)
         {
-            WaitOverlayManager.RaiseWaitOverlay(true, true, "正在强制更新依赖", "请稍等片刻");
+            UpdateTip.IsOpen = false;
+            WaitOverlayManager.RaiseWaitOverlay(true, "正在强制重装依赖", "请稍等片刻", true, 0);
             await InstallerHelper.GetInstaller();
-            InstallerHelper.RunInstaller("/depend /force");
+            if (InstallerHelper.RunInstaller("/depend /force") != 0)
+            {
+                NotificationManager.RaiseNotification("强制重装依赖失败", "", InfoBarSeverity.Error, true, 3);
+            }
             WaitOverlayManager.RaiseWaitOverlay(false);
         }
 
         // 选择主题开始
         private void ThemeRadio_Follow(object sender, RoutedEventArgs e)
         {
-            if (isProgrammaticChange) { ThemeTip.IsOpen = true; AppDataController.SetDayNight(0); }
+            if (!isProgrammaticChange) { ThemeTip.IsOpen = true; AppDataController.SetDayNight(0); }
         }
 
         private void ThemeRadio_Light(object sender, RoutedEventArgs e)
         {
-            if (isProgrammaticChange) { ThemeTip.IsOpen = true; AppDataController.SetDayNight(1); }
+            if (!isProgrammaticChange) { ThemeTip.IsOpen = true; AppDataController.SetDayNight(1); }
         }
 
         private void ThemeRadio_Dark(object sender, RoutedEventArgs e)
         {
-            if (isProgrammaticChange) { ThemeTip.IsOpen = true; AppDataController.SetDayNight(2); }
+            if (!isProgrammaticChange) { ThemeTip.IsOpen = true; AppDataController.SetDayNight(2); }
         }
 
         // 选择下载渠道开始
         private void uservice_Github_Choose(object sender, RoutedEventArgs e)
         {
-            if (isProgrammaticChange) { AppDataController.SetUpdateService(0); }
+            if (!isProgrammaticChange) { AppDataController.SetUpdateService(0); }
         }
 
         private void uservice_Gitee_Choose(object sender, RoutedEventArgs e)
         {
-            if (isProgrammaticChange) { AppDataController.SetUpdateService(1); }
+            if (!isProgrammaticChange) { AppDataController.SetUpdateService(1); }
         }
 
         private void uservice_JSG_Choose(object sender, RoutedEventArgs e)
         {
-            if (isProgrammaticChange) { AppDataController.SetUpdateService(2); }
+            if (!isProgrammaticChange) { AppDataController.SetUpdateService(2); }
         }
 
 
@@ -334,33 +359,61 @@ namespace SRTools.Views
             }
         }
 
-        private void Install_Font_Click(object sender, RoutedEventArgs e)
+        private async void Install_Font_Click(object sender, RoutedEventArgs e)
         {
             installSFF.IsEnabled = false;
             installSFF_Progress.Visibility = Visibility.Visible;
+            var progress = new Progress<double>();
+
+            await InstallFont.InstallSegoeFluentFontAsync(progress);
             installSFF.Content = "安装字体后重启SRTools即生效";
             installSFF_Progress.Visibility = Visibility.Collapsed;
         }
 
         private async void Restart_App(TeachingTip sender, object args)
         {
+            Logging.Write("Restarting application", 0);
             await ProcessRun.RestartApp();
         }
 
         // Debug_Clicks
-        private void Debug_Panic_Click(object sender, RoutedEventArgs e) 
+        private void Debug_Panic_Click(object sender, RoutedEventArgs e)
         {
+            Logging.Write("Triggering global exception handler test", 0);
             throw new Exception("全局异常处理测试");
         }
 
         private void Debug_Notification_Test(object sender, RoutedEventArgs e)
         {
-            NotificationManager.RaiseNotification("测试通知","这是一条测试通知", InfoBarSeverity.Success);
+            Notification_Test_Count++;
+            Logging.Write("Triggering notification test", 0);
+            NotificationManager.RaiseNotification("测试通知", $"这是一条测试通知{Notification_Test_Count}", InfoBarSeverity.Success, false, 1);
+        }
+
+        private async void Debug_WaitOverlayManager_Test(object sender, RoutedEventArgs e)
+        {
+            Logging.Write("Triggering WaitOverlayManager test", 0);
+            WaitOverlayManager.RaiseWaitOverlay(true, "全局等待测试", "如果您看到了这个界面，则全局等待测试已成功", true, 0, true, "退出测试", Debug_KillWaitOverlay);
+            await Task.Delay(1000);
+            Debug_KillWaitOverlay();
+        }
+
+        private void Debug_KillWaitOverlay()
+        {
+            Logging.Write("Killing WaitOverlay", 0);
+            WaitOverlayManager.RaiseWaitOverlay(false);
+        }
+
+        private void Debug_ShowDialog_Test(object sender, RoutedEventArgs e)
+        {
+            Logging.Write("Triggering ShowDialog test", 0);
+            DialogManager.RaiseDialog(XamlRoot);
         }
 
         // Debug_Disable_NavBtns
         private void Debug_Disable_NavBtns(object sender, RoutedEventArgs e)
         {
+            Logging.Write("Toggling navigation buttons", 0);
             NavigationView parentNavigationView = GetParentNavigationView(this);
             if (debug_DisableNavBtns.IsChecked == true)
             {
@@ -406,6 +459,7 @@ namespace SRTools.Views
 
         private NavigationView GetParentNavigationView(FrameworkElement child)
         {
+            Logging.Write("Getting parent NavigationView", 0);
             DependencyObject parent = VisualTreeHelper.GetParent(child);
 
             while (parent != null && !(parent is NavigationView))

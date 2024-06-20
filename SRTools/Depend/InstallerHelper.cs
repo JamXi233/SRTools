@@ -1,11 +1,28 @@
-﻿using Newtonsoft.Json;
+﻿// Copyright (c) 2021-2024, JamXi JSG-LLC.
+// All rights reserved.
+
+// This file is part of SRTools.
+
+// SRTools is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+
+// SRTools is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+
+// You should have received a copy of the GNU General Public License
+// along with SRTools.  If not, see <http://www.gnu.org/licenses/>.
+
+// For more information, please refer to <https://www.gnu.org/licenses/gpl-3.0.html>
+
+using Newtonsoft.Json;
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Linq;
 using System.Net.Http;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace SRTools.Depend
@@ -64,7 +81,6 @@ namespace SRTools.Depend
             }
         }
 
-        // 开始运行 Installer
         public static int RunInstaller(string args = "")
         {
             if (!File.Exists(InstallerFullPath))
@@ -76,39 +92,23 @@ namespace SRTools.Depend
             ProcessStartInfo startInfo = new ProcessStartInfo
             {
                 FileName = InstallerFullPath,
-                Arguments = args
+                Arguments = args,
+                UseShellExecute = true, // 使用Shell以提升权限
+                Verb = "runas" // 请求提升权限
             };
-
-            if (args.Contains("depend"))
-            {
-                // 需要管理员权限
-                startInfo.UseShellExecute = true;
-                startInfo.Verb = "runas";
-            }
-            else
-            {
-                // 不需要管理员权限，尝试重定向输出
-                startInfo.UseShellExecute = false;
-                startInfo.RedirectStandardOutput = true;
-                startInfo.RedirectStandardError = true;
-            }
 
             try
             {
-                using (Process process = new Process { StartInfo = startInfo })
+                using (Process process = Process.Start(startInfo))
                 {
-                    process.Start();
+                    process.WaitForExit();
 
-                    if (!startInfo.UseShellExecute)
+                    // 检查退出代码
+                    if (process.ExitCode != 0)
                     {
-                        // 读取输出
-                        string output = process.StandardOutput.ReadToEnd();
-                        string error = process.StandardError.ReadToEnd();
-                        Logging.Write($"Output: {output}", 0);
-                        Logging.Write($"Error: {error}", 2);
+                        Logging.Write($"安装程序退出代码: {process.ExitCode}", 2);
                     }
 
-                    process.WaitForExit();
                     return process.ExitCode;
                 }
             }
@@ -118,6 +118,8 @@ namespace SRTools.Depend
                 return -2;
             }
         }
+
+
 
 
     }

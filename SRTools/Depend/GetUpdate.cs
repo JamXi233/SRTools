@@ -1,13 +1,30 @@
-﻿using Microsoft.UI.Xaml.Controls;
-using Microsoft.UI.Xaml;
+﻿// Copyright (c) 2021-2024, JamXi JSG-LLC.
+// All rights reserved.
+
+// This file is part of SRTools.
+
+// SRTools is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+
+// SRTools is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+
+// You should have received a copy of the GNU General Public License
+// along with SRTools.  If not, see <http://www.gnu.org/licenses/>.
+
+// For more information, please refer to <https://www.gnu.org/licenses/gpl-3.0.html>
+
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using Windows.ApplicationModel;
 using Windows.Storage;
 using System.IO;
+using System.Diagnostics;
+using System.Linq;
 
 namespace SRTools.Depend
 {
@@ -60,34 +77,64 @@ namespace SRTools.Depend
                 Logging.Write("Software Name:" + latestReleaseInfo.Name, 0);
                 Logging.Write("Newer Version:" + latestReleaseInfo.Version, 0);
 
-                // Handle Depend Mode differently
                 if (Mode == "Depend")
                 {
                     string userDocumentsFolderPath = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
-                    string path = Path.Combine(userDocumentsFolderPath, "JSG-LLC", "SRTools", "Depends", PkgName, "SRToolsHelperVersion.ini");
-                    string content = File.Exists(path) ? File.ReadAllText(path) : "0";
-                    Version installedVersionParsed = new Version(content);
+                    string iniPath = Path.Combine(userDocumentsFolderPath, "JSG-LLC", "SRTools", "Depends", PkgName, "SRToolsHelperVersion.ini");
+                    string exePath = Path.Combine(userDocumentsFolderPath, "JSG-LLC", "SRTools", "Depends", PkgName, "SRToolsHelper.exe");
 
-                    if (new Version(latestReleaseInfo.Version) > installedVersionParsed)
+                    Version installedVersionParsed;
+
+                    if (File.Exists(iniPath))
                     {
+                        string[] iniLines = await File.ReadAllLinesAsync(iniPath);
+                        if (iniLines != null)
+                        {
+                            string versionString = iniLines[0].Trim();
+                            installedVersionParsed = new Version(versionString);
+                        }
+                        else
+                        {
+                            installedVersionParsed = new Version("0.0.0.0");
+                        }
+                    }
+                    else if (File.Exists(exePath))
+                    {
+                        FileVersionInfo fileInfo = FileVersionInfo.GetVersionInfo(exePath);
+                        installedVersionParsed = new Version(fileInfo.FileVersion);
+                    }
+                    else
+                    {
+                        installedVersionParsed = new Version("0.0.0.0");
+                    }
+
+                    Version latestVersionParsed = new Version(latestReleaseInfo.Version);
+                    if (latestVersionParsed > installedVersionParsed)
+                    {
+                        App.IsSRToolsHelperRequireUpdate = true;
                         return new UpdateResult(1, latestReleaseInfo.Version, latestReleaseInfo.Changelog);
                     }
-                    return new UpdateResult(0, content, string.Empty); // No update required
+                    App.IsSRToolsHelperRequireUpdate = false;
+                    return new UpdateResult(0, installedVersionParsed.ToString(), string.Empty);
                 }
+
+
                 else
                 {
                     Version latestVersionParsed = new Version(latestReleaseInfo.Version);
 
                     if (latestVersionParsed > currentVersionParsed)
                     {
+                        App.IsSRToolsRequireUpdate = true;
                         return new UpdateResult(1, latestReleaseInfo.Version, latestReleaseInfo.Changelog);
                     }
-                    return new UpdateResult(0, currentVersion, string.Empty); // No update required
+                    App.IsSRToolsRequireUpdate = false;
+                    return new UpdateResult(0, currentVersion, string.Empty);
                 }
             }
             catch (Exception)
             {
-                return new UpdateResult(2, string.Empty, string.Empty); // Error state
+                return new UpdateResult(2, string.Empty, string.Empty);
             }
         }
 

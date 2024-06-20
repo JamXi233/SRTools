@@ -21,10 +21,10 @@
 using System;
 using Microsoft.UI.Xaml.Controls;
 using SRTools.Depend;
-using Windows.Storage;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading.Tasks;
+using System.IO;
 
 namespace SRTools.Views.NotifyViews
 {
@@ -35,28 +35,35 @@ namespace SRTools.Views.NotifyViews
         {
             this.InitializeComponent();
             Logging.Write("Switch to NotifyMessageView", 0);
-            var folder = KnownFolders.DocumentsLibrary;
-            var srtoolsFolder = folder.GetFolderAsync("JSG-LLC\\SRTools").AsTask().GetAwaiter().GetResult();
-            var settingsFile = srtoolsFolder.GetFileAsync("Posts\\info.json").AsTask().GetAwaiter().GetResult();
-            var notify = FileIO.ReadTextAsync(settingsFile).AsTask().GetAwaiter().GetResult();
-            GetNotify getNotify = new GetNotify();
-            var records = getNotify.GetData(notify);
-            NotifyMessageView_List.ItemsSource = records;
-            LoadData(records);
+            string documentsPath = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+            string SRToolsPostsFolderPath = Path.Combine(documentsPath, "JSG-LLC", "SRTools", "Posts");
+            string settingsFilePath = Path.Combine(SRToolsPostsFolderPath, "info.json");
+            if (File.Exists(settingsFilePath))
+            {
+                string notify = File.ReadAllText(settingsFilePath);
+                GetNotify getNotify = new GetNotify();
+                var records = getNotify.GetData(notify);
+                NotifyMessageView_List.ItemsSource = records;
+                LoadData(records);
+            }
+            else
+            {
+                Logging.Write("Info file not found", 0);
+            }
         }
 
         private void LoadData(List<GetNotify> getNotifies)
         {
             foreach (GetNotify getNotify in getNotifies)
             {
-                list.Add(getNotify.url);
+                list.Add(getNotify.link);
             }
         }
 
         private async void List_PointerPressed(object sender, ItemClickEventArgs e)
         {
             await Task.Delay(TimeSpan.FromSeconds(0.1));
-            string url = list[NotifyMessageView_List.SelectedIndex]; // 替换为要打开的网页地址
+            string url = list[NotifyMessageView_List.SelectedIndex];
             Process.Start(new ProcessStartInfo
             {
                 FileName = url,

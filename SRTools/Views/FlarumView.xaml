@@ -11,7 +11,7 @@
     <Grid HorizontalAlignment="Stretch">
 
         
-        <ScrollViewer HorizontalAlignment="Left" >
+        <ScrollViewer HorizontalAlignment="Left" Visibility="Collapsed">
             <StackPanel HorizontalAlignment="Left" >
                 <Expander Width="580" IsExpanded="True" ExpandDirection="Down" VerticalAlignment="Top" Header="关于问题反馈" Content="发现问题时，可以将错误日志与系统版本在Github上开启一个issue。"/>
                 <Expander Width="580" ExpandDirection="Down" VerticalAlignment="Top" Header="无法切换账号" Content="检查是否设置游戏路径，如已经设置还是无法切换账号可以尝试备份抽卡记录后清空所有数据"/>

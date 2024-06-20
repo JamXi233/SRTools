@@ -41,6 +41,7 @@ using static SRTools.App;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using Microsoft.UI.Xaml.Data;
+using System.Threading;
 
 
 namespace SRTools.Views.ToolViews
@@ -425,7 +426,7 @@ public class GachaViewModel : INotifyPropertyChanged
                 {
                     // 进程正在运行
                     gacha_status.Text = GachaLink_String;
-                    WaitOverlayManager.RaiseWaitOverlay(true, true, "正在获取API信息,请不要退出", "请稍等片刻");
+                    WaitOverlayManager.RaiseWaitOverlay(true, "正在获取API信息,请不要退出", "请稍等片刻", true, 0);
                     ProxyButton.IsEnabled = false;
                     Stop();
                     Logging.Write("Get GachaLink Finish!", 0);
@@ -436,7 +437,7 @@ public class GachaViewModel : INotifyPropertyChanged
                     Clipboard.SetContent(dataPackage);
                     dispatcherTimer.Stop();
                     Logging.Write("Loading Gacha Data...", 0);
-                    WaitOverlayManager.RaiseWaitOverlay(true, true, "正在获取API信息,请不要退出", "请稍等片刻");
+                    WaitOverlayManager.RaiseWaitOverlay(true, "正在获取API信息,请不要退出", "请稍等片刻", true, 0);
                     LoadDataAsync(GachaLink_String);
                     GachaLink_String = null;
                 }
@@ -469,50 +470,79 @@ public class GachaViewModel : INotifyPropertyChanged
                     gacha_status.Text = "获取API信息出现问题，可能是抽卡链接已过期，请重新获取";
                     GachaLink.IsOpen = false;
                 }
-                else 
+                else
                 {
-                    var folder = KnownFolders.DocumentsLibrary;
-                    var srtoolsFolder = await folder.CreateFolderAsync("JSG-LLC\\SRTools", CreationCollisionOption.OpenIfExists);
-                    var char_gachaFile = await srtoolsFolder.CreateFileAsync("GachaRecords_Character.ini", CreationCollisionOption.OpenIfExists);
-                    var light_gachaFile = await srtoolsFolder.CreateFileAsync("GachaRecords_LightCone.ini", CreationCollisionOption.OpenIfExists);
-                    var newbie_gachaFile = await srtoolsFolder.CreateFileAsync("GachaRecords_Newbie.ini", CreationCollisionOption.OpenIfExists);
-                    var regular_gachaFile = await srtoolsFolder.CreateFileAsync("GachaRecords_Regular.ini", CreationCollisionOption.OpenIfExists);
-                    var char_serializedList = JsonConvert.SerializeObject(char_records);//获取到的数据
-                    var light_serializedList = JsonConvert.SerializeObject(light_records);//获取到的数据
-                    var newbie_serializedList = JsonConvert.SerializeObject(newbie_records);//获取到的数据
-                    var regular_serializedList = JsonConvert.SerializeObject(regular_records);//获取到的数据
+                    string documentsPath = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+                    string srtoolsFolderPath = Path.Combine(documentsPath, "JSG-LLC", "SRTools");
+
+                    // 确保目录存在
+                    Directory.CreateDirectory(srtoolsFolderPath);
+
+                    // 文件路径
+                    string charGachaFilePath = Path.Combine(srtoolsFolderPath, "GachaRecords_Character.ini");
+                    string lightGachaFilePath = Path.Combine(srtoolsFolderPath, "GachaRecords_LightCone.ini");
+                    string newbieGachaFilePath = Path.Combine(srtoolsFolderPath, "GachaRecords_Newbie.ini");
+                    string regularGachaFilePath = Path.Combine(srtoolsFolderPath, "GachaRecords_Regular.ini");
+
+                    // 确保文件存在，如果不存在则创建
+                    if (!File.Exists(charGachaFilePath))
+                    {
+                        using (File.Create(charGachaFilePath)) { }
+                    }
+                    if (!File.Exists(lightGachaFilePath))
+                    {
+                        using (File.Create(lightGachaFilePath)) { }
+                    }
+                    if (!File.Exists(newbieGachaFilePath))
+                    {
+                        using (File.Create(newbieGachaFilePath)) { }
+                    }
+                    if (!File.Exists(regularGachaFilePath))
+                    {
+                        using (File.Create(regularGachaFilePath)) { }
+                    }
+
+                    // 序列化数据
+                    var charSerializedList = JsonConvert.SerializeObject(char_records);
+                    var lightSerializedList = JsonConvert.SerializeObject(light_records);
+                    var newbieSerializedList = JsonConvert.SerializeObject(newbie_records);
+                    var regularSerializedList = JsonConvert.SerializeObject(regular_records);
+
                     Logging.Write("正在获取API信息,请不要退出... | 正在获取角色池...", 0);
-                    DataChange(char_serializedList, char_gachaFile);
+                    await DataChange(charSerializedList, charGachaFilePath);
                     Logging.Write("正在获取API信息,请不要退出... | 正在获取光锥池...", 0);
-                    DataChange(light_serializedList, light_gachaFile);
+                    await DataChange(lightSerializedList, lightGachaFilePath);
                     Logging.Write("正在获取API信息,请不要退出... | 正在获取新手池...", 0);
-                    DataChange(newbie_serializedList, newbie_gachaFile);
+                    await DataChange(newbieSerializedList, newbieGachaFilePath);
                     Logging.Write("正在获取API信息,请不要退出... | 正在获取常驻池...", 0);
-                    DataChange(regular_serializedList, regular_gachaFile);
+                    await DataChange(regularSerializedList, regularGachaFilePath);
                 }
+
             }
             ProxyButton.IsEnabled = true;
             ExportSRGF.IsEnabled = true;
         }
 
-        private async void DataChange(String serializedList, StorageFile gachaFile) 
+        private async Task DataChange(string serializedList, string gachaFile)
         {
-            
-            var GachaRecords = FileIO.ReadTextAsync(gachaFile).AsTask().GetAwaiter().GetResult();//原来的数据
+            // 读取原来的数据
+            string gachaRecords = await File.ReadAllTextAsync(gachaFile);
 
-            if (GachaRecords != "") //如果不为空
+            if (!string.IsNullOrEmpty(gachaRecords)) // 如果不为空
             {
-                // 反序列化为List<Record>对象
+                // 反序列化为 List<Record> 对象
                 List<GachaRecords> data1 = JsonConvert.DeserializeObject<List<GachaRecords>>(serializedList);
-                List<GachaRecords> data2 = JsonConvert.DeserializeObject<List<GachaRecords>>(GachaRecords);
-                // 合并数据，确保ID不重复
+                List<GachaRecords> data2 = JsonConvert.DeserializeObject<List<GachaRecords>>(gachaRecords);
+
+                // 合并数据，确保 ID 不重复
                 var combinedData = data1.Concat(data2)
-                            .GroupBy(r => r.Id)
-                            .Select(g => g.First())
-                            .ToList();
+                                .GroupBy(r => r.Id)
+                                .Select(g => g.First())
+                                .ToList();
+
                 string combinedDataJson = JsonConvert.SerializeObject(combinedData);
-                // 如果需要，将合并后的数据序列化为JSON字符串
-                // 消除ID为空的记录
+
+                // 消除 ID 为空的记录
                 JArray data = JArray.Parse(combinedDataJson);
                 for (int i = data.Count - 1; i >= 0; i--)
                 {
@@ -521,21 +551,24 @@ public class GachaViewModel : INotifyPropertyChanged
                         data.RemoveAt(i);
                     }
                 }
+
                 combinedDataJson = JsonConvert.SerializeObject(data);
-                await FileIO.WriteTextAsync(gachaFile, combinedDataJson);
+                await File.WriteAllTextAsync(gachaFile, combinedDataJson);
             }
             else
             {
-                await FileIO.WriteTextAsync(gachaFile, serializedList);
+                await File.WriteAllTextAsync(gachaFile, serializedList);
             }
+
+            // 更新 UI 和状态
             GachaLink.IsOpen = false;
             gacha_status.Text = "API获取完成";
             await Depend.GachaRecords.UpdateGachaRecordsAsync();
-            gachaNav.Visibility = Visibility.Visible;
+
             WaitOverlayManager.RaiseWaitOverlay(false);
-            gachaFrame.Navigate(typeof(CharacterGachaView));
             ProxyButton.IsEnabled = true;
         }
+
 
         private void ExportSRGF_Click(object sender, RoutedEventArgs e)
         {

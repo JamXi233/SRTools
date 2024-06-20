@@ -27,165 +27,296 @@ using SRTools.Views.ToolViews;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI;
 using Microsoft.UI.Xaml;
+using Microsoft.UI.Text;
+using Newtonsoft.Json;
+using static SRTools.Depend.GachaModel;
+using System.Collections.Generic;
 
 namespace SRTools.Views.GachaViews
 {
     public sealed partial class RegularGachaView : Page
     {
-
+        public static GachaModel.CardPoolInfo selectedCardPool;
         public RegularGachaView()
         {
             this.InitializeComponent();
             Logging.Write("Switch to RegularGachaView", 0);
+            selectedCardPool = new GachaModel.CardPoolInfo { FiveStarPity = 90, FourStarPity = 10 }; // 替换成实际获取卡池信息的逻辑
             LoadData();
         }
 
         private async void LoadData()
         {
+            Logging.Write("Starting LoadData method", 0);
             string selectedUID = GachaView.GetSelectedUid();
+            Logging.Write($"Selected UID: {selectedUID}", 0);
+
             var folder = KnownFolders.DocumentsLibrary;
-            var srtoolsFolder = folder.GetFolderAsync("JSG-LLC\\SRTools\\GachaRecords\\" + selectedUID).AsTask().GetAwaiter().GetResult();
-            var settingsFile = srtoolsFolder.GetFileAsync("GachaRecords_Regular.ini").AsTask().GetAwaiter().GetResult();
-            var GachaRecords = FileIO.ReadTextAsync(settingsFile).AsTask().GetAwaiter().GetResult();
-            var records = await new GachaRecords().GetAllGachaRecordsAsync(null, GachaRecords);
-            var groupedRecords = records.GroupBy(r => r.RankType).ToDictionary(g => g.Key, g => g.ToList());
-            int RankType5 = records.TakeWhile(r => r.RankType != "5").Count();
-            int RankType4 = records.TakeWhile(r => r.RankType != "4").Count();
-            string uid = records.Select(r => r.Uid).FirstOrDefault();
+            var srtoolsFolder = await folder.GetFolderAsync($"JSG-LLC\\SRTools\\GachaRecords\\{selectedUID}\\");
+            var settingsFile = await srtoolsFolder.GetFileAsync("GachaRecords_Regular.ini");
+            string gachaRecordsContent = await FileIO.ReadTextAsync(settingsFile);
 
-            // 筛选出四星和五星的记录
-            var rank4Records = records.Where(r => r.RankType == "4");
-            var rank5Records = records.Where(r => r.RankType == "5");
+            var records = JsonConvert.DeserializeObject<List<GachaRecord>>(gachaRecordsContent);
+            Logging.Write($"Total records found: {records.Count}", 0);
 
-            // 按名称进行分组并计算每个分组中的记录数量
-            var rank4Grouped = rank4Records.GroupBy(r => r.Name).Select(g => new { Name = g.Key, Count = g.Count() });
-            var rank5Grouped = rank5Records.GroupBy(r => r.Name).Select(g => new { Name = g.Key, Count = g.Count() });
-            int rank5Count = 0;
-            int i;
-            int j = 0;
-            bool NoEvent = false;
+            var rank4Records = records.Where(r => r.RankType == "4").ToList();
+            var rank5Records = records.Where(r => r.RankType == "5").ToList();
+            Logging.Write($"4-star records count: {rank4Records.Count}, 5-star records count: {rank5Records.Count}", 0);
 
-            // 输出五星记录
-            var rank5TextBlock = new TextBlock { };
-            var rank4TextBlock = new TextBlock { };
-            rank5Records.Reverse();
-            records.Reverse();
-            foreach (var group in rank5Records)
+            DisplayGachaDetails(records, rank4Records, rank5Records);
+            DisplayGachaInfo(records);
+            DisplayGachaRecords(records);
+
+            Logging.Write("LoadData method finished", 0);
+        }
+
+        private void DisplayGachaRecords(List<GachaRecord> records)
+        {
+            Logging.Write("Displaying gacha records", 0);
+            GachaRecords_List.ItemsSource = records;
+        }
+
+        private void DisplayGachaInfo(List<GachaRecord> records)
+        {
+            Logging.Write("Displaying gacha info", 0);
+
+            var rank5Records = records.Where(r => r.RankType == "5")
+                                       .Select(r => new
+                                       {
+                                           r.Name,
+                                           Count = CalculateCount(records, r.Id, "5"),
+                                           Pity = CalculatePity(records, r.Name, "5"),
+                                           PityVisibility = Visibility.Visible
+                                       }).ToList();
+            if (rank5Records.Count == 0) GachaInfo_List_Disable.Visibility = Visibility.Visible;
+
+            GachaInfo_List.ItemsSource = rank5Records;
+            Logging.Write("Finished displaying gacha info", 0);
+        }
+
+        private string CalculateCount(List<GachaRecord> records, string id, string qualityLevel)
+        {
+            Logging.Write("Calculating count since last target star", 0);
+            int countSinceLastTargetStar = 1;
+            bool foundTargetStar = false;
+            for (int i = records.Count - 1; i >= 0; i--)
             {
-                for (i = j; i < records.Count; i++)
+                var record = records[i];
+                if (record.RankType == qualityLevel && record.Id == id)
                 {
-                    //Logging.Write(i+ records[i].Name,0);
-                    rank5Count++;
-                    if (records[i].RankType == "5" && records[i].Name == group.Name)
-                    {
-                        Logging.Write("抽到5星:[[" + j + "]]:" + rank5Count + group.Name, 0);
-                        if (NoEvent)
-                        {
-                            rank5TextBlock.Text += $"{group.Name}：用了{rank5Count}抽[大保底] \n";
-                            NoEvent = false;
-                        }
-                        else
-                        {
-                            rank5TextBlock.Text += $"{group.Name}：用了{rank5Count}抽 \n";
-
-                        }
-
-                        rank5Count = 0;
-                        j = i + 1;
-                        break; //移动到下一个五星
-                    }
+                    foundTargetStar = true;
+                    break;
+                }
+                if (record.RankType == "5")
+                {
+                    countSinceLastTargetStar = 1;
+                }
+                else
+                {
+                    countSinceLastTargetStar++;
                 }
             }
-            records.Reverse();
-            var lines5 = rank5TextBlock.Text.Split("\n");
-            var reversedLines5 = lines5.Reverse();
-            rank5TextBlock.Text = string.Join("\n", reversedLines5);
-
-            foreach (var group in rank4Grouped)
+            if (!foundTargetStar)
             {
-                rank4TextBlock.Text += $"{group.Name} x{group.Count}, \n";
+                return "未找到";
             }
-            var lines4 = rank4TextBlock.Text.Split("\n");
-            var reversedLines4 = lines4.Reverse();
-            rank4TextBlock.Text = string.Join("\n", reversedLines4);
-            MyStackPanel.Children.Clear();
-            Gacha5Stars.Children.Clear();
-            Gacha4Stars.Children.Clear();
-            Gacha5Stars.Children.Add(rank5TextBlock);
-            Gacha4Stars.Children.Add(rank4TextBlock);
 
-            // 创建详情卡片
-            Border borderInfo = new Border
+            Logging.Write($"Count since last target star: {countSinceLastTargetStar}", 0);
+            return $"{countSinceLastTargetStar}";
+        }
+        
+        private string CalculatePity(List<GachaRecord> records, string name, string qualityLevel)
+        {
+            Logging.Write("Calculating pity", 0);
+            var specialNames = new List<string> { };
+
+            if (specialNames.Contains(name))
             {
-                Padding = new Thickness(10),
-                Margin = new Thickness(0, 4, 0, 4), // 添加一些底部间距
-                BorderBrush = new SolidColorBrush(Colors.Gray),
-                BorderThickness = new Thickness(1),
-                CornerRadius = new CornerRadius(8)
+                Logging.Write("Pity result: 歪了", 0);
+                return "歪了";
+            }
+            else
+            {
+                Logging.Write("Pity result: 没歪", 0);
+                return "";
+            }
+        }
+
+        private void DisplayGachaDetails(List<GachaRecord> records, List<GachaRecord> rank4Records, List<GachaRecord> rank5Records)
+        {
+            Logging.Write("Displaying gacha details", 0);
+            Gacha_Panel.Children.Clear();
+            var scrollView = new ScrollViewer
+            {
+                HorizontalScrollBarVisibility = ScrollBarVisibility.Hidden,
+                VerticalScrollBarVisibility = ScrollBarVisibility.Hidden,
+                Height = 320
             };
 
-            StackPanel stackPanelInfo = new StackPanel();
+            var contentPanel = new StackPanel();
 
-            stackPanelInfo.Children.Add(new TextBlock { Text = $"UID:" + uid });
-            foreach (var group in groupedRecords)
+            var selectedRecords = records
+                .OrderByDescending(r => r.Time)
+                .ToList();
+
+            Logging.Write($"Total selected records: {selectedRecords.Count}", 0);
+
+            int countSinceLast5Star = 0;
+            int countSinceLast4Star = 0;
+            bool foundLast5Star = false;
+            bool foundLast4Star = false;
+
+            foreach (var record in selectedRecords)
             {
-                var textBlock = new TextBlock
+                if (!foundLast5Star && record.RankType == "5")
                 {
-                    Text = $"{group.Key}星: {group.Value.Count} (相同的有{group.Value.GroupBy(r => r.Name).Count()}个)"
-                };
-                stackPanelInfo.Children.Add(textBlock);
+                    foundLast5Star = true;
+                    foundLast4Star = true;
+                }
+                else if (!foundLast5Star)
+                {
+                    countSinceLast5Star++;
+                }
+
+                if (!foundLast4Star && record.RankType == "4")
+                {
+                    foundLast4Star = true;
+                }
+                else if (!foundLast4Star)
+                {
+                    countSinceLast4Star++;
+                }
+
+                if (foundLast5Star && foundLast4Star)
+                {
+                    break;
+                }
             }
-            borderInfo.Child = stackPanelInfo;
-            MyStackPanel.Children.Add(borderInfo);
 
-            // 创建五星卡片
-            Border borderFiveStar = new Border
-            {
-                Padding = new Thickness(10),
-                Margin = new Thickness(0, 4, 0, 4), // 添加一些底部间距
-                BorderBrush = new SolidColorBrush(Colors.Gray),
-                BorderThickness = new Thickness(1),
-                CornerRadius = new CornerRadius(8)
-            };
+            var fourStarIntervals = CalculateIntervals(selectedRecords, "4");
+            var fiveStarIntervals = CalculateIntervals(selectedRecords, "5");
 
-            StackPanel stackPanelFiveStar = new StackPanel();
-            stackPanelFiveStar.Children.Add(new TextBlock { Text = $"距离上一个五星已经抽了{RankType5}发" });
-            ProgressBar progressBar5 = new ProgressBar
+            string averageDraws4Star = fourStarIntervals.Count > 0 ? (fourStarIntervals.Average()).ToString("F2") : "∞";
+            string averageDraws5Star = fiveStarIntervals.Count > 0 ? (fiveStarIntervals.Average()).ToString("F2") : "∞";
+
+            Gacha_UID.Text = selectedRecords.First().Uid;
+            GachaRecords_Count.Text = "共" + selectedRecords.Count() + "抽";
+            GachaInfo_SinceLast5Star.Text = $"垫了{countSinceLast5Star}发";
+
+            var basicInfoPanel = CreateDetailBorder();
+            var stackPanelBasicInfo = new StackPanel();
+            stackPanelBasicInfo.Children.Add(new TextBlock { Text = $"UID: {selectedRecords.First().Uid}", FontWeight = FontWeights.Bold });
+            stackPanelBasicInfo.Children.Add(new TextBlock { Text = $"总计抽数: {selectedRecords.Count}" });
+            stackPanelBasicInfo.Children.Add(new TextBlock { Text = $"五星抽卡次数: {rank5Records.Count}" });
+            stackPanelBasicInfo.Children.Add(new TextBlock { Text = $"四星抽卡次数: {rank4Records.Count}" });
+            stackPanelBasicInfo.Children.Add(new TextBlock { Text = $"预计使用星琼: {selectedRecords.Count * 160}" });
+            basicInfoPanel.Child = stackPanelBasicInfo;
+            contentPanel.Children.Add(basicInfoPanel);
+
+            var detailInfoPanel = CreateDetailBorder();
+            var stackPanelDetailInfo = new StackPanel();
+            stackPanelDetailInfo.Children.Add(new TextBlock { Text = "详细统计", FontWeight = FontWeights.Bold });
+
+            stackPanelDetailInfo.Children.Add(new TextBlock { Text = $"五星平均抽数: {averageDraws5Star}抽" });
+            stackPanelDetailInfo.Children.Add(new TextBlock { Text = $"四星平均抽数: {averageDraws4Star}抽" });
+
+            string rate4Star = rank4Records.Count > 0 ? (rank4Records.Count / (double)selectedRecords.Count * 100).ToString("F2") + "%" : "∞";
+            string rate5Star = rank5Records.Count > 0 ? (rank5Records.Count / (double)selectedRecords.Count * 100).ToString("F2") + "%" : "∞";
+
+            stackPanelDetailInfo.Children.Add(new TextBlock { Text = $"五星获取率: {rate5Star}" });
+            stackPanelDetailInfo.Children.Add(new TextBlock { Text = $"四星获取率: {rate4Star}" });
+
+            if (rank5Records.Any())
             {
-                Minimum = 0,
-                Maximum = 90,
-                Value = RankType5,
-                Height = 12
-            };
-            stackPanelFiveStar.Children.Add(progressBar5);
-            stackPanelFiveStar.Children.Add(new TextBlock { Text = $"保底90发", FontSize = 12, Foreground = new SolidColorBrush(Colors.Gray) });
+                stackPanelDetailInfo.Children.Add(new TextBlock { Text = $"最近五星: {rank5Records.First().Time}" });
+            }
+            else
+            {
+                stackPanelDetailInfo.Children.Add(new TextBlock { Text = "最近五星: ∞" });
+            }
+
+            if (rank4Records.Any())
+            {
+                stackPanelDetailInfo.Children.Add(new TextBlock { Text = $"最近四星: {rank4Records.First().Time}" });
+            }
+            else
+            {
+                stackPanelDetailInfo.Children.Add(new TextBlock { Text = "最近四星: ∞" });
+            }
+
+            detailInfoPanel.Child = stackPanelDetailInfo;
+            contentPanel.Children.Add(detailInfoPanel);
+
+            var borderFiveStar = CreateDetailBorder();
+            var stackPanelFiveStar = new StackPanel();
+            stackPanelFiveStar.Children.Add(new TextBlock { Text = $"距离上一个五星已经垫了{countSinceLast5Star}发", FontWeight = FontWeights.Bold });
+            if (selectedCardPool != null && selectedCardPool.FiveStarPity.HasValue)
+            {
+                var progressBar5 = CreateProgressBar(countSinceLast5Star, selectedCardPool.FiveStarPity.Value);
+                stackPanelFiveStar.Children.Add(progressBar5);
+                stackPanelFiveStar.Children.Add(new TextBlock { Text = $"保底{selectedCardPool.FiveStarPity.Value}发", FontSize = 12, Foreground = new SolidColorBrush(Colors.Gray) });
+            }
             borderFiveStar.Child = stackPanelFiveStar;
-            MyStackPanel.Children.Add(borderFiveStar);
+            contentPanel.Children.Add(borderFiveStar);
 
-            // 创建四星卡片
-            Border borderFourStar = new Border
+            var borderFourStar = CreateDetailBorder();
+            var stackPanelFourStar = new StackPanel();
+            stackPanelFourStar.Children.Add(new TextBlock { Text = $"距离上一个四星已经抽了{countSinceLast4Star}发", FontWeight = FontWeights.Bold });
+
+            if (selectedCardPool != null && selectedCardPool.FourStarPity.HasValue)
+            {
+                var progressBar4 = CreateProgressBar(countSinceLast4Star, selectedCardPool.FourStarPity.Value);
+                stackPanelFourStar.Children.Add(progressBar4);
+                stackPanelFourStar.Children.Add(new TextBlock { Text = $"保底{selectedCardPool.FourStarPity.Value}发", FontSize = 12, Foreground = new SolidColorBrush(Colors.Gray) });
+            }
+            borderFourStar.Child = stackPanelFourStar;
+            contentPanel.Children.Add(borderFourStar);
+
+            scrollView.Content = contentPanel;
+            Gacha_Panel.Children.Add(scrollView);
+            Logging.Write("Finished displaying gacha details", 0);
+        }
+
+        private Border CreateDetailBorder()
+        {
+            return new Border
             {
                 Padding = new Thickness(10),
-                Margin = new Thickness(0, 4, 0, 4), // 添加一些底部间距
+                Margin = new Thickness(0, 4, 0, 4),
                 BorderBrush = new SolidColorBrush(Colors.Gray),
                 BorderThickness = new Thickness(1),
                 CornerRadius = new CornerRadius(8)
             };
-            StackPanel stackPanelFourStar = new StackPanel();
-            stackPanelFourStar.Children.Add(new TextBlock { Text = $"距离上一个四星已经抽了{RankType4}发" });
-            ProgressBar progressBar4 = new ProgressBar
+        }
+
+        private ProgressBar CreateProgressBar(int value, int maximum)
+        {
+            return new ProgressBar
             {
                 Minimum = 0,
-                Maximum = 10,
-                Value = RankType4,
+                Maximum = maximum,
+                Value = value,
                 Height = 12
             };
-            stackPanelFourStar.Children.Add(progressBar4);
-            stackPanelFourStar.Children.Add(new TextBlock { Text = $"保底10发", FontSize = 12, Foreground = new SolidColorBrush(Colors.Gray) });
-            borderFourStar.Child = stackPanelFourStar;
-            MyStackPanel.Children.Add(borderFourStar);
-            MyListView.ItemsSource = records;
-            //gacha_status.Text = "已加载本地缓存";
+        }
+
+        private List<int> CalculateIntervals(List<GachaRecord> records, string qualityLevel)
+        {
+            var intervals = new List<int>();
+            int countSinceLastStar = 0;
+
+            foreach (var record in records.AsEnumerable().Reverse())
+            {
+                countSinceLastStar++;
+
+                if (record.RankType == qualityLevel)
+                {
+                    intervals.Add(countSinceLastStar);
+                    countSinceLastStar = 0;
+                }
+            }
+
+            return intervals;
         }
 
     }

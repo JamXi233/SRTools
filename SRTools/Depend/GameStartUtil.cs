@@ -30,7 +30,6 @@ namespace SRTools.Depend
         public async void StartGame()
         {
             string userDocumentsFolderPath = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
-            await ProcessRun.SRToolsHelperAsync("/SetValue FPS " + 120);
             string gamePath = localSettings.Values["Config_GamePath"] as string;
             var processInfo = new ProcessStartInfo(gamePath);
 

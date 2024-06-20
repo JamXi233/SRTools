@@ -18,8 +18,6 @@
 
 // For more information, please refer to <https://www.gnu.org/licenses/gpl-3.0.html>
 
-using Microsoft.UI.Windowing;
-using Microsoft.UI;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using SRTools.Depend;
@@ -28,7 +26,6 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 using Windows.Storage;
-using WinRT.Interop;
 
 
 namespace SRTools
@@ -47,12 +44,14 @@ namespace SRTools
         // 导入 GetAsyncKeyState 函数
         [DllImport("User32.dll")]
         public static extern short GetAsyncKeyState(int vKey);
-        GetNotify getNotify = new GetNotify();
         internal Window m_window;
+        public static bool IsRequireReboot { get; set; } = false;
+        public static bool IsSRToolsRequireUpdate { get; set; } = false;
+        public static bool IsSRToolsHelperRequireUpdate { get; set; } = false;
 
         public App()
         {
-            this.InitializeComponent();
+            InitializeComponent();
             InitAppData();
             SetupTheme();
         }
@@ -95,7 +94,7 @@ namespace SRTools
             catch (Exception ex) 
             {
                 Logging.Write(ex.StackTrace);
-                NotificationManager.RaiseNotification("主题切换失败", ex.Message, InfoBarSeverity.Error);
+                NotificationManager.RaiseNotification("主题切换失败", ex.Message, InfoBarSeverity.Error, true, 5);
             }
             
         }
@@ -149,7 +148,6 @@ namespace SRTools
                         break;
                 }
             }
-            try { await getNotify.Get(); } catch { }
 
             if (isDebug)
             {
@@ -171,23 +169,34 @@ namespace SRTools
 
         public static class NotificationManager
         {
-            public delegate void NotificationEventHandler(string title, string message, InfoBarSeverity severity, Action action = null, string actionButtonText = null);
+            public delegate void NotificationEventHandler(string title, string message, InfoBarSeverity severity, bool isClosable = true, int TimerSec = 0, Action action = null, string actionButtonText = null);
             public static event NotificationEventHandler OnNotificationRequested;
 
-            public static void RaiseNotification(string title, string message, InfoBarSeverity severity, Action action = null, string actionButtonText = null)
+            public static void RaiseNotification(string title, string message, InfoBarSeverity severity, bool isClosable = true, int TimerSec = 0, Action action = null, string actionButtonText = null)
             {
-                OnNotificationRequested?.Invoke(title, message, severity, action, actionButtonText);
+                OnNotificationRequested?.Invoke(title, message, severity, isClosable, TimerSec, action, actionButtonText);
             }
         }
 
         public static class WaitOverlayManager
         {
-            public delegate void WaitOverlayEventHandler(bool status, bool isProgress = false, string title = null, string subtitle = null);
+            public delegate void WaitOverlayEventHandler(bool status, string title = null, string subtitle = null, bool isProgress = false, int progress = 0, bool isBtnEnabled = false, string btnContent = "", Action btnAction = null);
             public static event WaitOverlayEventHandler OnWaitOverlayRequested;
 
-            public static void RaiseWaitOverlay(bool status, bool isProgress = false, string title = null, string subtitle = null)
+            public static void RaiseWaitOverlay(bool status, string title = null, string subtitle = null, bool isProgress = false, int progress = 0, bool isBtnEnabled = false, string btnContent = "", Action btnAction = null)
             {
-                OnWaitOverlayRequested?.Invoke(status, isProgress, title, subtitle);
+                OnWaitOverlayRequested?.Invoke(status, title, subtitle, isProgress, progress, isBtnEnabled, btnContent, btnAction);
+            }
+        }
+
+        public static class DialogManager
+        {
+            public delegate void DialogEventHandler(XamlRoot xamlRoot, string title = null, string content = null, bool isPrimaryButtonEnabled = false, string primaryButtonContent = "", Action primaryButtonAction = null, bool isSecondaryButtonEnabled = false, string secondaryButtonContent = "", Action secondaryButtonAction = null);
+            public static event DialogEventHandler OnDialogRequested;
+
+            public static void RaiseDialog(XamlRoot xamlRoot, string title = null, string content = null, bool isPrimaryButtonEnabled = false, string primaryButtonContent = "", Action primaryButtonAction = null, bool isSecondaryButtonEnabled = false, string secondaryButtonContent = "", Action secondaryButtonAction = null)
+            {
+                OnDialogRequested?.Invoke(xamlRoot, title, content, isPrimaryButtonEnabled, primaryButtonContent, primaryButtonAction, isSecondaryButtonEnabled, secondaryButtonContent, secondaryButtonAction);
             }
         }
 

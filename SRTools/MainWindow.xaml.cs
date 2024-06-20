@@ -28,25 +28,22 @@ using Vanara.PInvoke;
 using Windows.Graphics;
 using WinRT.Interop;
 using Microsoft.UI.Xaml.Controls;
-using Windows.Storage;
 using SRTools.Depend;
 using System.Threading.Tasks;
 using System.IO;
 using System.Net.Http;
 using System.Text.Json;
 using Microsoft.UI.Xaml.Media.Imaging;
-using Spectre.Console;
 using Windows.System;
-using Windows.Storage.AccessCache;
-using SRTools.Views.ToolViews;
 using SRTools.Views.FirstRunViews;
-using System.Data;
-using Microsoft.UI.Xaml.Media;
 using static SRTools.App;
+using System.Diagnostics;
+using Microsoft.UI.Xaml.Media.Animation;
+using Microsoft.UI.Xaml.Media;
 
 namespace SRTools
 {
-    public partial class MainWindow : Window
+    public partial class MainWindow : Microsoft.UI.Xaml.Window
     {
         private static readonly HttpClient httpClient = new HttpClient();
         private IntPtr hwnd = IntPtr.Zero;
@@ -70,6 +67,10 @@ namespace SRTools
 
         public NavigationView NavigationView { get; }
 
+        private Action buttonAction;
+
+        private MainFrameController mainFrameController;
+
         public MainWindow()
         {
             Windows.ApplicationModel.Core.CoreApplication.UnhandledErrorDetected += OnUnhandledErrorDetected;
@@ -77,8 +78,12 @@ namespace SRTools
             InitShiftPress();
             InitializeWindowProperties();
             InitializeComponent();
+
             NotificationManager.OnNotificationRequested += AddNotification;
             WaitOverlayManager.OnWaitOverlayRequested += ShowWaitOverlay;
+            DialogManager.OnDialogRequested += ShowDialog;
+            mainFrameController = new MainFrameController(MainFrame);
+
             this.Activated += MainWindow_Activated;
             this.Closed += MainWindow_Closed;
         }
@@ -218,13 +223,11 @@ namespace SRTools
 
             float scale = (float)User32.GetDpiForWindow(hwnd) / 96;
 
-            int windowX = (int)(560 * scale);
-            int windowY = (int)(280 * scale);
             int windowWidth = (int)(1024 * scale);
             int windowHeight = (int)(584 * scale);
 
-            Logging.Write("MoveAndResize to " + windowWidth + "*" + windowHeight, 0);
-            appWindow.MoveAndResize(new RectInt32(windowX, windowY, windowWidth, windowHeight));
+            Logging.Write("Resize to " + windowWidth + "*" + windowHeight, 0);
+            appWindow.Resize(new SizeInt32(windowWidth, windowHeight));
 
             if (AppWindowTitleBar.IsCustomizationSupported())
             {
@@ -250,7 +253,6 @@ namespace SRTools
             }
 
         }
-
 
         private void RegisterSystemThemeChangeEvents(WindowId id)
         {
@@ -282,8 +284,6 @@ namespace SRTools
                 titleBar.ButtonForegroundColor = App.CurrentTheme == ApplicationTheme.Light ? Colors.Black : Colors.White;
             }
         }
-
-
         private void DisableWindowResize()
         {
             int style = NativeMethods.GetWindowLong(hwnd, NativeMethods.GWL_STYLE);
@@ -295,67 +295,51 @@ namespace SRTools
 
         private async Task BackgroundImageAsync()
         {
-            string apiUrl = "https://api-launcher-static.mihoyo.com/hkrpg_cn/mdk/launcher/api/content?filter_adv=false&key=6KcVuOkbcqjJomjZ&language=zh-cn&launcher_id=33";
-            ApiResponse response = await FetchData(apiUrl);
-            backgroundUrl = response.data.adv.background;
+            string apiUrl = "https://hyp-api.mihoyo.com/hyp/hyp-connect/api/getGames?launcher_id=jGHBHlcOq1&language=zh-cn";
+            string responseBody = await FetchData(apiUrl);
+            using (JsonDocument doc = JsonDocument.Parse(responseBody))
+            {
+                JsonElement root = doc.RootElement;
+                JsonElement games = root.GetProperty("data").GetProperty("games");
 
-            BitmapImage backgroundImage = new BitmapImage();
-            backgroundImage.UriSource = new Uri(backgroundUrl);
-            Background.ImageSource = backgroundImage;
+                foreach (JsonElement game in games.EnumerateArray())
+                {
+                    if (game.GetProperty("biz").GetString() == "hkrpg_cn")
+                    {
+                        backgroundUrl = game.GetProperty("display").GetProperty("background").GetProperty("url").GetString();
+                        break;
+                    }
+                }
+            }
+
+            if (!string.IsNullOrEmpty(backgroundUrl))
+            {
+                BitmapImage backgroundImage = new BitmapImage();
+                backgroundImage.UriSource = new Uri(backgroundUrl);
+                Background.ImageSource = backgroundImage;
+            }
         }
-
 
         private void NavView_SelectionChanged(NavigationView sender, NavigationViewSelectionChangedEventArgs args)
         {
-            NavigationViewItem item = args.SelectedItem as NavigationViewItem;
-            string tag = item.Tag.ToString();
             if (args.IsSettingsSelected)
             {
-                MainFrame.Navigate(typeof(AboutView));
+                mainFrameController.Navigate("settings");
             }
             else if (args.SelectedItemContainer != null)
             {
-                switch (args.SelectedItemContainer.Tag.ToString())
-                {
-                    case "home":
-                        MainFrame.Navigate(typeof(MainView));
-                        break;
-                    case "startgame":
-                        MainFrame.Navigate(typeof(StartGameView));
-                        break;
-                    case "gacha":
-                        MainFrame.Navigate(typeof(GachaView));
-                        break;
-                    case "flarum":
-                        MainFrame.Navigate(typeof(FlarumView));
-                        break;
-                    case "donation":
-                        MainFrame.Navigate(typeof(DonationView));
-                        break;
-                    case "account_status":
-                        MainFrame.Navigate(typeof(AccountStatusView));
-                        break;
-                    case "settings":
-                        MainFrame.Navigate(typeof(AboutView));
-                        break;
-                }
+                string tag = args.SelectedItemContainer.Tag.ToString();
+                mainFrameController.Navigate(tag);
             }
         }
 
-        public static async Task<ApiResponse> FetchData(string url)
+        private async Task<string> FetchData(string url)
         {
             HttpResponseMessage httpResponse = await httpClient.GetAsync(url);
             httpResponse.EnsureSuccessStatusCode();
-            string responseBody = await httpResponse.Content.ReadAsStringAsync();
-            return JsonSerializer.Deserialize<ApiResponse>(responseBody);
+            return await httpResponse.Content.ReadAsStringAsync();
         }
 
-        public class ApiResponse
-        {
-            public int retcode { get; set; }
-            public string message { get; set; }
-            public Data data { get; set; }
-        }
 
         private void CleanUpdate() 
         {
@@ -371,43 +355,75 @@ namespace SRTools
             }
             catch (Exception ex)
             {
-                ExpectionFileName = string.Format("SRTools_Panic_{0:yyyyMMdd_HHmmss}.SRToolsPanic", DateTime.Now);
+                string errorMessage;
+                InfoBarSeverity severity = InfoBarSeverity.Error;
+                if (ex.Message.Contains("SSL"))
+                {
+                    errorMessage = "网络连接发生错误\n" + ex.Message;
+                    severity = InfoBarSeverity.Warning;
+                }
+                else
+                {
+                    errorMessage = ex.Message.Trim() + "\n\n已生成错误报告\n如再次尝试仍会重现错误\n您可以到Github提交Issue";
+                }
+
+                ExpectionFileName = string.Format("WaveTools_Panic_{0:yyyyMMdd_HHmmss}.WaveToolsPanic", DateTime.Now);
 
                 // 显示InfoBar通知
-                var errorMessage = ex.Message.Trim() + "\n\n已生成错误报告\n如再次尝试仍会重现错误\n您可以到Github提交Issue";
-                // 调用 AddNotification 方法来显示错误信息和操作按钮
-                AddNotification("严重错误", errorMessage, InfoBarSeverity.Error, () =>
+                AddNotification("严重错误", errorMessage, severity, true, 0, () =>
                 {
                     ExpectionFolderOpen_Click();
                 }, "打开文件夹");
 
-                AnsiConsole.WriteException(ex, ExceptionFormats.ShortenPaths | ExceptionFormats.ShortenTypes | ExceptionFormats.ShortenMethods | ExceptionFormats.ShowLinks | ExceptionFormats.Default);
-                await ExceptionSave.Write("源:" + ex.Source + "\n错误标题:" + ex.Message + "\n堆栈跟踪:\n" + ex.StackTrace + "\n内部异常:\n" + ex.InnerException + "\n结束代码:" + ex.HResult, 1, ExpectionFileName);
+                Spectre.Console.AnsiConsole.WriteException(ex, Spectre.Console.ExceptionFormats.ShortenPaths | Spectre.Console.ExceptionFormats.ShortenTypes | Spectre.Console.ExceptionFormats.ShortenMethods | Spectre.Console.ExceptionFormats.ShowLinks | Spectre.Console.ExceptionFormats.Default);
+                await ExceptionSave.Write("源:" + ex.Source + "\n错误标题:" + ex.Message + "\n堆栈跟踪:\n" + ex.StackTrace + "\n内部异常:\n" + ex.InnerException + "\n结束代码:" + ex.HResult + "\n完整错误:\n" + ex.ToString(), 1, ExpectionFileName);
             }
         }
 
-        private async void ExpectionFolderOpen_Click() 
+        private void ExpectionFolderOpen_Click()
         {
-            StorageFolder folder = await KnownFolders.DocumentsLibrary.CreateFolderAsync("JSG-LLC\\Panic", CreationCollisionOption.OpenIfExists);
-            // 获取指定文件
-            StorageFile file = await folder.GetFileAsync(ExpectionFileName);
-            // 将文件添加到最近使用列表中
-            StorageApplicationPermissions.MostRecentlyUsedList.Add(file);
-            await Launcher.LaunchFolderAsync(folder, new FolderLauncherOptions { ItemsToSelect = { file } });
+            string folderPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "JSG-LLC", "Panic");
+            Directory.CreateDirectory(folderPath);
+            string filePath = Path.Combine(folderPath, ExpectionFileName);
+            if (!File.Exists(filePath))
+            {
+                File.Create(filePath).Dispose();
+            }
+            Process.Start("explorer.exe", folderPath);
         }
 
-
-        public void AddNotification(string title, string message, InfoBarSeverity severity, Action actionButtonAction = null, string actionButtonText = null)
+        private DateTime lastNotificationTime = DateTime.MinValue;
+        private const int ThrottleTimeMilliseconds = 50;
+        public async void AddNotification(string title, string message, InfoBarSeverity severity, bool isClosable = true, int TimerSec = 0, Action actionButtonAction = null, string actionButtonText = null)
         {
-            var infoBar = new InfoBar
+            DateTime currentTime = DateTime.Now;
+            if ((currentTime - lastNotificationTime).TotalMilliseconds < ThrottleTimeMilliseconds)
             {
-                Title = title,
+                await Task.Delay(ThrottleTimeMilliseconds);
+            }
+            lastNotificationTime = DateTime.Now;
+
+            if (IsNotificationPresent(message))
+            {
+                Logging.Write($"Notification with title '{title}' already present, skipping.", 1);
+                return;
+            }
+
+            Logging.WriteNotification(title, message, (int)severity);
+            string titleWithDate = $"{title}";
+            InfoBar infoBar = new InfoBar
+            {
+                Title = titleWithDate,
                 Message = message,
                 Severity = severity,
                 IsOpen = true,
-                VerticalAlignment = Microsoft.UI.Xaml.VerticalAlignment.Top,
-                Margin = new Thickness(0, 0, 0, 5),
+                VerticalAlignment = VerticalAlignment.Top,
+                Margin = new Thickness(0, 0, 0, 8),
+                Opacity = 0,
+                RenderTransform = new TranslateTransform(),
+                IsClosable = isClosable
             };
+
             if (actionButtonText != null)
             {
                 var actionButton = new Button { Content = actionButtonText };
@@ -417,31 +433,226 @@ namespace SRTools
                 }
                 infoBar.ActionButton = actionButton;
             }
+
             infoBar.CloseButtonClick += (sender, args) =>
             {
-                InfoBarPanel.Children.Remove(sender as InfoBar);
+                InfoBarPanel.Children.Remove(infoBar);
             };
-            InfoBarPanel.Children.Add(infoBar);
-            Logging.WriteNotification(title, message);
+
+            Storyboard moveDownStoryboard = new Storyboard();
+            foreach (UIElement child in InfoBarPanel.Children)
+            {
+                TranslateTransform transform = new TranslateTransform();
+                child.RenderTransform = transform;
+
+                DoubleAnimation moveDownAnimation = new DoubleAnimation
+                {
+                    Duration = new Duration(TimeSpan.FromSeconds(0.2)),
+                    From = -20,
+                    To = infoBar.ActualHeight,
+                    EasingFunction = new BackEase { EasingMode = EasingMode.EaseOut }
+                };
+                Storyboard.SetTarget(moveDownAnimation, child);
+                Storyboard.SetTargetProperty(moveDownAnimation, "(UIElement.RenderTransform).(TranslateTransform.Y)");
+
+                moveDownStoryboard.Children.Add(moveDownAnimation);
+            }
+            InfoBarPanel.Children.Insert(0, infoBar);
+            Storyboard flyInStoryboard = new Storyboard();
+
+            DoubleAnimation translateInAnimation = new DoubleAnimation
+            {
+                Duration = new Duration(TimeSpan.FromSeconds(0.2)),
+                From = 40,
+                To = 0,
+                EasingFunction = new BackEase { EasingMode = EasingMode.EaseOut }
+            };
+            Storyboard.SetTarget(translateInAnimation, infoBar);
+            Storyboard.SetTargetProperty(translateInAnimation, "(UIElement.RenderTransform).(TranslateTransform.X)");
+
+            DoubleAnimation fadeInAnimation = new DoubleAnimation
+            {
+                Duration = new Duration(TimeSpan.FromSeconds(0.5)),
+                From = 0,
+                To = 1,
+                EasingFunction = new BackEase { EasingMode = EasingMode.EaseOut }
+            };
+            Storyboard.SetTarget(fadeInAnimation, infoBar);
+            Storyboard.SetTargetProperty(fadeInAnimation, "Opacity");
+
+            moveDownStoryboard.Begin();
+            flyInStoryboard.Children.Add(translateInAnimation);
+            flyInStoryboard.Children.Add(fadeInAnimation);
+            flyInStoryboard.Begin();
+            await Task.Delay(10);
+
+            if (TimerSec > 0)
+            {
+                ProgressBar progressBar = new ProgressBar
+                {
+                    Width = 300,
+                    Height = 2,
+                    IsIndeterminate = false,
+                    Margin = new Thickness(-48, -4, 0, 0),
+                    Maximum = 100,
+                    Value = 100,
+                    
+                };
+
+                if (isClosable)
+                {
+                    progressBar.Margin = new Thickness(-54, -4, -48, 0);
+                }
+
+                infoBar.Content = progressBar;
+                var timer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(TimerSec * 10) };
+                timer.Start();
+                timer.Tick += async (s, e) =>
+                {
+                    if (progressBar.Value > 0)
+                    {
+                        progressBar.Value -= 1;
+                    }
+                    else
+                    {
+                        timer.Stop();
+                        Storyboard closeStoryboard = new Storyboard();
+
+                        DoubleAnimation translateOutAnimation = new DoubleAnimation
+                        {
+                            Duration = new Duration(TimeSpan.FromSeconds(0.3)),
+                            From = 0,
+                            To = 40,
+                            EasingFunction = new BackEase { EasingMode = EasingMode.EaseIn }
+                        };
+                        Storyboard.SetTarget(translateOutAnimation, infoBar);
+                        Storyboard.SetTargetProperty(translateOutAnimation, "(UIElement.RenderTransform).(TranslateTransform.X)");
+
+                        DoubleAnimation fadeOutAnimation = new DoubleAnimation
+                        {
+                            Duration = new Duration(TimeSpan.FromSeconds(0.3)),
+                            From = 1,
+                            To = 0,
+                            EasingFunction = new BackEase { EasingMode = EasingMode.EaseIn }
+                        };
+                        Storyboard.SetTarget(fadeOutAnimation, infoBar);
+                        Storyboard.SetTargetProperty(fadeOutAnimation, "Opacity");
+                        closeStoryboard.Children.Add(translateOutAnimation);
+                        closeStoryboard.Children.Add(fadeOutAnimation);
+
+                        closeStoryboard.Completed += (s, e) =>
+                        {
+                            infoBar.IsOpen = false;
+                            InfoBarPanel.Children.Remove(infoBar);
+                        };
+
+                        closeStoryboard.Begin();
+                    }
+                };
+            }
         }
 
-        public void ShowWaitOverlay(bool status, bool isProgress = false, string title = null, string subtitle = null)
+        public bool IsNotificationPresent(string message)
+        {
+            foreach (InfoBar infoBar in InfoBarPanel.Children)
+            {
+                if (infoBar.Message == message)
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+
+        public async void ShowWaitOverlay(bool status, string title = null, string subtitle = null, bool isProgress = false, int progress = 0, bool isBtnEnabled = false, string btnContent = "", Action btnAction = null)
         {
             if (status)
             {
+                if(WaitOverlay.Visibility != Visibility.Visible) FadeInStoryboard.Begin();
                 WaitOverlay.Visibility = Visibility.Visible;
-                if (isProgress) WaitOverlay_Progress.Visibility = Visibility.Visible;
-                else WaitOverlay_Success.Visibility = Visibility.Visible;
+                if (isProgress) { WaitOverlay_Progress_Grid.Visibility = Visibility.Visible; WaitOverlay_Progress.Visibility = Visibility.Visible; }
+                else WaitOverlay_Progress_Grid.Visibility = Visibility.Collapsed;
+                if (progress > 0)
+                {
+                    WaitOverlay_ProgressBar.Visibility = Visibility.Visible;
+                    WaitOverlay_ProgressBar_Value.Visibility = Visibility.Visible;
+                    WaitOverlay_ProgressBar.Value = progress;
+                    WaitOverlay_ProgressBar_Value.Text = progress.ToString() + "%";
+                }
+                else
+                {
+                    WaitOverlay_ProgressBar.Visibility = Visibility.Collapsed;
+                    WaitOverlay_ProgressBar_Value.Visibility = Visibility.Collapsed;
+                }
+
                 WaitOverlay_Title.Text = title;
                 WaitOverlay_SubTitle.Text = subtitle;
+
+                if (isBtnEnabled)
+                {
+                    WaitOverlay_Button.Visibility = Visibility.Visible;
+                    WaitOverlay_Button.IsEnabled = true;
+                    buttonAction = btnAction;
+                    if (btnContent != "") WaitOverlay_Button.Content = btnContent;
+                }
+                else
+                {
+                    WaitOverlay_Button.Visibility = Visibility.Collapsed;
+                    WaitOverlay_Button.IsEnabled = false;
+                    buttonAction = null;
+                }
             }
-            else WaitOverlay.Visibility = Visibility.Collapsed;
+            else
+            {
+                if (WaitOverlay.Visibility != Visibility.Collapsed) FadeOutStoryboard.Begin();
+                await Task.Delay(100);
+                WaitOverlay.Visibility = Visibility.Collapsed;
+                WaitOverlay_Progress.Visibility = Visibility.Collapsed;
+                WaitOverlay_Success.Visibility = Visibility.Collapsed;
+                WaitOverlay_Button.Visibility = Visibility.Collapsed;
+                WaitOverlay_Button.IsEnabled = false;
+                buttonAction = null;
+            }
+        }
+
+        private void WaitOverlayButton_Click(object sender, RoutedEventArgs e)
+        {
+            buttonAction?.Invoke();
+        }
+
+        private async void ShowDialog(XamlRoot xamlRoot, string title = null, string content = null, bool isPrimaryButtonEnabled = false, string primaryButtonContent = "", Action primaryButtonAction = null, bool isSecondaryButtonEnabled = false, string secondaryButtonContent = "", Action secondaryButtonAction = null)
+        {
+            ContentDialog dialog = new ContentDialog();
+
+            // XamlRoot must be set in the case of a ContentDialog running in a Desktop app
+            dialog.XamlRoot = xamlRoot;
+            dialog.Style = Application.Current.Resources["DefaultContentDialogStyle"] as Style;
+            dialog.Title = title;
+            dialog.PrimaryButtonText = isPrimaryButtonEnabled ? primaryButtonContent : null;
+            dialog.SecondaryButtonText = isSecondaryButtonEnabled ? secondaryButtonContent : null;
+            dialog.CloseButtonText = "关闭";
+            dialog.DefaultButton = ContentDialogButton.Primary;
+            dialog.Content = new TextBlock { Text = content, FontSize = 14 };
+            if (isPrimaryButtonEnabled)
+            {
+                dialog.PrimaryButtonClick += (sender, args) => primaryButtonAction?.Invoke();
+            }
+
+            if (isSecondaryButtonEnabled)
+            {
+                dialog.SecondaryButtonClick += (sender, args) => secondaryButtonAction?.Invoke();
+            }
+
+            var result = await dialog.ShowAsync();
+
         }
 
         private void MainWindow_Closed(object sender, WindowEventArgs e)
         {
             NotificationManager.OnNotificationRequested -= AddNotification;
             WaitOverlayManager.OnWaitOverlayRequested -= ShowWaitOverlay;
+            DialogManager.OnDialogRequested -= ShowDialog;
         }
 
     }

@@ -19,10 +19,7 @@
 // For more information, please refer to <https://www.gnu.org/licenses/gpl-3.0.html>
 
 using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using Windows.Storage;
 
@@ -33,16 +30,20 @@ namespace SRTools.Depend
         public static async Task Write(string message, int severity, string fileName)
         {
             // 获取用户文档目录下的JSG-LLC\Panic目录
-            StorageFolder folder = await KnownFolders.DocumentsLibrary.CreateFolderAsync("JSG-LLC\\Panic", CreationCollisionOption.OpenIfExists);
+            string folderPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "JSG-LLC", "Panic");
 
-            // 创建或覆盖log.txt文件
-            StorageFile file = await folder.CreateFileAsync(fileName, CreationCollisionOption.ReplaceExisting);
+            // 确保目录存在
+            Directory.CreateDirectory(folderPath);
 
-            // 将ex变量内容写入文件
-            using (StreamWriter writer = new StreamWriter(await file.OpenStreamForWriteAsync()))
+            // 创建文件路径
+            string filePath = Path.Combine(folderPath, fileName);
+
+            // 使用StreamWriter异步写入数据
+            using (StreamWriter writer = new StreamWriter(filePath, false)) // false表示覆盖文件
             {
-                await writer.WriteLineAsync(DateTime.Now.ToString() + " [" + severity.ToString() + "] \n" + message);
+                await writer.WriteLineAsync($"{DateTime.Now} [{severity}] {message}");
             }
         }
+
     }
 }

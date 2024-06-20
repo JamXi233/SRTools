@@ -94,47 +94,9 @@ namespace SRTools.Depend
             // 打开字体文件以供用户安装
             Process.Start("explorer", fontFilePath);
 
-            App.WaitOverlayManager.RaiseWaitOverlay(true, true, "请点击安装", "安装后需要重启工具箱来生效");
+            App.WaitOverlayManager.RaiseWaitOverlay(true, "请点击安装", "安装后需要重启工具箱来生效", false, 0);
 
-            // 异步等待用户完成安装
-            await Task.Delay(2000); // 10秒后提示重启，可以根据需要调整时间
-
-            // 提示用户重启应用
-            await ProcessRun.RestartApp();
             return 0; // 表示字体文件已打开等待用户操作
-        }
-
-
-        public static bool StartInstallFont(string fontFilePath)
-        {
-            try
-            {
-                string fontName = Path.GetFileNameWithoutExtension(fontFilePath);
-                string fontsPath = Environment.GetFolderPath(Environment.SpecialFolder.Fonts);
-                string destination = Path.Combine(fontsPath, Path.GetFileName(fontFilePath));
-
-                // 复制字体文件到Windows字体目录
-                File.Copy(fontFilePath, destination, true);
-
-                // 将字体注册到注册表中
-                using (RegistryKey fonts = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Microsoft\Windows NT\CurrentVersion\Fonts", true))
-                {
-                    if (fonts == null)
-                    {
-                        Console.WriteLine("无法打开注册表字体项");
-                        return false;
-                    }
-
-                    fonts.SetValue(fontName, Path.GetFileName(fontFilePath));
-                }
-
-                return true;
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"安装字体时出错: {ex.Message}");
-                return false;
-            }
         }
     }
 }

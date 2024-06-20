@@ -33,17 +33,15 @@ namespace SRTools.Depend
 {
     public class GetNotify
     {
-        public string post_id { get; set; }
+        public string id { get; set; }
         public string type { get; set; }
-        public string tittle { get; set; }
-        public string url { get; set; }
-        public string show_time { get; set; }
-        public string order { get; set; }
         public string title { get; set; }
+        public string link { get; set; }
+        public string date { get; set; }
 
         public async Task Get()
         {
-            string apiAddress = "https://api-launcher-static.mihoyo.com/hkrpg_cn/mdk/launcher/api/content?filter_adv=false&key=6KcVuOkbcqjJomjZ&language=zh-cn&launcher_id=33";
+            string apiAddress = "https://hyp-api.mihoyo.com/hyp/hyp-connect/api/getGameContent?launcher_id=jGHBHlcOq1&game_id=64kMb5iAWu&language=zh-cn";
 
             using (HttpClient client = new HttpClient())
             {
@@ -52,28 +50,35 @@ namespace SRTools.Depend
 
                 // 将API响应转换为JSON对象并筛选特定类型的帖子
                 var jsonObject = JObject.Parse(jsonResponse);
-                var activityPosts = jsonObject["data"]["post"]
+                var activityPosts = jsonObject["data"]["content"]["posts"]
                     .Where(p => (string)p["type"] == "POST_TYPE_ACTIVITY")
                     .OrderByDescending(p => (string)p["type"])
                     .ToList();
-                var announcePosts = jsonObject["data"]["post"]
+                var announcePosts = jsonObject["data"]["content"]["posts"]
                     .Where(p => (string)p["type"] == "POST_TYPE_ANNOUNCE")
                     .OrderByDescending(p => (string)p["type"])
                     .ToList();
-                var infoPosts = jsonObject["data"]["post"]
+                var infoPosts = jsonObject["data"]["content"]["posts"]
                     .Where(p => (string)p["type"] == "POST_TYPE_INFO")
                     .OrderByDescending(p => (string)p["type"])
                     .ToList();
 
+                // 获取用户文档目录下的JSG-LLC\SRTools\Posts目录
+                string documentsPath = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+                string srtoolsFolderPath = Path.Combine(documentsPath, "JSG-LLC", "SRTools", "Posts");
+
+                // 确保目录存在
+                Directory.CreateDirectory(srtoolsFolderPath);
+
+                // 文件路径
+                string activityFilePath = Path.Combine(srtoolsFolderPath, "activity.json");
+                string announceFilePath = Path.Combine(srtoolsFolderPath, "announce.json");
+                string infoFilePath = Path.Combine(srtoolsFolderPath, "info.json");
+
                 // 将结果保存到文件中
-                var folder = KnownFolders.DocumentsLibrary;
-                var srtoolsFolder = await folder.CreateFolderAsync("JSG-LLC\\SRTools", CreationCollisionOption.OpenIfExists);
-                var activityFile = await srtoolsFolder.CreateFileAsync("Posts\\activity.json", CreationCollisionOption.OpenIfExists);
-                var announceFile = await srtoolsFolder.CreateFileAsync("Posts\\announce.json", CreationCollisionOption.OpenIfExists);
-                var infoFile = await srtoolsFolder.CreateFileAsync("Posts\\info.json", CreationCollisionOption.OpenIfExists);
-                await File.WriteAllTextAsync(activityFile.Path, JArray.FromObject(activityPosts).ToString());
-                await File.WriteAllTextAsync(announceFile.Path, JArray.FromObject(announcePosts).ToString());
-                await File.WriteAllTextAsync(infoFile.Path, JArray.FromObject(infoPosts).ToString());
+                File.WriteAllTextAsync(activityFilePath, JArray.FromObject(activityPosts).ToString());
+                File.WriteAllTextAsync(announceFilePath, JArray.FromObject(announcePosts).ToString());
+                File.WriteAllTextAsync(infoFilePath, JArray.FromObject(infoPosts).ToString());
             }
         }
 

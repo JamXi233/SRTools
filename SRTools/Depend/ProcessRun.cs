@@ -22,6 +22,8 @@ using System;
 using System.Diagnostics;
 using System.IO;
 using System.Threading.Tasks;
+using Microsoft.UI.Xaml.Controls;
+using static SRTools.App;
 
 namespace SRTools.Depend
 {
@@ -31,40 +33,80 @@ namespace SRTools.Depend
         {
             return await Task.Run(() =>
             {
-                using (Process process = new Process())
+                try
                 {
-                    process.StartInfo.UseShellExecute = false;
-                    process.StartInfo.RedirectStandardOutput = true;
-                    process.StartInfo.FileName = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments) + @"\JSG-LLC\SRTools\Depends\SRToolsHelper\SRToolsHelper.exe";
-                    process.StartInfo.Arguments = args;
-                    process.Start();
-                    string output = process.StandardOutput.ReadToEnd();
-                    process.WaitForExit();
-                    Logging.Write(output.Trim(), 3, "SRToolsHelper");
-                    return output.Trim();
+                    using (Process process = new Process())
+                    {
+                        process.StartInfo.UseShellExecute = false;
+                        process.StartInfo.RedirectStandardOutput = true;
+                        process.StartInfo.RedirectStandardError = true; // 捕获标准错误输出
+                        process.StartInfo.FileName = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), @"JSG-LLC\SRTools\Depends\SRToolsHelper\SRToolsHelper.exe");
+                        process.StartInfo.Arguments = args;
+
+                        Logging.Write($"Starting process: {process.StartInfo.FileName} with arguments: {args}", 0, "SRToolsHelper");
+
+                        process.Start();
+
+
+                        // 同时读取标准输出和标准错误
+                        string output = process.StandardOutput.ReadToEnd();
+                        string error = process.StandardError.ReadToEnd();
+
+                        process.WaitForExit();
+
+                        if (!string.IsNullOrEmpty(error))
+                        {
+                            Logging.Write($"Error: {error}", 3, "SRToolsHelper");
+                        }
+
+                        Logging.Write(output.Trim(), 3, "SRToolsHelper");
+                        return output.Trim();
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Logging.Write($"Exception in SRToolsHelperAsync: {ex.Message}", 3, "SRToolsHelper");
+                    throw;
                 }
             });
         }
 
+        public static void StopSRToolsHelperProcess()
+        {
+            try
+            {
+                foreach (var process in Process.GetProcessesByName("SRToolsHelper"))
+                {
+                    process.Kill();
+                }
+                NotificationManager.RaiseNotification("SRToolsHelper", "已停止依赖运行", InfoBarSeverity.Warning, true, 3);
+            }
+            catch (Exception ex)
+            {
+                NotificationManager.RaiseNotification("错误", "停止SRToolsHelper失败" + ex.ToString(), InfoBarSeverity.Error, true, 3);
+            }
+        }
+
+        public static void StopSRProcess()
+        {
+            foreach (var process in Process.GetProcessesByName("Star Rail"))
+            {
+                process.Kill();
+            }
+        }
+
         public async static Task RestartApp()
         {
-            // 获取当前应用程序的进程 ID 和文件路径
+            Logging.Write("Restart SRTools Requested", 2);
             var processId = Process.GetCurrentProcess().Id;
             var fileName = Process.GetCurrentProcess().MainModule.FileName;
-
-            // 启动一个新的应用程序实例
             ProcessStartInfo info = new ProcessStartInfo(fileName)
             {
                 UseShellExecute = true,
             };
             Process.Start(info);
-
-            // 给新的实例一些时间来启动
-            await Task.Delay(100); // 延迟时间可能需要根据应用程序的启动时间来调整
-
-            // 关闭当前应用程序实例
+            await Task.Delay(100);
             Process.GetProcessById(processId).Kill();
         }
-
     }
 }

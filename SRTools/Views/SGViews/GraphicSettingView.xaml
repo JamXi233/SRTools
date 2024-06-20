@@ -7,7 +7,7 @@
     mc:Ignorable="d">
 
     <Grid>
-        <ScrollViewer>
+        <ScrollViewer x:Name="DDB_Main" Visibility="Collapsed">
 
             <StackPanel Orientation="Vertical">
 
@@ -24,8 +24,8 @@
                         <RowDefinition Height="Auto"/>
                         <!-- 下方 -->
                     </Grid.RowDefinitions>
-                    <TextBlock Text="帧率" FontSize="15" FontWeight="Bold" Margin="0 8 0 8"/>
-                    <DropDownButton x:Name="DDB_FPS" Content="Email" Grid.Column="1" HorizontalAlignment="Right" Margin="8">
+                    <TextBlock Text="帧率" FontSize="15" FontWeight="Bold" Margin="0 14 0 0"/>
+                    <DropDownButton x:Name="DDB_FPS" Content="" Grid.Column="1" HorizontalAlignment="Right" Margin="8">
                         <DropDownButton.Flyout>
                             <MenuFlyout Placement="Bottom">
                                 <MenuFlyoutItem Tag="FPS" x:Name="DDB_FPS_30" Text="30" Click="ChangeGraphic"/>
@@ -50,8 +50,8 @@
                         <RowDefinition Height="Auto"/>
                         <!-- 下方 -->
                     </Grid.RowDefinitions>
-                    <TextBlock Text="垂直同步" FontSize="15" FontWeight="Bold" Margin="0 8 0 8"/>
-                    <DropDownButton x:Name="DDB_EnableVSync" Content="Email" Grid.Column="1" HorizontalAlignment="Right" Margin="8">
+                    <TextBlock Text="垂直同步" FontSize="15" FontWeight="Bold" Margin="0 14 0 0"/>
+                    <DropDownButton x:Name="DDB_EnableVSync" Content="" Grid.Column="1" HorizontalAlignment="Right" Margin="8">
                         <DropDownButton.Flyout>
                             <MenuFlyout Placement="Bottom">
                                 <MenuFlyoutItem Tag="EnableVSync" Text="开" Click="ChangeGraphic"/>
@@ -74,8 +74,8 @@
                         <RowDefinition Height="Auto"/>
                         <!-- 下方 -->
                     </Grid.RowDefinitions>
-                    <TextBlock Text="渲染精度" FontSize="15" FontWeight="Bold" Margin="0 8 0 8"/>
-                    <DropDownButton x:Name="DDB_RenderScale" Content="Email" Grid.Column="1" HorizontalAlignment="Right" Margin="8">
+                    <TextBlock Text="渲染精度" FontSize="15" FontWeight="Bold" Margin="0 14 0 0"/>
+                    <DropDownButton x:Name="DDB_RenderScale" Content="" Grid.Column="1" HorizontalAlignment="Right" Margin="8">
                         <DropDownButton.Flyout>
                             <MenuFlyout Placement="Bottom">
                                 <MenuFlyoutItem Tag="RenderScale" Text="0.6" Click="ChangeGraphic"/>
@@ -104,8 +104,8 @@
                         <RowDefinition Height="Auto"/>
                         <!-- 下方 -->
                     </Grid.RowDefinitions>
-                    <TextBlock Text="阴影质量" FontSize="15" FontWeight="Bold" Margin="0 8 0 8"/>
-                    <DropDownButton x:Name="DDB_ShadowQuality" Content="Email" Grid.Column="1" HorizontalAlignment="Right" Margin="8">
+                    <TextBlock Text="阴影质量" FontSize="15" FontWeight="Bold" Margin="0 14 0 0"/>
+                    <DropDownButton x:Name="DDB_ShadowQuality" Content="" Grid.Column="1" HorizontalAlignment="Right" Margin="8">
                         <DropDownButton.Flyout>
                             <MenuFlyout Placement="Bottom">
                                 <MenuFlyoutItem Tag="ShadowQuality" Text="关" Click="ChangeGraphic"/>
@@ -132,8 +132,8 @@
                         <RowDefinition Height="Auto"/>
                         <!-- 下方 -->
                     </Grid.RowDefinitions>
-                    <TextBlock Text="反射质量" FontSize="15" FontWeight="Bold" Margin="0 8 0 8"/>
-                    <DropDownButton x:Name="DDB_ReflectionQuality" Content="Email" Grid.Column="1" HorizontalAlignment="Right" Margin="8">
+                    <TextBlock Text="反射质量" FontSize="15" FontWeight="Bold" Margin="0 14 0 0"/>
+                    <DropDownButton x:Name="DDB_ReflectionQuality" Content="" Grid.Column="1" HorizontalAlignment="Right" Margin="8">
                         <DropDownButton.Flyout>
                             <MenuFlyout Placement="Bottom">
                                 <MenuFlyoutItem Tag="ReflectionQuality" Text="关" Click="ChangeGraphic"/>
@@ -160,8 +160,8 @@
                         <RowDefinition Height="Auto"/>
                         <!-- 下方 -->
                     </Grid.RowDefinitions>
-                    <TextBlock Text="角色质量" FontSize="15" FontWeight="Bold" Margin="0 8 0 8"/>
-                    <DropDownButton x:Name="DDB_CharacterQuality" Content="Email" Grid.Column="1" HorizontalAlignment="Right" Margin="8">
+                    <TextBlock Text="角色质量" FontSize="15" FontWeight="Bold" Margin="0 14 0 0"/>
+                    <DropDownButton x:Name="DDB_CharacterQuality" Content="" Grid.Column="1" HorizontalAlignment="Right" Margin="8">
                         <DropDownButton.Flyout>
                             <MenuFlyout Placement="Bottom">
                                 <MenuFlyoutItem Tag="CharacterQuality" Text="关" Click="ChangeGraphic"/>
@@ -188,8 +188,32 @@
                         <RowDefinition Height="Auto"/>
                         <!-- 下方 -->
                     </Grid.RowDefinitions>
-                    <TextBlock Text="场景细节" FontSize="15" FontWeight="Bold" Margin="0 8 0 8"/>
-                    <DropDownButton x:Name="DDB_EnvDetailQuality" Content="Email" Grid.Column="1" HorizontalAlignment="Right" Margin="8">
+                    <TextBlock Text="地图探索中实时阴影" FontSize="15" FontWeight="Bold" Margin="0 14 0 0"/>
+                    <DropDownButton x:Name="DDB_EnableSelfShadow" Content="" Grid.Column="1" HorizontalAlignment="Right" Margin="8">
+                        <DropDownButton.Flyout>
+                            <MenuFlyout Placement="Bottom">
+                                <MenuFlyoutItem Tag="EnableSelfShadow" Text="开" Click="ChangeGraphic"/>
+                                <MenuFlyoutItem Tag="EnableSelfShadow" Text="关" Click="ChangeGraphic"/>
+                            </MenuFlyout>
+                        </DropDownButton.Flyout>
+                    </DropDownButton>
+                </Grid>
+
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <!-- 左侧 -->
+                        <ColumnDefinition Width="Auto"/>
+                        <!-- 右侧 -->
+                    </Grid.ColumnDefinitions>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <!-- 上方 -->
+                        <RowDefinition Height="Auto"/>
+                        <!-- 下方 -->
+                    </Grid.RowDefinitions>
+                    <TextBlock Text="场景细节" FontSize="15" FontWeight="Bold" Margin="0 14 0 0"/>
+                    <DropDownButton x:Name="DDB_EnvDetailQuality" Content="" Grid.Column="1" HorizontalAlignment="Right" Margin="8">
                         <DropDownButton.Flyout>
                             <MenuFlyout Placement="Bottom">
                                 <MenuFlyoutItem Tag="EnvDetailQuality" Text="关" Click="ChangeGraphic"/>
@@ -216,8 +240,8 @@
                         <RowDefinition Height="Auto"/>
                         <!-- 下方 -->
                     </Grid.RowDefinitions>
-                    <TextBlock Text="特效质量" FontSize="15" FontWeight="Bold" Margin="0 8 0 8"/>
-                    <DropDownButton x:Name="DDB_SFXQuality" Content="Email" Grid.Column="1" HorizontalAlignment="Right" Margin="8">
+                    <TextBlock Text="特效质量" FontSize="15" FontWeight="Bold" Margin="0 14 0 0"/>
+                    <DropDownButton x:Name="DDB_SFXQuality" Content="" Grid.Column="1" HorizontalAlignment="Right" Margin="8">
                         <DropDownButton.Flyout>
                             <MenuFlyout Placement="Bottom">
                                 <MenuFlyoutItem Tag="SFXQuality" Text="关" Click="ChangeGraphic"/>
@@ -225,7 +249,6 @@
                                 <MenuFlyoutItem Tag="SFXQuality" Text="低" Click="ChangeGraphic"/>
                                 <MenuFlyoutItem Tag="SFXQuality" Text="中" Click="ChangeGraphic"/>
                                 <MenuFlyoutItem Tag="SFXQuality" Text="高" Click="ChangeGraphic"/>
-                                <MenuFlyoutItem Tag="SFXQuality" Text="非常高" Click="ChangeGraphic"/>
                             </MenuFlyout>
                         </DropDownButton.Flyout>
                     </DropDownButton>
@@ -244,8 +267,8 @@
                         <RowDefinition Height="Auto"/>
                         <!-- 下方 -->
                     </Grid.RowDefinitions>
-                    <TextBlock Text="泛光效果" FontSize="15" FontWeight="Bold" Margin="0 8 0 8"/>
-                    <DropDownButton x:Name="DDB_BloomQuality" Content="Email" Grid.Column="1" HorizontalAlignment="Right" Margin="8">
+                    <TextBlock Text="泛光效果" FontSize="15" FontWeight="Bold" Margin="0 14 0 0"/>
+                    <DropDownButton x:Name="DDB_BloomQuality" Content="" Grid.Column="1" HorizontalAlignment="Right" Margin="8">
                         <DropDownButton.Flyout>
                             <MenuFlyout Placement="Bottom">
                                 <MenuFlyoutItem Tag="BloomQuality" Text="关" Click="ChangeGraphic"/>
@@ -272,8 +295,8 @@
                         <RowDefinition Height="Auto"/>
                         <!-- 下方 -->
                     </Grid.RowDefinitions>
-                    <TextBlock Text="抗锯齿" FontSize="15" FontWeight="Bold" Margin="0 8 0 8"/>
-                    <DropDownButton x:Name="DDB_AAMode" Content="Email" Grid.Column="1" HorizontalAlignment="Right" Margin="8">
+                    <TextBlock Text="抗锯齿" FontSize="15" FontWeight="Bold" Margin="0 14 0 0"/>
+                    <DropDownButton x:Name="DDB_AAMode" Content="" Grid.Column="1" HorizontalAlignment="Right" Margin="8">
                         <DropDownButton.Flyout>
                             <MenuFlyout Placement="Bottom">
                                 <MenuFlyoutItem Tag="AAMode" Text="关" Click="ChangeGraphic"/>
@@ -297,8 +320,8 @@
                         <RowDefinition Height="Auto"/>
                         <!-- 下方 -->
                     </Grid.RowDefinitions>
-                    <TextBlock Text="光照质量" FontSize="15" FontWeight="Bold" Margin="0 8 0 8"/>
-                    <DropDownButton x:Name="DDB_LightQuality" Content="Email" Grid.Column="1" HorizontalAlignment="Right" Margin="8">
+                    <TextBlock Text="光照质量" FontSize="15" FontWeight="Bold" Margin="0 14 0 0"/>
+                    <DropDownButton x:Name="DDB_LightQuality" Content="" Grid.Column="1" HorizontalAlignment="Right" Margin="8">
                         <DropDownButton.Flyout>
                             <MenuFlyout Placement="Bottom">
                                 <MenuFlyoutItem Tag="LightQuality" Text="关" Click="ChangeGraphic"/>
@@ -312,9 +335,37 @@
                     </DropDownButton>
                 </Grid>
 
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <!-- 左侧 -->
+                        <ColumnDefinition Width="Auto"/>
+                        <!-- 右侧 -->
+                    </Grid.ColumnDefinitions>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <!-- 上方 -->
+                        <RowDefinition Height="Auto"/>
+                        <!-- 下方 -->
+                    </Grid.RowDefinitions>
+                    <TextBlock Text="MetalFX(不可用)" FontSize="15" FontWeight="Bold" Margin="0 14 0 0"/>
+                    <DropDownButton x:Name="DDB_EnableMetalFXSU" Content="" Grid.Column="1" HorizontalAlignment="Right" Margin="8">
+                        <DropDownButton.Flyout>
+                            <MenuFlyout Placement="Bottom">
+                                <MenuFlyoutItem Tag="EnableMetalFXSU" Text="开" Click="ChangeGraphic"/>
+                                <MenuFlyoutItem Tag="EnableMetalFXSU" Text="关" Click="ChangeGraphic"/>
+                            </MenuFlyout>
+                        </DropDownButton.Flyout>
+                    </DropDownButton>
+                </Grid>
+
             </StackPanel>
 
         </ScrollViewer>
+
+        <Grid x:Name="DDB_Load" Background="Transparent" CornerRadius="8">
+            <ProgressRing/>
+        </Grid>
 
     </Grid>
 </Page>

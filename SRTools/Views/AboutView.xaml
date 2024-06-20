@@ -37,8 +37,6 @@
                         <Button x:Name="checkDependUpdate" Click="Check_Depend_Update" Content="检查依赖更新" Margin="0 0 0 10"/>
                         <RadioButtons x:Name="userviceRadio" Header="更新渠道" FontSize="16" FontWeight="Bold" Margin="0 12 0 0">
                             <RadioButton x:Name="uservice_JSG" Content="JSG-LLC(JSG-DS)" Checked="uservice_JSG_Choose"/>
-                            <RadioButton x:Name="uservice_Gitee" Content="Gitee" Checked="uservice_Gitee_Choose" IsEnabled="False"/>
-                            <RadioButton x:Name="uservice_Github" Content="Github" Checked="uservice_Github_Choose" IsEnabled="False"/>
                         </RadioButtons>
                     </StackPanel>
 
@@ -109,7 +107,7 @@
 
             <TeachingTip x:Name="ThemeTip"
                 Background="{ThemeResource SystemControlAcrylicElementMediumHighBrush}"
-                Target="{x:Bind themeRadio}"
+                Target="{x:Bind other}"
                 Title="主题切换需要重启SRTools"
                 ActionButtonContent="立即重启"
                 ActionButtonClick="Restart_App"
@@ -170,12 +168,18 @@
                     <TextBlock Style="{ThemeResource BodyStrongTextBlockStyle}" Margin="0,8,0,4" HorizontalAlignment="Left">
                         <Hyperlink NavigateUri="https://github.com/JamXi233/SRTools" UnderlineStyle="None"><Run Text="贡献代码"/></Hyperlink>
                     </TextBlock>
-                    <StackPanel x:Name="debug_Mode" Margin="0 12 0 0" Visibility="Collapsed">
-                        <TextBlock Text="Debug设置" FontSize="16" FontWeight="Bold" Margin="0 0 0 10"/>
-                        <Button x:Name="debug_Panic" Click="Debug_Panic_Click" Content="Debug_崩溃" Margin="0 0 0 10"/>
-                        <ToggleButton x:Name="debug_DisableNavBtns" Click="Debug_Disable_NavBtns" Content="禁用所有导航按钮" Margin="0 0 0 10"/>
-                        <Button x:Name="debug_NotificationTest" Click="Debug_Notification_Test" Content="全局通知测试" Margin="0 0 0 10"/>
-                        <TextBlock x:Name="debug_Message" Text="处于Debug模式，控制台无法关闭" Margin="0 0 0 0"/>
+                    <StackPanel x:Name="debug_Mode" Margin="0 12 0 0" Visibility="Collapsed" Spacing="5">
+                        <TextBlock Text="Debug设置" FontSize="16" FontWeight="Bold"/>
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <Button x:Name="debug_Panic" Click="Debug_Panic_Click" Content="Debug_崩溃"/>
+                            <ToggleButton x:Name="debug_DisableNavBtns" Click="Debug_Disable_NavBtns" Content="禁用导航按钮"/>
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <Button x:Name="debug_NotificationTest" Click="Debug_Notification_Test" Content="全局通知测试"/>
+                            <Button x:Name="debug_WaitOverlayManager" Click="Debug_WaitOverlayManager_Test" Content="全局等待测试"/>
+                            <Button x:Name="debug_ShowDialogTest" Click="Debug_ShowDialog_Test" Content="全局Dialog测试"/>
+                        </StackPanel>
+                        <TextBlock x:Name="debug_Message" Text="处于Debug模式，控制台无法关闭"/>
                     </StackPanel>
                     <StackPanel Margin="230 110 0 0" VerticalAlignment="Bottom" HorizontalAlignment="Right">
                         <TextBlock x:Name="appVersion" Text="" FontSize="18" FontWeight="Bold" HorizontalAlignment="Right"/>

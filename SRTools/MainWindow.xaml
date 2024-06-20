@@ -9,6 +9,10 @@
     xmlns:animatedvisuals="using:Microsoft.UI.Xaml.Controls.AnimatedVisuals"
     mc:Ignorable="d">
 
+    <Window.SystemBackdrop>
+        <MicaBackdrop Kind="BaseAlt"/>
+    </Window.SystemBackdrop>
+
     <Grid>
         <Grid.Background>
             <ImageBrush x:Name="Background"/>
@@ -16,7 +20,7 @@
         <!-- 主界面 -->
         <Grid x:Name="MainAPP" Visibility="Collapsed">
 
-            <NavigationView x:Name="navView" IsBackEnabled="False" IsBackButtonVisible="Collapsed" IsPaneOpen="False" SelectionChanged="NavView_SelectionChanged" Background="{ThemeResource SystemControlAcrylicElementMediumHighBrush}">
+            <NavigationView x:Name="navView" IsBackEnabled="False" IsBackButtonVisible="Collapsed" IsPaneOpen="False" SelectionChanged="NavView_SelectionChanged" Background="{ThemeResource SystemControlAcrylicElementMediumHighBrush}" OpenPaneLength="250">
                 <NavigationView.Resources>
                     <Thickness x:Key="NavigationViewContentMargin">0,48,0,0</Thickness>
                 </NavigationView.Resources>
@@ -54,14 +58,14 @@
 
                 <NavigationView.FooterMenuItems>
 
+                    <NavigationViewItem Content="JSG-LLC账号(计划中)" Tag="jsg_account" SelectsOnInvoked="False" IsEnabled="False">
+                        <NavigationViewItem.Icon>
+                            <ImageIcon Source="ms-appx:///Imgs/JSG_Logo.png"/>
+                        </NavigationViewItem.Icon>
+                    </NavigationViewItem>
                     <NavigationViewItem Content="账号管理(计划中)" Tag="account" SelectsOnInvoked="False" IsEnabled="False">
                         <NavigationViewItem.Icon>
                             <FontIcon FontFamily="Segoe Fluent Icons" Glyph="&#xe77b;"/>
-                        </NavigationViewItem.Icon>
-                    </NavigationViewItem>
-                    <NavigationViewItem Content="社区" Tag="flarum">
-                        <NavigationViewItem.Icon>
-                            <FontIcon FontFamily="Segoe Fluent Icons" Glyph="&#xe8f2;" />
                         </NavigationViewItem.Icon>
                     </NavigationViewItem>
                     <NavigationViewItem Content="赞助" Tag="donation">
@@ -116,23 +120,43 @@
             </NavigationView>
         </Grid>
 
-        <StackPanel x:Name="InfoBarPanel" Orientation="Vertical" VerticalAlignment="Top" HorizontalAlignment="Right" Margin="0 64 12 0"/>
+        <ScrollView x:Name="InfoBarScroll" VerticalAlignment="Top" HorizontalAlignment="Right" Width="340">
+            <StackPanel x:Name="InfoBarPanel" Orientation="Vertical" VerticalAlignment="Top" HorizontalAlignment="Right" Width="300" Margin="0 64 12 0"/>
+        </ScrollView>
 
         <Grid x:Name="WaitOverlay" Background="{ThemeResource SystemControlAcrylicElementMediumHighBrush}" Visibility="Collapsed">
             <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
-                <Grid Width="72" Height="72" Background="{ThemeResource SystemControlAcrylicElementMediumHighBrush}" CornerRadius="8">
-                    <ProgressRing x:Name="WaitOverlay_Progress" Visibility="Collapsed"/>
+                <Grid x:Name="WaitOverlay_Progress_Grid" Width="72" Height="72" Background="{ThemeResource SystemControlAcrylicElementMediumHighBrush}" CornerRadius="8">
+                    <ProgressRing x:Name="WaitOverlay_Progress" />
                     <Image x:Name="WaitOverlay_Image" Grid.Row="0" Source="ms-appx:///Imgs/Logo_Background.png" Width="48" Height="48" Visibility="Collapsed"/>
                     <FontIcon x:Name="WaitOverlay_Success" FontFamily="Segoe Fluent Icons" Glyph="&#xE73E;" Visibility="Collapsed"/>
                 </Grid>
                 <StackPanel Height="8"/>
                 <StackPanel HorizontalAlignment="Center">
                     <TextBlock x:Name="WaitOverlay_Title" Text="" FontSize="24" FontWeight="Bold" HorizontalAlignment="Center"/>
-                    <TextBlock x:Name="WaitOverlay_SubTitle" Text="" FontSize="14" HorizontalAlignment="Center"/>
+                    <TextBlock x:Name="WaitOverlay_SubTitle" Text="" FontSize="14" Margin="0 4 0 0" HorizontalAlignment="Center"/>
+                    <ProgressBar x:Name="WaitOverlay_ProgressBar" Minimum="0" Maximum="100" Value="10" Width="200" Margin="0 12 0 0" Visibility="Collapsed"/>
+                    <TextBlock x:Name="WaitOverlay_ProgressBar_Value" Text="" HorizontalAlignment="Right" FontSize="12" Foreground="Gray" Visibility="Collapsed"/>
+                    <Button x:Name="WaitOverlay_Button" Content="" HorizontalAlignment="Center" Click="WaitOverlayButton_Click" Margin="0 4 0 0" />
                 </StackPanel>
             </StackPanel>
         </Grid>
-            
+
+        <Grid>
+            <Grid.Resources>
+                <Storyboard x:Name="FadeInStoryboard">
+                    <DoubleAnimation Storyboard.TargetName="WaitOverlay"
+                             Storyboard.TargetProperty="Opacity"
+                             From="0" To="1" Duration="0:0:0.1"/>
+                </Storyboard>
+                <Storyboard x:Name="FadeOutStoryboard">
+                    <DoubleAnimation Storyboard.TargetName="WaitOverlay"
+                             Storyboard.TargetProperty="Opacity"
+                             From="1" To="0" Duration="0:0:0.1"/>
+                </Storyboard>
+            </Grid.Resources>
+        </Grid>
+
     </Grid>
 
 </Window>

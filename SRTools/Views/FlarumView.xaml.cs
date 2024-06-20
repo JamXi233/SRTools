@@ -40,8 +40,6 @@ namespace SRTools.Views
             BBS.NavigationStarting += WebView2_NavigationStarting;
             BBS.NavigationCompleted += WebView2_NavigationCompleted;
             LoadWebView2();
-
-            
         }
 
 

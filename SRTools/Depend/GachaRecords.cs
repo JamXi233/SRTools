@@ -106,7 +106,7 @@ namespace SRTools.Depend
                                 });
                                 count++;
                                 Logging.Write(item.GetProperty("uid").GetString() + "|" + item.GetProperty("time").GetString() + "|" + item.GetProperty("gacha_id").GetString() + "|" + item.GetProperty("name").GetString() + "|" + item.GetProperty("id").GetString(), 0);
-                                WaitOverlayManager.RaiseWaitOverlay(true, true, "正在获取API信息,请不要退出", "已获取"+count+"条记录"+item.GetProperty("uid").GetString() + "|" + item.GetProperty("time").GetString() + "|" + item.GetProperty("name").GetString());
+                                WaitOverlayManager.RaiseWaitOverlay(true, "正在获取API信息,请不要退出", "已获取"+count+"条记录"+item.GetProperty("uid").GetString() + "|" + item.GetProperty("time").GetString() + "|" + item.GetProperty("name").GetString(), true, 0);
                             }
                             endId = records.Last().Id;
                             page++;

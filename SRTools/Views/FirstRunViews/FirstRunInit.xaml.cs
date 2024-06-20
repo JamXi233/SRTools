@@ -26,7 +26,6 @@ using System;
 using Windows.Storage.Pickers;
 using System.IO;
 using System.IO.Compression;
-using Windows.Storage;
 using Microsoft.UI.Xaml.Media;
 
 namespace SRTools.Views.FirstRunViews
@@ -81,33 +80,37 @@ namespace SRTools.Views.FirstRunViews
             }
         }
 
-        private async Task DeleteFilesAndSubfoldersAsync(StorageFolder folder, String Close)
+        private async Task DeleteFilesAndSubfoldersAsync(string directoryPath, string close)
         {
-            // 获取文件夹中的所有文件和子文件夹
-            var items = await folder.GetItemsAsync();
-
-            // 遍历所有项目
-            foreach (var item in items)
+            // 检查目录是否存在
+            if (Directory.Exists(directoryPath))
             {
-                // 如果项目是文件，则删除它
-                if (item is StorageFile file)
+                // 获取所有文件和递归删除所有子目录
+                var subDirectories = Directory.GetDirectories(directoryPath);
+                foreach (var dir in subDirectories)
                 {
-                    await file.DeleteAsync();
+                    await DeleteFilesAndSubfoldersAsync(dir, close);
+                    Directory.Delete(dir);
                 }
-                // 如果项目是文件夹，则递归删除其中所有文件和子文件夹
-                else if (item is StorageFolder subfolder)
-                {
-                    await DeleteFilesAndSubfoldersAsync(subfolder, Close);
 
-                    // 删除子文件夹本身
-                    await subfolder.DeleteAsync();
+                // 删除所有文件
+                var files = Directory.GetFiles(directoryPath);
+                foreach (var file in files)
+                {
+                    File.Delete(file);
                 }
+
+                // 删除当前目录
+                Directory.Delete(directoryPath, true); // true 表示即使目录非空也强制删除
             }
-            if (Close == "1")
+
+            // 根据传入的参数决定是否关闭应用
+            if (close == "1")
             {
                 Application.Current.Exit();
             }
         }
+
 
         private Frame GetParentFrame(FrameworkElement child)
         {

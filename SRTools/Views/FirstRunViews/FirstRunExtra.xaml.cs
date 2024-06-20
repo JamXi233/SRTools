@@ -49,26 +49,7 @@ namespace SRTools.Views.FirstRunViews
                 InstallFontProgress.Value = p * 100; // 假设 p 是一个0到1之间的比例
             });
 
-            int result = await InstallFont.InstallSegoeFluentFontAsync(progress);
-
-            //按照回传显示
-            if (result == 0)
-            {
-                InstallFontButton.Content = "字体安装成功";
-                Logging.Write("Font installed successfully", 0);
-                Frame parentFrame = GetParentFrame(this);
-                if (parentFrame != null)
-                {
-                    parentFrame.Navigate(typeof(FirstRunFinish));
-                }
-            }
-            else
-            {
-                InstallFontButton.Content = "字体安装失败";
-                Logging.Write("Font installed failed", 2);
-                SkipButton.Visibility = Visibility.Visible;
-                SkipButton.IsEnabled = true;
-            }
+            await InstallFont.InstallSegoeFluentFontAsync(progress);
         }
 
 

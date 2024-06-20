@@ -52,9 +52,11 @@
   <ItemGroup>
     <None Remove="Assets\Don_Alipay.jpg" />
     <None Remove="Assets\Don_Wechat.jpg" />
+    <None Remove="Views\JSGAccountViews\AccountView.xaml" />
     <None Remove="Views\BlankPage1.xaml" />
     <None Remove="Views\Dialog.xaml" />
     <None Remove="Views\GachaView.xaml.cs.bak" />
+    <None Remove="Views\NotifyViews\BannerView.xaml" />
   </ItemGroup>
   <ItemGroup>
     <Page Remove="Views\Dialog.xaml" />
@@ -88,6 +90,9 @@
     <ProjectCapability Include="Msix" />
   </ItemGroup>
   <ItemGroup>
+    <Page Update="Views\AccountViews\AccountView.xaml">
+      <XamlRuntime>$(DefaultXamlRuntime)</XamlRuntime>
+    </Page>
     <Page Update="Views\BlankPage1.xaml">
       <Generator>MSBuild:Compile</Generator>
     </Page>
@@ -129,6 +134,9 @@
     <Page Update="Views\FlarumView.xaml">
       <XamlRuntime>$(DefaultXamlRuntime)</XamlRuntime>
     </Page>
+    <Page Update="Views\NotifyViews\BannerView.xaml">
+      <XamlRuntime>$(DefaultXamlRuntime)</XamlRuntime>
+    </Page>
     <Page Update="Views\SGViews\AccountView.xaml">
       <XamlRuntime>$(DefaultXamlRuntime)</XamlRuntime>
       <SubType>Designer</SubType>
@@ -138,9 +146,9 @@
     </Page>
   </ItemGroup>
   <ItemGroup>
-    <Folder Include="Views\NotifyViews\" />
-  </ItemGroup>
-  <ItemGroup>
+    <None Update="Assets\Logo.ico">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
     <None Update="Imgs\Don_Alipay.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
@@ -178,6 +186,9 @@
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
     <None Update="Imgs\FirstRun_Windows.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="Imgs\JSG_Logo.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
     <None Update="Imgs\Logo.png">
