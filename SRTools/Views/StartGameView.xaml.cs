@@ -104,7 +104,6 @@ namespace SRTools.Views
             {
                 UpdateUIElementsVisibility(0);
             }
-
         }
 
         private async void SelectGame(object sender, RoutedEventArgs e)
@@ -147,7 +146,12 @@ namespace SRTools.Views
 
         private void StartGame_Click(object sender, RoutedEventArgs e)
         {
-            StartGame(null, null);
+            StartGame();
+        }
+
+        private void MultiStartGame_Click(object sender, RoutedEventArgs e)
+        {
+            DialogManager.RaiseDialog(this.XamlRoot, "游戏多开", "⚠️注意⚠️\n一次性只可以启动两个游戏\n否则会被检测到多开后强制关闭游戏", true, "启动游戏", StartGame, true, "关闭游戏", ProcessRun.StopSRProcess);
         }
 
         private async void StartUpdate_Click(object sender, RoutedEventArgs e)
@@ -230,7 +234,7 @@ namespace SRTools.Views
             }
         }
 
-        public void StartGame(TeachingTip sender, object args)
+        public void StartGame()
         {
             GameStartUtil gameStartUtil = new GameStartUtil();
             gameStartUtil.StartGame();
@@ -246,9 +250,6 @@ namespace SRTools.Views
                 Frame_GraphicSettingView_Launched_Disable.Visibility = Visibility.Visible;
                 Frame_GraphicSettingView_Launched_Disable_Title.Text = "崩坏：星穹铁道正在运行";
                 Frame_GraphicSettingView_Launched_Disable_Subtitle.Text = "游戏运行时无法修改画质";
-                Frame_AccountView_Launched_Disable.Visibility = Visibility.Visible;
-                Frame_AccountView_Launched_Disable_Title.Text = "崩坏：星穹铁道正在运行";
-                Frame_AccountView_Launched_Disable_Subtitle.Text = "游戏运行时无法切换账号";
             }
             else
             {
@@ -256,7 +257,6 @@ namespace SRTools.Views
                 startGame.Visibility = Visibility.Visible;
                 gameRunning.Visibility = Visibility.Collapsed;
                 Frame_GraphicSettingView_Launched_Disable.Visibility = Visibility.Collapsed;
-                Frame_AccountView_Launched_Disable.Visibility = Visibility.Collapsed;
             }
         }
 
@@ -275,7 +275,7 @@ namespace SRTools.Views
             {
                 try
                 {
-                    string GSValue = await ProcessRun.SRToolsHelperAsync($"/GetReg");
+                    string GSValue = await ProcessRun.SRToolsHelperAsync($"/GetReg {GameRegion}");
                     if (!GSValue.Contains("FPS"))
                     {
                         GraphicSelect.IsEnabled = false;

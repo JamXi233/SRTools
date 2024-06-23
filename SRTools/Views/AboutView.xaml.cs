@@ -324,38 +324,55 @@ namespace SRTools.Views
             var window = new Window();
             var hwnd = WinRT.Interop.WindowNative.GetWindowHandle(window);
             WinRT.Interop.InitializeWithWindow.Initialize(savePicker, hwnd);
-            StorageFile file = await savePicker.PickSaveFileAsync();
-            if (file != null)
+            try
             {
-                string startPath = userDocumentsFolderPath + @"\JSG-LLC\SRTools";
-                string zipPath = file.Path;
-                if (File.Exists(zipPath))
+                StorageFile file = await savePicker.PickSaveFileAsync();
+                if (file != null)
                 {
-                    File.Delete(zipPath);
+                    string startPath = userDocumentsFolderPath + @"\JSG-LLC\SRTools";
+                    string zipPath = file.Path;
+                    if (File.Exists(zipPath))
+                    {
+                        File.Delete(zipPath);
+                    }
+                    ZipFile.CreateFromDirectory(startPath, zipPath);
+                    NotificationManager.RaiseNotification("备份完成", null, InfoBarSeverity.Success, true, 1);
                 }
-                ZipFile.CreateFromDirectory(startPath, zipPath);
+            }
+            finally
+            {
+                window.Close();
             }
         }
 
         private void Restore_Data_Click(object sender, RoutedEventArgs e)
         {
-            RestoreTip.IsOpen = true;
+            DialogManager.RaiseDialog(this.XamlRoot, "是否要还原数据？", "还原数据将会清空当前所有数据\n还原成功后会进入首次设置", true, "选择文件", Restore_Data);
         }
 
-        private async void Restore_Data(TeachingTip e, object o)
+        private async void Restore_Data()
         {
+            WaitOverlayManager.RaiseWaitOverlay(true, "等待选择还原文件", null, false);
             var picker = new FileOpenPicker();
             picker.FileTypeFilter.Add(".SRToolsBackup");
             var window = new Window();
             var hwnd = WinRT.Interop.WindowNative.GetWindowHandle(window);
             WinRT.Interop.InitializeWithWindow.Initialize(picker, hwnd);
-            var file = await picker.PickSingleFileAsync();
-            if (file != null) 
+            try
             {
-                string userDocumentsFolderPath = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
-                Task.Run(() => Clear_AllData_NoClose(null, null)).Wait();
-                Task.Run(() => ZipFile.ExtractToDirectory(file.Path, userDocumentsFolderPath + "\\JSG-LLC\\SRTools\\")).Wait();
-                await ProcessRun.RestartApp();
+                var file = await picker.PickSingleFileAsync();
+                if (file != null)
+                {
+                    string userDocumentsFolderPath = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+                    Task.Run(() => Clear_AllData_NoClose(null, null)).Wait();
+                    Task.Run(() => ZipFile.ExtractToDirectory(file.Path, userDocumentsFolderPath + "\\JSG-LLC\\SRTools\\")).Wait();
+                    await ProcessRun.RestartApp();
+                }
+                else WaitOverlayManager.RaiseWaitOverlay(false);
+            }
+            finally
+            {
+                window.Close();
             }
         }
 

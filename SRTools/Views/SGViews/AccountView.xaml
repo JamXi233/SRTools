@@ -19,7 +19,7 @@
 
                 </StackPanel>
                 <TextBlock Text="账号列表" Margin="0 8 0 8"/>
-                <ListView x:Name="AccountListView" SelectionChanged="AccountListView_SelectionChanged">
+                <ListView x:Name="AccountListView" SelectionChanged="AccountListView_SelectionChanged" Height="240">
                     <ListView.ItemTemplate>
                         <DataTemplate>
                             <StackPanel Orientation="Horizontal">
@@ -50,19 +50,6 @@
 	                CloseButtonContent="关闭">
                 <TeachingTip.IconSource>
                     <SymbolIconSource Symbol="PreviewLink" />
-                </TeachingTip.IconSource>
-            </TeachingTip>
-
-            <TeachingTip x:Name="saveAccountFound"
-                    Background="{ThemeResource SystemControlAcrylicElementMediumHighBrush}"
-                    Target="{x:Bind saveAccount}"
-                    Title="账号已存在"
-                    Subtitle="是否要覆盖保存？"
-                    ActionButtonContent="覆盖保存"
-	                CloseButtonContent="关闭"
-                    ActionButtonClick="SaveAccount_Override">
-                <TeachingTip.IconSource>
-                    <SymbolIconSource Symbol="Clear" />
                 </TeachingTip.IconSource>
             </TeachingTip>
 

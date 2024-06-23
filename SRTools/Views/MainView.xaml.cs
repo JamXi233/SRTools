@@ -14,6 +14,7 @@ using Microsoft.UI.Xaml.Input;
 using SRTools.Views.NotifyViews;
 using System.IO;
 using static SRTools.App;
+using System.Runtime.InteropServices;
 
 namespace SRTools.Views
 {
@@ -212,12 +213,19 @@ namespace SRTools.Views
             }
 
             BitmapImage bitmapImage = new BitmapImage();
-            using (var stream = await httpClient.GetStreamAsync(imageUrl))
-            using (var memStream = new MemoryStream())
+            try
             {
-                await stream.CopyToAsync(memStream);
-                memStream.Position = 0;
-                await bitmapImage.SetSourceAsync(memStream.AsRandomAccessStream());
+                byte[] imageData = await httpClient.GetByteArrayAsync(imageUrl);
+                using (var memStream = new MemoryStream(imageData))
+                {
+                    memStream.Position = 0;
+                    bitmapImage = new BitmapImage();
+                    await bitmapImage.SetSourceAsync(memStream.AsRandomAccessStream());
+                }
+            }
+            catch (COMException comEx)
+            {
+                Logging.Write("COMException" + comEx, 2);
             }
 
             imageCache[imageUrl] = bitmapImage;

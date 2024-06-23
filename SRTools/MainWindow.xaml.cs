@@ -43,7 +43,7 @@ using Microsoft.UI.Xaml.Media;
 
 namespace SRTools
 {
-    public partial class MainWindow : Microsoft.UI.Xaml.Window
+    public partial class MainWindow : Window
     {
         private static readonly HttpClient httpClient = new HttpClient();
         private IntPtr hwnd = IntPtr.Zero;
@@ -68,6 +68,7 @@ namespace SRTools
         public NavigationView NavigationView { get; }
 
         private Action buttonAction;
+        private static bool isDialogOpen = false;
 
         private MainFrameController mainFrameController;
 
@@ -367,7 +368,7 @@ namespace SRTools
                     errorMessage = ex.Message.Trim() + "\n\n已生成错误报告\n如再次尝试仍会重现错误\n您可以到Github提交Issue";
                 }
 
-                ExpectionFileName = string.Format("WaveTools_Panic_{0:yyyyMMdd_HHmmss}.WaveToolsPanic", DateTime.Now);
+                ExpectionFileName = string.Format("SRTools_Panic_{0:yyyyMMdd_HHmmss}.WaveToolsPanic", DateTime.Now);
 
                 // 显示InfoBar通知
                 AddNotification("严重错误", errorMessage, severity, true, 0, () =>
@@ -623,17 +624,25 @@ namespace SRTools
 
         private async void ShowDialog(XamlRoot xamlRoot, string title = null, string content = null, bool isPrimaryButtonEnabled = false, string primaryButtonContent = "", Action primaryButtonAction = null, bool isSecondaryButtonEnabled = false, string secondaryButtonContent = "", Action secondaryButtonAction = null)
         {
-            ContentDialog dialog = new ContentDialog();
+            if (isDialogOpen)
+            {
+                return;
+            }
 
-            // XamlRoot must be set in the case of a ContentDialog running in a Desktop app
-            dialog.XamlRoot = xamlRoot;
-            dialog.Style = Application.Current.Resources["DefaultContentDialogStyle"] as Style;
-            dialog.Title = title;
-            dialog.PrimaryButtonText = isPrimaryButtonEnabled ? primaryButtonContent : null;
-            dialog.SecondaryButtonText = isSecondaryButtonEnabled ? secondaryButtonContent : null;
-            dialog.CloseButtonText = "关闭";
-            dialog.DefaultButton = ContentDialogButton.Primary;
-            dialog.Content = new TextBlock { Text = content, FontSize = 14 };
+            isDialogOpen = true;
+
+            ContentDialog dialog = new ContentDialog
+            {
+                XamlRoot = xamlRoot,
+                Style = Application.Current.Resources["DefaultContentDialogStyle"] as Style,
+                Title = title,
+                PrimaryButtonText = isPrimaryButtonEnabled ? primaryButtonContent : null,
+                SecondaryButtonText = isSecondaryButtonEnabled ? secondaryButtonContent : null,
+                CloseButtonText = "关闭",
+                DefaultButton = ContentDialogButton.Primary,
+                Content = new TextBlock { Text = content, FontSize = 14 }
+            };
+
             if (isPrimaryButtonEnabled)
             {
                 dialog.PrimaryButtonClick += (sender, args) => primaryButtonAction?.Invoke();
@@ -644,8 +653,18 @@ namespace SRTools
                 dialog.SecondaryButtonClick += (sender, args) => secondaryButtonAction?.Invoke();
             }
 
-            var result = await dialog.ShowAsync();
-
+            try
+            {
+                await dialog.ShowAsync();
+            }
+            catch (Exception ex)
+            {
+                NotificationManager.RaiseNotification("对话框出现问题", ex.Message, InfoBarSeverity.Error, true, 5);
+            }
+            finally
+            {
+                isDialogOpen = false;
+            }
         }
 
         private void MainWindow_Closed(object sender, WindowEventArgs e)

@@ -89,7 +89,7 @@ namespace SRTools.Depend
 
         public static void StopSRProcess()
         {
-            foreach (var process in Process.GetProcessesByName("Star Rail"))
+            foreach (var process in Process.GetProcessesByName("StarRail"))
             {
                 process.Kill();
             }

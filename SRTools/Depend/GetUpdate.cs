@@ -21,10 +21,8 @@
 using System;
 using System.Threading.Tasks;
 using Windows.ApplicationModel;
-using Windows.Storage;
 using System.IO;
 using System.Diagnostics;
-using System.Linq;
 
 namespace SRTools.Depend
 {
@@ -52,7 +50,6 @@ namespace SRTools.Depend
             Version currentVersionParsed = new Version(currentVersion);
             try
             {
-                ApplicationDataContainer localSettings = ApplicationData.Current.LocalSettings;
                 var latestReleaseInfo = await _getJSGLatest.GetLatestReleaseInfoAsync("cn.jamsg.SRTools");
                 Logging.Write("Getting Update Info...", 0);
 
@@ -70,8 +67,8 @@ namespace SRTools.Depend
                         latestReleaseInfo = await _getJSGLatest.GetLatestReleaseInfoAsync("cn.jamsg." + PkgName);
                         break;
                     default:
-                        Logging.Write($"Invalid update service value: {localSettings.Values["Config_UpdateService"]}", 0);
-                        throw new InvalidOperationException($"Invalid update service value: {localSettings.Values["Config_UpdateService"]}");
+                        Logging.Write($"Invalid update service value: {AppDataController.GetUpdateService()}", 0);
+                        throw new InvalidOperationException($"Invalid update service value: {AppDataController.GetUpdateService()}");
                 }
 
                 Logging.Write("Software Name:" + latestReleaseInfo.Name, 0);

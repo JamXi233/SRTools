@@ -166,8 +166,7 @@ namespace SRTools.Views.SGViews
 
                 if (currentAccount != null)
                 {
-                    saveAccountFound.IsOpen = true;
-                    saveAccountFound.Subtitle = $"是否要覆盖保存UID: {CurrentLoginUID}";
+                    DialogManager.RaiseDialog(XamlRoot, "账号已经存在", $"是否要覆盖保存UID: {CurrentLoginUID}", true, "确定覆盖", SaveAccount_Override);
                 }
                 else
                 {
@@ -181,7 +180,7 @@ namespace SRTools.Views.SGViews
             }
         }
 
-        private async void SaveAccount_Override(TeachingTip sender, object args)
+        private async void SaveAccount_Override()
         {
             try
             {

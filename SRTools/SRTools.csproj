@@ -37,6 +37,7 @@
 	<IsPublishable>True</IsPublishable>
 	<StartupObject>SRTools.Program</StartupObject>
 	<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+
   </PropertyGroup>
     <ItemGroup>
     <Compile Remove="Views\Dialog.xaml.cs" />
