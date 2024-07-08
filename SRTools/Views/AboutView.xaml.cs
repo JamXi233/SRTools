@@ -76,10 +76,10 @@ namespace SRTools.Views
         {
             consoleToggle.IsChecked = AppDataController.GetConsoleMode() == 1;
             terminalToggle.IsChecked = AppDataController.GetTerminalMode() == 1;
+            autoCheckUpdateToggle.IsChecked = AppDataController.GetAutoCheckUpdate() == 1;
             userviceRadio.SelectedIndex = new[] { 1, 2, 0 }[AppDataController.GetUpdateService()];
             themeRadio.SelectedIndex = AppDataController.GetDayNight();
         }
-
 
         private void CheckFont()
         {
@@ -114,6 +114,10 @@ namespace SRTools.Views
             AppDataController.SetTerminalMode(terminalToggle.IsChecked == true ? 1 : 0);
         }
 
+        private void Auto_Check_Update_Toggle(object sender, RoutedEventArgs e)
+        {
+            AppDataController.SetAutoCheckUpdate(autoCheckUpdateToggle.IsChecked == true ? 1 : 0);
+        }
 
         public void Clear_AllData_TipShow(object sender, RoutedEventArgs e)
         {
@@ -239,7 +243,8 @@ namespace SRTools.Views
             UpdateTip.IsOpen = false;
             WaitOverlayManager.RaiseWaitOverlay(true, "正在更新", "请稍等片刻", true, 0);
             await InstallerHelper.GetInstaller();
-            if (InstallerHelper.RunInstaller() != 0)
+            string channelArgument = GetChannelArgument();
+            if (InstallerHelper.RunInstaller(channelArgument) != 0)
             {
                 NotificationManager.RaiseNotification("更新失败", "", InfoBarSeverity.Error, true, 3);
             }
@@ -251,7 +256,8 @@ namespace SRTools.Views
             UpdateTip.IsOpen = false;
             WaitOverlayManager.RaiseWaitOverlay(true, "正在强制重装SRTools", "请稍等片刻", true, 0);
             await InstallerHelper.GetInstaller();
-            if (InstallerHelper.RunInstaller("/force") != 0)
+            string channelArgument = GetChannelArgument();
+            if (InstallerHelper.RunInstaller($"/force {channelArgument}") != 0)
             {
                 NotificationManager.RaiseNotification("更新失败", "", InfoBarSeverity.Error, true, 3);
             }
@@ -263,7 +269,8 @@ namespace SRTools.Views
             UpdateTip.IsOpen = false;
             WaitOverlayManager.RaiseWaitOverlay(true, "正在更新依赖", "请稍等片刻", true, 0);
             await InstallerHelper.GetInstaller();
-            InstallerHelper.RunInstaller("/depend");
+            string channelArgument = GetChannelArgument();
+            InstallerHelper.RunInstaller($"/depend {channelArgument}");
             WaitOverlayManager.RaiseWaitOverlay(false);
         }
 
@@ -272,11 +279,23 @@ namespace SRTools.Views
             UpdateTip.IsOpen = false;
             WaitOverlayManager.RaiseWaitOverlay(true, "正在强制重装依赖", "请稍等片刻", true, 0);
             await InstallerHelper.GetInstaller();
-            if (InstallerHelper.RunInstaller("/depend /force") != 0)
+            string channelArgument = GetChannelArgument();
+            if (InstallerHelper.RunInstaller($"/depend /force {channelArgument}") != 0)
             {
                 NotificationManager.RaiseNotification("强制重装依赖失败", "", InfoBarSeverity.Error, true, 3);
             }
             WaitOverlayManager.RaiseWaitOverlay(false);
+        }
+
+        private string GetChannelArgument()
+        {
+            int channel = AppDataController.GetUpdateService();
+            return channel switch
+            {
+                0 => "/channel github",
+                2 => "/channel ds",
+                _ => string.Empty
+            };
         }
 
         // 选择主题开始

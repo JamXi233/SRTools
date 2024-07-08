@@ -187,12 +187,12 @@ public class GachaViewModel : INotifyPropertyChanged
                         loadGachaProgress.Visibility = Visibility.Visible;
                         loadGachaFailedIcon.Visibility = Visibility.Visible;
                         loadGachaProgressRing.Visibility = Visibility.Collapsed;
-                        loadGachaText.Text = "无抽卡记录";
+                        loadGachaText.Text = "无跃迁记录";
                         ClearGacha.IsEnabled = false;
                         ExportSRGF.IsEnabled = false;
                         ImportSRGF.IsEnabled = true;
                         localSettings.Values["Gacha_Data"] = "0";
-                        Logging.Write("无抽卡记录");
+                        Logging.Write("无跃迁记录");
                     }
                     else
                     {
@@ -249,7 +249,7 @@ public class GachaViewModel : INotifyPropertyChanged
                         if (file.Exists)
                         {
                             file.Delete();
-                            Console.WriteLine($"已删除旧版本抽卡记录: {file.FullName}");
+                            Console.WriteLine($"已删除旧版本跃迁记录: {file.FullName}");
                         }
                     }
                     catch (Exception ex)
@@ -260,7 +260,7 @@ public class GachaViewModel : INotifyPropertyChanged
             }
             else
             {
-                Logging.Write("无旧版本抽卡记录更新/删除");
+                Logging.Write("无旧版本跃迁记录更新/删除");
             }
         }
 
@@ -306,12 +306,12 @@ public class GachaViewModel : INotifyPropertyChanged
                 loadGachaProgress.Visibility = Visibility.Visible;
                 loadGachaFailedIcon.Visibility = Visibility.Visible;
                 loadGachaProgressRing.Visibility = Visibility.Collapsed;
-                loadGachaText.Text = "无抽卡记录";
+                loadGachaText.Text = "无跃迁记录";
                 ClearGacha.IsEnabled = false;
                 ExportSRGF.IsEnabled = false;
                 ImportSRGF.IsEnabled = true;
                 localSettings.Values["Gacha_Data"] = "0";
-                Logging.Write("无抽卡记录");
+                Logging.Write("无跃迁记录");
             }
         }
 
@@ -394,6 +394,7 @@ public class GachaViewModel : INotifyPropertyChanged
                         await StartAsync();
                         Disable_NavBtns();
                         gacha_status.Text = "正在等待打开抽卡历史记录...";
+                        WaitOverlayManager.RaiseWaitOverlay(true, "正在等待调频记录链接", "请前往游戏打开调频记录", true, 0, true, "取消获取", StopProxy);
                         ProxyButton.IsEnabled = true;
                         dispatcherTimer.Start();
                     }
@@ -416,6 +417,16 @@ public class GachaViewModel : INotifyPropertyChanged
             }
             else { Stop(); isProxyRunning = false; }
         }
+
+        private void StopProxy()
+        {
+            Stop();
+            ProxyButton.IsChecked = false;
+            isProxyRunning = false;
+
+            WaitOverlayManager.RaiseWaitOverlay(false);
+        }
+
         // 定时器回调函数，检查进程是否正在运行
         private void CheckProcess(DispatcherQueueTimer timer, object e)
         {
@@ -623,7 +634,7 @@ public class GachaViewModel : INotifyPropertyChanged
             // XamlRoot must be set in the case of a ContentDialog running in a Desktop app
             dialog.XamlRoot = this.XamlRoot;
             dialog.Style = Application.Current.Resources["DefaultContentDialogStyle"] as Microsoft.UI.Xaml.Style;
-            dialog.Title = "确定要清空您的抽卡记录吗？";
+            dialog.Title = "确定要清空您的跃迁记录吗？";
             dialog.Content = "确保您已经做好SRGF兼容格式或SRTools的备份";
             dialog.PrimaryButtonText = "备份后删除";
             dialog.SecondaryButtonText = "直接删除";
@@ -725,7 +736,7 @@ public class GachaViewModel : INotifyPropertyChanged
             if (parentNavigationView != null)
             {
                 var selectedItem = parentNavigationView.SelectedItem;
-                var excludeTags = new HashSet<string> { "account_status", "event", "account" };  // 需要排除的标签
+                var excludeTags = new HashSet<string> { "account_status", "event", "account", "jsg_account" };  // 需要排除的标签
 
                 foreach (var menuItem in parentNavigationView.MenuItems.Concat(parentNavigationView.FooterMenuItems))
                 {

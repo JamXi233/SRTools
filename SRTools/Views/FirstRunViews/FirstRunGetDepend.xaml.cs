@@ -35,7 +35,7 @@ namespace SRTools.Views.FirstRunViews
         private MainWindow mainWindow;
         string fileUrl;
         private GetNetData _getNetData;
-        private readonly GetGiteeLatest _getGiteeLatest = new GetGiteeLatest();
+        private readonly GetGithubLatest _getGithubLatest = new GetGithubLatest();
         private readonly GetJSGLatest _getJSGLatest = new GetJSGLatest();
 
         public FirstRunGetDepend()
@@ -54,6 +54,7 @@ namespace SRTools.Views.FirstRunViews
 
         private async void DependDownload_Click(object sender, RoutedEventArgs e)
         {
+            depend_Progress_Text.Text = "正在下载...";
             _getNetData = new GetNetData();
             string userDocumentsFolderPath = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
             string localFilePath = Path.Combine(userDocumentsFolderPath + FileFolder, ZipFileName);
@@ -111,6 +112,7 @@ namespace SRTools.Views.FirstRunViews
 
         private async void OnGetDependLatestReleaseInfo()
         {
+            depend_Progress_Text.Text = "正在获取...";
             depend_Grid.Visibility = Visibility.Collapsed;
             depend_Progress_Grid.Visibility = Visibility.Visible;
             var dispatcher = Microsoft.UI.Dispatching.DispatcherQueue.GetForCurrentThread();
@@ -121,10 +123,7 @@ namespace SRTools.Views.FirstRunViews
                 switch (localSettings.Values["Config_UpdateService"])
                 {
                     case 0:
-                        //latestReleaseInfo = await _getGithubLatest.GetLatestReleaseInfoAsync("JamXi233", "SRToolsHelper");
-                        break;
-                    case 1:
-                        latestReleaseInfo = await _getGiteeLatest.GetLatestReleaseInfoAsync("JSG-JamXi", "SRToolsHelper");
+                        latestReleaseInfo = await _getGithubLatest.GetLatestDependReleaseInfoAsync("JamXi233", "Releases", "SRToolsHelper");
                         break;
                     case 2:
                         latestReleaseInfo = await _getJSGLatest.GetLatestReleaseInfoAsync("cn.jamsg.srtoolshelper");

@@ -53,7 +53,6 @@
   <ItemGroup>
     <None Remove="Assets\Don_Alipay.jpg" />
     <None Remove="Assets\Don_Wechat.jpg" />
-    <None Remove="Views\JSGAccountViews\AccountView.xaml" />
     <None Remove="Views\BlankPage1.xaml" />
     <None Remove="Views\Dialog.xaml" />
     <None Remove="Views\GachaView.xaml.cs.bak" />

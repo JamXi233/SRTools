@@ -38,7 +38,7 @@
                         </NavigationViewItem.Icon>
                     </NavigationViewItem>
                     <NavigationViewItemHeader Content="工具箱"/>
-                    <NavigationViewItem Content="抽卡记录" Tag="gacha">
+                    <NavigationViewItem Content="跃迁记录" Tag="gacha">
                         <NavigationViewItem.Icon>
                             <FontIcon FontFamily="Segoe Fluent Icons" Glyph="&#xe734;"/>
                         </NavigationViewItem.Icon>

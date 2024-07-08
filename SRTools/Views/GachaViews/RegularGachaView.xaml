@@ -31,7 +31,7 @@
 
         <StackPanel x:Name="GachaInfo" Grid.Column="1" Margin="8 0 8 0">
             <StackPanel Orientation="Horizontal" Spacing="4">
-                <TextBlock Text="抽卡详情" FontSize="18" FontWeight="Bold"/>
+                <TextBlock Text="跃迁详情" FontSize="18" FontWeight="Bold"/>
                 <TextBlock x:Name="GachaInfo_SinceLast5Star" Text="SinceLast5Star" Foreground="Gray" VerticalAlignment="Bottom"/>
             </StackPanel>
             <Grid>
@@ -72,7 +72,7 @@
 
         <StackPanel x:Name="GachaRecords" Grid.Column="2" Orientation="Vertical" Margin="8 0 8 0">
             <StackPanel Orientation="Horizontal" Spacing="4">
-                <TextBlock Text="抽卡记录" FontSize="18" FontWeight="Bold"/>
+                <TextBlock Text="跃迁记录" FontSize="18" FontWeight="Bold"/>
                 <TextBlock x:Name="GachaRecords_Count" Text="Count" Foreground="Gray" VerticalAlignment="Bottom"/>
             </StackPanel>
             <StackPanel Orientation="Horizontal" Margin="0 8 0 0">

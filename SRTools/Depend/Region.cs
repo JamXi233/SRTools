@@ -41,7 +41,7 @@ namespace SRTools.Depend
                     if (await isBili()) 
                     { 
                         if (isFirst) NotificationManager.RaiseNotification("游戏路径读取完成", "检测到B服\n" + signerName, InfoBarSeverity.Success, true, 3); 
-                        StartGameView.GameRegion = "CN"; 
+                        StartGameView.GameRegion = "Bili"; 
                     }
                     else 
                     {

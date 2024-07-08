@@ -1,34 +1,16 @@
-﻿// Copyright (c) 2021-2024, JamXi JSG-LLC.
-// All rights reserved.
-
-// This file is part of SRTools.
-
-// SRTools is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-
-// SRTools is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
-
-// You should have received a copy of the GNU General Public License
-// along with SRTools.  If not, see <http://www.gnu.org/licenses/>.
-
-// For more information, please refer to <https://www.gnu.org/licenses/gpl-3.0.html>
-
-using System;
+﻿using System;
 using System.Threading.Tasks;
 using Windows.ApplicationModel;
 using System.IO;
 using System.Diagnostics;
+using SRTools.Depend;
+using SRTools;
 
 namespace SRTools.Depend
 {
     class GetUpdate
     {
-        private static readonly GetGiteeLatest _getGiteeLatest = new GetGiteeLatest();
+        private static readonly GetGithubLatest _getGithubLatest = new GetGithubLatest();
         private static readonly GetJSGLatest _getJSGLatest = new GetJSGLatest();
 
         public static async Task<UpdateResult> GetSRToolsUpdate()
@@ -56,14 +38,18 @@ namespace SRTools.Depend
                 switch (AppDataController.GetUpdateService())
                 {
                     case 0:
-                        Logging.Write("UService:Github", 0);
-                        break;
-                    case 1:
-                        Logging.Write("UService:Gitee", 0);
-                        latestReleaseInfo = await _getGiteeLatest.GetLatestReleaseInfoAsync("JSG-JamXi", PkgName);
+                        Logging.Write("UpdateService:Github", 0);
+                        if (Mode == "Depend")
+                        {
+                            latestReleaseInfo = await _getGithubLatest.GetLatestDependReleaseInfoAsync("JamXi233", "Releases", PkgName);
+                        }
+                        else
+                        {
+                            latestReleaseInfo = await _getGithubLatest.GetLatestReleaseInfoAsync("JamXi233", PkgName);
+                        }
                         break;
                     case 2:
-                        Logging.Write("UService:JSG-DS", 0);
+                        Logging.Write("UpdateService:JSG-DS", 0);
                         latestReleaseInfo = await _getJSGLatest.GetLatestReleaseInfoAsync("cn.jamsg." + PkgName);
                         break;
                     default:
@@ -114,8 +100,6 @@ namespace SRTools.Depend
                     App.IsSRToolsHelperRequireUpdate = false;
                     return new UpdateResult(0, installedVersionParsed.ToString(), string.Empty);
                 }
-
-
                 else
                 {
                     Version latestVersionParsed = new Version(latestReleaseInfo.Version);
@@ -134,8 +118,8 @@ namespace SRTools.Depend
                 return new UpdateResult(2, string.Empty, string.Empty);
             }
         }
-
     }
+
     public class UpdateResult
     {
         public int Status { get; set; } // 0: 无更新, 1: 有更新, 2: 错误
@@ -147,8 +131,6 @@ namespace SRTools.Depend
             Status = status;
             Version = version;
             Changelog = changelog;
-
         }
     }
-
 }

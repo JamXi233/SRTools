@@ -96,6 +96,10 @@ namespace SRTools
             await InitializeAppDataAsync();
             await BackgroundImageAsync();
             CleanUpdate();
+            if (AppDataController.GetAutoCheckUpdate() == 1)
+            {
+                await AutoGetUpdate();
+            }
         }
 
         private void InitShiftPress()
@@ -181,6 +185,21 @@ namespace SRTools
             }
         }
 
+        private async Task AutoGetUpdate()
+        {
+            var result = await GetUpdate.GetDependUpdate();
+            var status = result.Status;
+            if (status == 1)
+            {
+                NotificationManager.RaiseNotification("更新提示", "依赖包需要更新\n请尽快到[设置-检查依赖更新]进行更新", InfoBarSeverity.Warning, false, 5);
+            }
+            result = await GetUpdate.GetSRToolsUpdate();
+            status = result.Status;
+            if (status == 1)
+            {
+                NotificationManager.RaiseNotification("更新提示", "SRTools有更新\n可到[设置-检查更新]进行更新", InfoBarSeverity.Warning, false, 5);
+            }
+        }
 
         public void StartCheckingFirstRun()
         {

@@ -11,22 +11,16 @@
         <FlipView x:Name="Gallery" ItemsSource="{x:Bind Pictures}" PointerPressed="Gallery_PointerPressed" Height="160" Width="345" Margin="-28 2 -28 0">
             <FlipView.ItemTemplate>
                 <DataTemplate x:DataType="x:String">
-                    <Image>
-                        <Image.Source>
-                            <BitmapImage UriSource="{x:Bind Mode=OneTime}" DecodePixelWidth="345" />
-                        </Image.Source>
-                    </Image>
+                    <Image Source="{Binding}" Stretch="UniformToFill"/>
                 </DataTemplate>
             </FlipView.ItemTemplate>
         </FlipView>
 
         <Grid Background="{ThemeResource SystemControlAcrylicElementMediumHighBrush}" Height="24" Width="64" CornerRadius="12" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0 0 8 8">
-
             <PipsPager x:Name="FlipViewPipsPager"
-            VerticalAlignment="Center"
-            HorizontalAlignment="Center"
-            SelectedPageIndex="{x:Bind Path=Gallery.SelectedIndex, Mode=TwoWay}" />
-
+                   VerticalAlignment="Center"
+                   HorizontalAlignment="Center"
+                   SelectedPageIndex="{x:Bind Path=Gallery.SelectedIndex, Mode=TwoWay}" />
         </Grid>
 
     </Grid>

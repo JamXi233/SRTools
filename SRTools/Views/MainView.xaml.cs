@@ -30,6 +30,10 @@ namespace SRTools.Views
         string iconUrl = "";
         GetNotify getNotify = new GetNotify();
 
+        private string imageFolderPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "JSG-LLC", "SRTools", "images");
+        private string imageLinksFilePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "JSG-LLC", "SRTools", "images", "imagelinks.json");
+
+
         public MainView()
         {
             InitializeComponent();
@@ -120,34 +124,57 @@ namespace SRTools.Views
         private async Task LoadAdvertisementDataAsync()
         {
             Logging.Write("LoadAdvertisementData...", 0);
+
+            // 确保文件夹存在
+            if (!Directory.Exists(imageFolderPath))
+            {
+                Directory.CreateDirectory(imageFolderPath);
+            }
+
             Logging.Write("Getting Background: " + backgroundUrl, 0);
-            BackgroundImage.Source = await LoadImageAsync(backgroundUrl);
+
+            try
+            {
+                bool isBackgroundUpdated = await IsImageLinkUpdatedAsync("background", backgroundUrl);
+                if (!isBackgroundUpdated)
+                {
+                    BackgroundImage.Source = await LoadImageAsync(backgroundUrl, "background.jpg");
+                    Logging.Write("Background image loaded from local file", 0);
+                }
+                else
+                {
+                    BackgroundImage.Source = await LoadImageAsync(backgroundUrl, "background.jpg");
+                    Logging.Write("Background image updated and loaded successfully", 0);
+                }
+            }
+            catch (Exception ex)
+            {
+                Logging.Write($"Error loading background image: {ex.Message}", 2);
+            }
 
             try
             {
                 Logging.Write("Getting Button Image: " + iconUrl, 0);
-                IconImageBrush.ImageSource = await LoadImageAsync(iconUrl);
+                bool isIconUpdated = await IsImageLinkUpdatedAsync("icon", iconUrl);
+                if (!isIconUpdated)
+                {
+                    IconImageBrush.ImageSource = await LoadImageAsync(iconUrl, "icon.jpg");
+                    Logging.Write("Button image loaded from local file", 0);
+                }
+                else
+                {
+                    IconImageBrush.ImageSource = await LoadImageAsync(iconUrl, "icon.jpg");
+                    Logging.Write("Button image updated and loaded successfully", 0);
+                }
             }
             catch (Exception e)
             {
                 Logging.Write("Getting Button Image Error: " + e.Message, 0);
             }
 
-            var result = await GetUpdate.GetDependUpdate();
-            var status = result.Status;
-            if (status == 1)
-            {
-                NotificationManager.RaiseNotification("更新提示", "依赖包需要更新\n请尽快到[设置-检查依赖更新]进行更新", InfoBarSeverity.Warning, false, 5);
-            }
-            result = await GetUpdate.GetSRToolsUpdate();
-            status = result.Status;
-            if (status == 1)
-            {
-                NotificationManager.RaiseNotification("更新提示", "SRTools有更新\n可到[设置-检查更新]进行更新", InfoBarSeverity.Warning, false, 5);
-            }
-
             loadRing.Visibility = Visibility.Collapsed;
         }
+
 
         private async Task<string> FetchData(string url)
         {
@@ -205,31 +232,97 @@ namespace SRTools.Views
             }
         }
 
-        private async Task<BitmapImage> LoadImageAsync(string imageUrl)
+        private async Task<BitmapImage> LoadImageAsync(string imageUrl, string fileName)
         {
-            if (imageCache.ContainsKey(imageUrl))
+            string filePath = Path.Combine(imageFolderPath, fileName);
+            BitmapImage bitmapImage = new BitmapImage();
+
+            // 尝试加载本地文件
+            try
             {
-                return imageCache[imageUrl];
+                if (File.Exists(filePath))
+                {
+                    using (var stream = File.OpenRead(filePath))
+                    {
+                        await bitmapImage.SetSourceAsync(stream.AsRandomAccessStream());
+                        imageCache[imageUrl] = bitmapImage;
+                        return bitmapImage;
+                    }
+                }
+                else
+                {
+                    Logging.Write($"Local file not found: {filePath}", 2);
+                }
+            }
+            catch (Exception ex)
+            {
+                Logging.Write($"Error loading local image from {filePath}: {ex.Message}", 2);
             }
 
-            BitmapImage bitmapImage = new BitmapImage();
+            // 本地文件加载失败或不存在，尝试下载并保存图片
             try
             {
                 byte[] imageData = await httpClient.GetByteArrayAsync(imageUrl);
+                await File.WriteAllBytesAsync(filePath, imageData);
+
                 using (var memStream = new MemoryStream(imageData))
                 {
                     memStream.Position = 0;
-                    bitmapImage = new BitmapImage();
                     await bitmapImage.SetSourceAsync(memStream.AsRandomAccessStream());
                 }
+
+                SaveImageLink(fileName, imageUrl);
+                imageCache[imageUrl] = bitmapImage;
             }
-            catch (COMException comEx)
+            catch (Exception ex)
             {
-                Logging.Write("COMException" + comEx, 2);
+                Logging.Write($"Error downloading image from {imageUrl}: {ex.Message}", 2);
             }
 
-            imageCache[imageUrl] = bitmapImage;
             return bitmapImage;
+        }
+
+
+
+
+
+        private async Task<bool> IsImageLinkUpdatedAsync(string imageType, string newUrl)
+        {
+            Dictionary<string, string> imageLinks = new Dictionary<string, string>();
+
+            if (File.Exists(imageLinksFilePath))
+            {
+                string json = await File.ReadAllTextAsync(imageLinksFilePath);
+                imageLinks = JsonSerializer.Deserialize<Dictionary<string, string>>(json);
+            }
+
+            if (imageLinks.ContainsKey(imageType) && imageLinks[imageType] == newUrl)
+            {
+                return false;
+            }
+
+            imageLinks[imageType] = newUrl;
+            string updatedJson = JsonSerializer.Serialize(imageLinks);
+            await File.WriteAllTextAsync(imageLinksFilePath, updatedJson);
+
+            return true;
+        }
+
+
+
+        private void SaveImageLink(string imageType, string newUrl)
+        {
+            Dictionary<string, string> imageLinks = new Dictionary<string, string>();
+
+            if (File.Exists(imageLinksFilePath))
+            {
+                string json = File.ReadAllText(imageLinksFilePath);
+                imageLinks = JsonSerializer.Deserialize<Dictionary<string, string>>(json);
+            }
+
+            imageLinks[imageType] = newUrl;
+            string updatedJson = JsonSerializer.Serialize(imageLinks);
+            File.WriteAllText(imageLinksFilePath, updatedJson);
         }
     }
 }

@@ -25,6 +25,10 @@
                         <Button Style="{StaticResource AccentButtonStyle}" x:Name="selectGame" Content="选择游戏本体" Click="SelectGame" />
                         <Button x:Name="rmGame" Content="清除游戏路径" Click="RMGameLocation"/>
                         <Button x:Name="reloadFrame" Content="刷新" Click="ReloadFrame"/>
+                        <ComboBox Name="serverSelect" VerticalAlignment="Center" SelectionChanged="ServerSelect_SelectionChanged" HorizontalAlignment="Center" Visibility="Collapsed">
+                            <ComboBoxItem Content="官服" />
+                            <ComboBoxItem Content="B服" />
+                        </ComboBox>
                     </StackPanel>
 
                     <StackPanel x:Name="SGFrame" Orientation="Horizontal" Spacing="8">

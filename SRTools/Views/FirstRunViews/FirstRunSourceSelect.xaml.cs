@@ -53,13 +53,6 @@ namespace SRTools.Views.FirstRunViews
             DSerivceChooseFinish();
         }
 
-        private void DService_Gitee_Choose(object sender, RoutedEventArgs e)
-        {
-            ApplicationDataContainer localSettings = ApplicationData.Current.LocalSettings;
-            localSettings.Values["Config_UpdateService"] = 1;
-            DSerivceChooseFinish();
-        }
-
         private void DService_JSG_Choose(object sender, RoutedEventArgs e)
         {
             ApplicationDataContainer localSettings = ApplicationData.Current.LocalSettings;

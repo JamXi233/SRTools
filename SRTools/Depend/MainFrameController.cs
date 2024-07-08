@@ -22,7 +22,6 @@ using Microsoft.UI.Xaml.Controls;
 using SRTools.Views.ToolViews;
 using SRTools.Views;
 using System;
-using SRTools.Views.JSGAccountViews;
 
 namespace SRTools.Depend
 {
@@ -47,9 +46,6 @@ namespace SRTools.Depend
                     break;
                 case "gacha":
                     mainFrame.Navigate(typeof(GachaView));
-                    break;
-                case "jsg_account":
-                    mainFrame.Navigate(typeof(AccountView));
                     break;
                 case "donation":
                     mainFrame.Navigate(typeof(DonationView));

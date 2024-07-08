@@ -20,6 +20,7 @@
 
 using System;
 using System.Diagnostics;
+using System.IO;
 using Windows.Storage;
 
 namespace SRTools.Depend
@@ -31,13 +32,21 @@ namespace SRTools.Depend
         {
             string userDocumentsFolderPath = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
             string gamePath = localSettings.Values["Config_GamePath"] as string;
-            var processInfo = new ProcessStartInfo(gamePath);
 
-            //启动程序
-            processInfo.UseShellExecute = true;
-            processInfo.Verb = "runas";
+            // 获取游戏的执行路径（目录）
+            string gameDirectory = Path.GetDirectoryName(gamePath);
+
+            var processInfo = new ProcessStartInfo(gamePath)
+            {
+                UseShellExecute = true,
+                Verb = "runas",
+                WorkingDirectory = gameDirectory // 设置当前路径为执行路径
+            };
+
+            // 启动程序
             Process.Start(processInfo);
         }
+
 
         public void StartLauncher()
         {
