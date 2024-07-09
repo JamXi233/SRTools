@@ -159,6 +159,7 @@ namespace SRTools.Views.ToolViews
                     gachaView.Visibility = Visibility.Collapsed;
                     loadGachaProgress.Visibility = Visibility.Collapsed;
                     noGachaFound.Visibility = Visibility.Visible;
+                    ExportUIGF.IsEnabled = false;
                     return;
                 }
 
@@ -169,6 +170,7 @@ namespace SRTools.Views.ToolViews
                     loadGachaProgress.Visibility = Visibility.Collapsed;
                     noGachaFound.Visibility = Visibility.Collapsed;
                     gachaView.Visibility = Visibility.Visible;
+                    ExportUIGF.IsEnabled = true;
                     ClearGacha.IsEnabled = true;
                 }
             }

@@ -257,7 +257,7 @@ namespace SRTools.Views
                 }
                 else
                 {
-                    ValidGameFile.Subtitle = "选择正确的StarRail.exe\n通常位于[游戏根目录\\Game\\StarRail.exe]";
+                    ValidGameFile.Subtitle = "选择正确的StarRail.exe\n通常位于[游戏根目录\\StarRail.exe]";
                     ValidGameFile.IsOpen = true;
                 }
             });
