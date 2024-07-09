@@ -94,7 +94,7 @@ namespace SRTools.Depend
             var oitems = new List<ExportSRGF.OItem>();
 
             // 读取每个文件的内容，并将其反序列化为一个List<ExportSRGF.OItem>对象
-            var srtoolsFolder = await KnownFolders.DocumentsLibrary.GetFolderAsync("JSG-LLC\\SRTools");
+            var srtoolsFolder = await KnownFolders.DocumentsLibrary.GetFolderAsync("JSG-LLC\\SRTools\\");
             var files = new List<string> { "GachaRecords_Character.ini", "GachaRecords_LightCone.ini", "GachaRecords_Newbie.ini", "GachaRecords_Regular.ini" };
 
             foreach (var fileName in files)
