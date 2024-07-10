@@ -40,6 +40,7 @@ using static SRTools.App;
 using System.Diagnostics;
 using Microsoft.UI.Xaml.Media.Animation;
 using Microsoft.UI.Xaml.Media;
+using System.ComponentModel.Design;
 
 namespace SRTools
 {
@@ -95,6 +96,7 @@ namespace SRTools
             this.Activated -= MainWindow_Activated;
             await InitializeAppDataAsync();
             await BackgroundImageAsync();
+            await InitStatus();
             CleanUpdate();
             if (AppDataController.GetAutoCheckUpdate() == 1)
             {
@@ -271,7 +273,6 @@ namespace SRTools
             {
                 RegisterSystemThemeChangeEvents(id);
             }
-
         }
 
         private void RegisterSystemThemeChangeEvents(WindowId id)
@@ -338,6 +339,30 @@ namespace SRTools
                 backgroundImage.UriSource = new Uri(backgroundUrl);
                 Background.ImageSource = backgroundImage;
             }
+            if (AppDataController.GetAdminMode() == 1)
+            {
+                if (!ProcessRun.IsRunAsAdmin()) 
+                {
+                    NotificationManager.RaiseNotification("获取管理员权限时出现问题", "您在设置中开启了\n[使用管理员身份运行]\n\n但SRTools并没有正确获取到管理员权限", InfoBarSeverity.Warning); 
+                    AppTitleBar_Status.Text = "Refusal"; 
+                }
+                else AppTitleBar_Status.Text = "Privileged";
+            }
+            if (Debugger.IsAttached || App.SDebugMode) AppTitleBar_Status.Text = "Debugging";
+        }
+
+        private async Task InitStatus()
+        {
+            if (AppDataController.GetAdminMode() == 1)
+            {
+                if (!ProcessRun.IsRunAsAdmin())
+                {
+                    NotificationManager.RaiseNotification("获取管理员权限时出现问题", "您在设置中开启了\n[使用管理员身份运行]\n\n但SRTools并没有正确获取到管理员权限", InfoBarSeverity.Warning);
+                    AppTitleBar_Status.Text = "Refusal";
+                }
+                else AppTitleBar_Status.Text = "Privileged";
+            }
+            if (Debugger.IsAttached || App.SDebugMode) AppTitleBar_Status.Text = "Debugging";
         }
 
         private void NavView_SelectionChanged(NavigationView sender, NavigationViewSelectionChangedEventArgs args)
@@ -387,7 +412,7 @@ namespace SRTools
                     errorMessage = ex.Message.Trim() + "\n\n已生成错误报告\n如再次尝试仍会重现错误\n您可以到Github提交Issue";
                 }
 
-                ExpectionFileName = string.Format("SRTools_Panic_{0:yyyyMMdd_HHmmss}.WaveToolsPanic", DateTime.Now);
+                ExpectionFileName = string.Format("SRTools_Panic_{0:yyyyMMdd_HHmmss}.SRToolsPanic", DateTime.Now);
 
                 // 显示InfoBar通知
                 AddNotification("严重错误", errorMessage, severity, true, 0, () =>

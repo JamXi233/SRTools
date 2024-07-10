@@ -47,9 +47,10 @@
                         <Button x:Name="backupData" Click="Backup_Data" Content="备份数据" Margin="0 0 0 10"/>
                         <Button x:Name="restoreData" Click="Restore_Data_Click" Content="还原数据" Margin="0 0 0 10"/>
                         <StackPanel Orientation="Horizontal">
-                            <Button x:Name="installSFF" Click="Install_Font_Click" Content="安装图标字体" Margin="0 0 10 0"/>
+                            <Button x:Name="installSFF" Click="Install_Font_Click" Content="安装图标字体" Margin="0 0 0 10"/>
                             <ProgressRing x:Name="installSFF_Progress" Height="20" Width="20" Visibility="Collapsed"/>
                         </StackPanel>
+                        <ToggleButton x:Name="adminModeToggle" Click="Admin_Mode_Toggle" Content="使用管理员身份运行" Margin="0 0 10 0"/>
                         <StackPanel x:Name="other" Margin="0 12 0 10" Visibility="Visible">
                             <RadioButtons x:Name="themeRadio" Header="主题设置" FontSize="16" FontWeight="Bold" Margin="0 12 0 0">
                                 <RadioButton x:Name="themeRadio_Follow" Checked="ThemeRadio_Follow">
