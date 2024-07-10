@@ -340,7 +340,8 @@ namespace SRTools.Views.ToolViews
         {
             var window = new Window();
             string recordsBasePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), @"JSG-LLC\SRTools\GachaRecords");
-
+            DateTime now = DateTime.Now;
+            string formattedDate = now.ToString("yyyy_MM_dd_HH_mm_ss");
             // 打开文件选择器
             var savePicker = new FileSavePicker();
             var hwnd = WindowNative.GetWindowHandle(window);
@@ -348,7 +349,7 @@ namespace SRTools.Views.ToolViews
 
             savePicker.SuggestedStartLocation = PickerLocationId.DocumentsLibrary;
             savePicker.FileTypeChoices.Add("Uniformed Interchangeable GachaLog Format standard v4.0", new List<string>() { ".json" });
-            savePicker.SuggestedFileName = $"SRTools_Gacha_{selectedUid}_Export_UIGF4";
+            savePicker.SuggestedFileName = $"SRTools_Gacha_Export_{selectedUid}_{formattedDate}_UIGF4";
 
             StorageFile exportFile = await savePicker.PickSaveFileAsync();
             if (exportFile != null)

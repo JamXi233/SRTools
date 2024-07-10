@@ -157,7 +157,7 @@ namespace SRTools.Views.GachaViews
         {
             Logging.Write("Calculating pity", 0);
             var selectedCardPool = cardPoolInfo.CardPools.FirstOrDefault(cp => cp.CardPoolId == selectedCardPoolId);
-            var specialNames = new List<string> { "猫又", "「11号」", "珂蕾妲", "莱卡恩", "格莉丝", "丽娜" };
+            var specialNames = new List<string> { "姬子", "瓦尔特", "布洛妮娅", "杰帕德", "克拉拉", "彦卿", "白露" };
 
             if (specialNames.Contains(name))
             {
@@ -262,9 +262,9 @@ namespace SRTools.Views.GachaViews
             var stackPanelBasicInfo = new StackPanel();
             stackPanelBasicInfo.Children.Add(new TextBlock { Text = $"UID: {gachaData.info.uid}", FontWeight = FontWeights.Bold });
             stackPanelBasicInfo.Children.Add(new TextBlock { Text = $"总计抽数: {selectedRecords.Count}" });
-            stackPanelBasicInfo.Children.Add(new TextBlock { Text = $"抽到S级次数: {rank5Records.Count}" });
-            stackPanelBasicInfo.Children.Add(new TextBlock { Text = $"抽到A级次数: {rank4Records.Count}" });
-            stackPanelBasicInfo.Children.Add(new TextBlock { Text = $"预计使用菲林: {selectedRecords.Count * 160}" });
+            stackPanelBasicInfo.Children.Add(new TextBlock { Text = $"抽到5星次数: {rank5Records.Count}" });
+            stackPanelBasicInfo.Children.Add(new TextBlock { Text = $"抽到4星次数: {rank4Records.Count}" });
+            stackPanelBasicInfo.Children.Add(new TextBlock { Text = $"预计使用星琼: {selectedRecords.Count * 160}" });
             basicInfoPanel.Child = stackPanelBasicInfo;
             contentPanel.Children.Add(basicInfoPanel);
 
@@ -272,31 +272,31 @@ namespace SRTools.Views.GachaViews
             var stackPanelDetailInfo = new StackPanel();
             stackPanelDetailInfo.Children.Add(new TextBlock { Text = "详细统计", FontWeight = FontWeights.Bold });
 
-            stackPanelDetailInfo.Children.Add(new TextBlock { Text = $"S级平均抽数: {averageDraws5Star}抽" });
-            stackPanelDetailInfo.Children.Add(new TextBlock { Text = $"A级平均抽数: {averageDraws4Star}抽" });
+            stackPanelDetailInfo.Children.Add(new TextBlock { Text = $"5星平均抽数: {averageDraws5Star}抽" });
+            stackPanelDetailInfo.Children.Add(new TextBlock { Text = $"4星平均抽数: {averageDraws4Star}抽" });
 
             string rate4Star = rank4Records.Count > 0 ? (rank4Records.Count / (double)selectedRecords.Count * 100).ToString("F2") + "%" : "∞";
             string rate5Star = rank5Records.Count > 0 ? (rank5Records.Count / (double)selectedRecords.Count * 100).ToString("F2") + "%" : "∞";
 
-            stackPanelDetailInfo.Children.Add(new TextBlock { Text = $"S级获取率: {rate5Star}" });
-            stackPanelDetailInfo.Children.Add(new TextBlock { Text = $"A级获取率: {rate4Star}" });
+            stackPanelDetailInfo.Children.Add(new TextBlock { Text = $"5星获取率: {rate5Star}" });
+            stackPanelDetailInfo.Children.Add(new TextBlock { Text = $"4星获取率: {rate4Star}" });
 
             if (rank5Records.Any())
             {
-                stackPanelDetailInfo.Children.Add(new TextBlock { Text = $"最近S级: {rank5Records.First().time}" });
+                stackPanelDetailInfo.Children.Add(new TextBlock { Text = $"最近5星: {rank5Records.First().time}" });
             }
             else
             {
-                stackPanelDetailInfo.Children.Add(new TextBlock { Text = "最近S级: ∞" });
+                stackPanelDetailInfo.Children.Add(new TextBlock { Text = "最近5星: ∞" });
             }
 
             if (rank4Records.Any())
             {
-                stackPanelDetailInfo.Children.Add(new TextBlock { Text = $"最近A级: {rank4Records.First().time}" });
+                stackPanelDetailInfo.Children.Add(new TextBlock { Text = $"最近4星: {rank4Records.First().time}" });
             }
             else
             {
-                stackPanelDetailInfo.Children.Add(new TextBlock { Text = "最近A级: ∞" });
+                stackPanelDetailInfo.Children.Add(new TextBlock { Text = "最近4星: ∞" });
             }
 
             detailInfoPanel.Child = stackPanelDetailInfo;
@@ -305,7 +305,7 @@ namespace SRTools.Views.GachaViews
             // 创建五星垫次数卡片
             var borderFiveStar = CreateDetailBorder();
             var stackPanelFiveStar = new StackPanel();
-            stackPanelFiveStar.Children.Add(new TextBlock { Text = $"距离上一个S级已经垫了{countSinceLast5Star}发", FontWeight = FontWeights.Bold });
+            stackPanelFiveStar.Children.Add(new TextBlock { Text = $"距离上一个5星已经垫了{countSinceLast5Star}发", FontWeight = FontWeights.Bold });
 
             var selectedCardPool = cardPoolInfo.CardPools.FirstOrDefault(cp => cp.CardPoolId == selectedCardPoolId);
             if (selectedCardPool != null && selectedCardPool.FiveStarPity.HasValue)
@@ -321,7 +321,7 @@ namespace SRTools.Views.GachaViews
             // 创建四星垫次数卡片
             var borderFourStar = CreateDetailBorder();
             var stackPanelFourStar = new StackPanel();
-            stackPanelFourStar.Children.Add(new TextBlock { Text = $"距离上一个A级已经抽了{countSinceLast4Star}发", FontWeight = FontWeights.Bold });
+            stackPanelFourStar.Children.Add(new TextBlock { Text = $"距离上一个4星已经抽了{countSinceLast4Star}发", FontWeight = FontWeights.Bold });
 
             if (selectedCardPool != null && selectedCardPool.FourStarPity.HasValue)
             {
