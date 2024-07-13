@@ -80,7 +80,7 @@ namespace SRTools.Views.SGViews
                 currentAccount.IsEnabled = true;
             }
 
-            if (!accountexist && CurrentLoginUID != "0" && CurrentLoginUID != "目前未登录ID")
+            if (!accountexist && CurrentLoginUID != "0" && CurrentLoginUID != "目前未登录ID" && CurrentLoginUID != "未启动过游戏")
             {
                 Account newAccount = new Account { uid = CurrentLoginUID, name = "未保存", nuser = true };
                 accounts.Add(newAccount);

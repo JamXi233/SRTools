@@ -22,27 +22,49 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 using Microsoft.UI;
 using Microsoft.UI.Text;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Data;
 using Microsoft.UI.Xaml.Media;
+using Microsoft.UI.Xaml.Media.Imaging;
 using Newtonsoft.Json;
 using SRTools.Depend;
 using SRTools.Views.ToolViews;
+using static SRTools.App;
+using Windows.Graphics.Imaging;
+using Windows.Storage.Streams;
 
 namespace SRTools.Views.GachaViews
 {
-    public sealed partial class TempGachaView : Page
+    public sealed partial class ScreenShotGacha : Page
     {
-        private CountToProgressWidthConverter progressWidthConverter;
-        public TempGachaView()
+        public static bool isShowGachaRecords = false;
+        public static bool isScreenShotSelf = false;
+        public static bool isHideUID = true;
+        public static bool isFinished = false;
+        public static string FilePath = null;
+        public TaskCompletionSource<bool> TaskCompletionSource { get; set; }
+        public Window CurrentWindow { get; set; }
+        public ScreenShotGacha()
         {
             this.InitializeComponent();
-            Logging.Write("Switch to TempGachaView", 0);
-            progressWidthConverter = new CountToProgressWidthConverter();
+            Logging.Write("Switch to ScreenShotGacha", 0);
             LoadData();
+            if (isShowGachaRecords)
+            {
+                GachaRecords_Viewer.Visibility = Visibility.Visible;
+            }
+            else
+            {
+                GachaRecords_Viewer.Visibility = Visibility.Collapsed;
+                if (TempGachaGrid.ColumnDefinitions.Count > 0)
+                {
+                    TempGachaGrid.ColumnDefinitions.RemoveAt(TempGachaGrid.ColumnDefinitions.Count - 1);
+                }
+            }
         }
 
         private async void LoadData()
@@ -84,24 +106,114 @@ namespace SRTools.Views.GachaViews
             Logging.Write("Grouped records by name", 0);
 
             // 显示记录详情
-            DisplayGachaDetails(gachaData, rank4Records, rank5Records, selectedCardPoolId, GachaView.cardPoolInfo);
+            Task displayGachaDetailsTask = DisplayGachaDetails(gachaData, rank4Records, rank5Records, selectedCardPoolId, GachaView.cardPoolInfo);
 
             // 显示抽卡详情
-            DisplayGachaInfo(records, selectedCardPoolId);
+            Task displayGachaInfoTask = DisplayGachaInfo(records, selectedCardPoolId);
 
             // 显示跃迁记录
-            DisplayGachaRecords(records);
+            Task displayGachaRecordsTask = DisplayGachaRecords(records);
 
+            // 等待所有任务完成
+            await Task.WhenAll(displayGachaDetailsTask, displayGachaInfoTask, displayGachaRecordsTask);
+            await Task.Delay(1000);
             Logging.Write("LoadData method finished", 0);
+            if (isScreenShotSelf)
+            {
+                await CaptureScreenshotAsync(this.Content);
+            }
         }
 
-        private void DisplayGachaRecords(List<GachaModel.GachaRecord> records)
+        public void CloseWindow()
+        {
+            isFinished = true;
+            TaskCompletionSource?.SetResult(isScreenShotSelf);
+            CurrentWindow?.Close(); // 使用保存的窗口实例关闭窗口
+        }
+
+        private string MaskUID(string uid)
+        {
+            if (uid.Length < 1) return uid; // 防止UID长度不足
+
+            char lastChar = uid[uid.Length - 1];
+            return new string('●', uid.Length - 1) + lastChar;
+        }
+
+
+        public async Task CaptureScreenshotAsync(UIElement element)
+        {
+            try
+            {
+                // 渲染 UIElement 到 RenderTargetBitmap
+                var renderTargetBitmap = new RenderTargetBitmap();
+                await renderTargetBitmap.RenderAsync(element);
+
+                // 获取像素数据
+                var pixelBuffer = await renderTargetBitmap.GetPixelsAsync();
+
+                // 使用 DataReader 将 IBuffer 转换为字节数组
+                byte[] pixels;
+                using (var reader = DataReader.FromBuffer(pixelBuffer))
+                {
+                    pixels = new byte[pixelBuffer.Length];
+                    reader.ReadBytes(pixels);
+                }
+
+                // 获取文档文件夹路径并创建子文件夹
+                string documentsPath = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+                string jsgFolderPath = Path.Combine(documentsPath, "JSG-LLC");
+                string SRToolsFolderPath = Path.Combine(jsgFolderPath, "SRTools");
+                string gachaScreenshotsFolderPath = Path.Combine(SRToolsFolderPath, "GachaScreenshots");
+
+                // 创建子文件夹
+                Directory.CreateDirectory(gachaScreenshotsFolderPath);
+
+                var now = DateTime.Now.ToString("yyyy-MM-dd-HH-mm-ss");
+                // 创建文件路径
+                string filePath = Path.Combine(gachaScreenshotsFolderPath, "GachaScreenShot_" + GachaView.selectedUid + "_" + now + ".png");
+
+                // 使用 System.IO 创建文件并保存像素数据
+                using (var fileStream = new FileStream(filePath, FileMode.Create, FileAccess.Write))
+                {
+                    var encoder = await BitmapEncoder.CreateAsync(BitmapEncoder.PngEncoderId, fileStream.AsRandomAccessStream());
+                    encoder.SetPixelData(
+                        BitmapPixelFormat.Bgra8,
+                        BitmapAlphaMode.Ignore,
+                        (uint)renderTargetBitmap.PixelWidth,
+                        (uint)renderTargetBitmap.PixelHeight,
+                        96, 96,
+                        pixels
+                    );
+
+                    await encoder.FlushAsync();
+                }
+                SharedDatas.ScreenShotData.ScreenShotPath = filePath;
+                isFinished = true;
+                CloseWindow();
+            }
+            catch (Exception ex)
+            {
+                DialogManager.RaiseDialog(XamlRoot, "", "");
+                var dialog = new ContentDialog
+                {
+                    Title = "错误",
+                    Content = $"获取截图时发生错误: {ex.Message}",
+                    CloseButtonText = "确定"
+                };
+
+                await dialog.ShowAsync();
+            }
+        }
+
+
+
+        private async Task DisplayGachaRecords(List<GachaModel.GachaRecord> records)
         {
             Logging.Write("Displaying gacha records", 0);
             GachaRecords_List.ItemsSource = records;
         }
 
-        private void DisplayGachaInfo(List<GachaModel.GachaRecord> records, int selectedCardPoolId)
+        private async Task DisplayGachaInfo(List<GachaModel.GachaRecord> records, int selectedCardPoolId)
         {
             Logging.Write("Displaying gacha info", 0);
             var selectedCardPool = GachaView.cardPoolInfo.CardPools.FirstOrDefault(cp => cp.CardPoolId == selectedCardPoolId);
@@ -192,15 +304,14 @@ namespace SRTools.Views.GachaViews
             return intervals;
         }
 
-        private void DisplayGachaDetails(GachaModel.GachaData gachaData, List<GachaModel.GachaRecord> rank4Records, List<GachaModel.GachaRecord> rank5Records, int selectedCardPoolId, GachaModel.CardPoolInfo cardPoolInfo)
+        private async Task DisplayGachaDetails(GachaModel.GachaData gachaData, List<GachaModel.GachaRecord> rank4Records, List<GachaModel.GachaRecord> rank5Records, int selectedCardPoolId, GachaModel.CardPoolInfo cardPoolInfo)
         {
             Logging.Write("Displaying gacha details", 0);
             Gacha_Panel.Children.Clear();
             var scrollView = new ScrollViewer
             {
                 HorizontalScrollBarVisibility = ScrollBarVisibility.Hidden,
-                VerticalScrollBarVisibility = ScrollBarVisibility.Hidden,
-                Height = 320
+                VerticalScrollBarVisibility = ScrollBarVisibility.Hidden
             };
 
             var contentPanel = new StackPanel();
@@ -254,13 +365,17 @@ namespace SRTools.Views.GachaViews
             string averageDraws4Star = fourStarIntervals.Count > 0 ? (fourStarIntervals.Average()).ToString("F2") : "∞";
             string averageDraws5Star = fiveStarIntervals.Count > 0 ? (fiveStarIntervals.Average()).ToString("F2") : "∞";
 
-            Gacha_UID.Text = gachaData.info.uid;
+            if (isHideUID) Gacha_UID.Text = MaskUID(gachaData.info.uid);
+            else Gacha_UID.Text = gachaData.info.uid;
             GachaRecords_Count.Text = "共" + selectedRecords.Count() + "抽";
             GachaInfo_SinceLast5Star.Text = $"垫了{countSinceLast5Star}发";
 
             var basicInfoPanel = CreateDetailBorder();
             var stackPanelBasicInfo = new StackPanel();
-            stackPanelBasicInfo.Children.Add(new TextBlock { Text = $"UID: {gachaData.info.uid}", FontWeight = FontWeights.Bold });
+            if (isHideUID)
+                stackPanelBasicInfo.Children.Add(new TextBlock { Text = $"UID: {MaskUID(gachaData.info.uid)}", FontWeight = FontWeights.Bold });
+            else
+                stackPanelBasicInfo.Children.Add(new TextBlock { Text = $"UID: {gachaData.info.uid}", FontWeight = FontWeights.Bold }); 
             stackPanelBasicInfo.Children.Add(new TextBlock { Text = $"总计抽数: {selectedRecords.Count}" });
             stackPanelBasicInfo.Children.Add(new TextBlock { Text = $"抽到5星次数: {rank5Records.Count}" });
             stackPanelBasicInfo.Children.Add(new TextBlock { Text = $"抽到4星次数: {rank4Records.Count}" });
@@ -362,123 +477,4 @@ namespace SRTools.Views.GachaViews
             };
         }
     }
-
-    public class RankTypeToBackgroundColorConverter : IValueConverter
-    {
-        public object Convert(object value, Type targetType, object parameter, string language)
-        {
-            var qualityLevel = value as string;
-            SolidColorBrush brush;
-
-            switch (qualityLevel)
-            {
-                case "5":
-                    // Gold color: #FFE2AC58
-                    brush = new SolidColorBrush(ColorHelper.FromArgb(0xFF, 0xE2, 0xAC, 0x58));
-                    break;
-                case "4":
-                    // Purple color: #FF7242B3
-                    brush = new SolidColorBrush(ColorHelper.FromArgb(0xFF, 0x72, 0x42, 0xB3));
-                    break;
-                case "3":
-                    // Dark Blue color: #FF3F5992
-                    brush = new SolidColorBrush(ColorHelper.FromArgb(0xFF, 0x3F, 0x59, 0x92));
-                    break;
-                default:
-                    brush = new SolidColorBrush(Colors.Transparent);
-                    break;
-            }
-            return brush;
-        }
-
-        public object ConvertBack(object value, Type targetType, object parameter, string language)
-        {
-            throw new NotImplementedException("Converting from a SolidColorBrush to a string is not supported.");
-        }
-    }
-
-    public class CountToBackgroundColorConverter : IValueConverter
-    {
-        public object Convert(object value, Type targetType, object parameter, string language)
-        {
-            int count = int.Parse(value.ToString());
-            SolidColorBrush brush;
-            if (count >= 0 && count <= 40)
-            {
-                brush = new SolidColorBrush(Colors.Green);
-            }
-            else if (count >= 41 && count <= 70)
-            {
-                brush = new SolidColorBrush(Colors.Orange);
-            }
-            else if (count >= 71 && count <= 90)
-            {
-                brush = new SolidColorBrush(Colors.Red);
-            }
-            else
-            {
-                brush = new SolidColorBrush(Colors.Transparent);
-            }
-            Logging.Write($"Converting count {count} to background color", 0);
-            return brush;
-        }
-
-        public object ConvertBack(object value, Type targetType, object parameter, string language)
-        {
-            throw new NotImplementedException();
-        }
-    }
-
-    public class CountToProgressBackgroundColorConverter : IValueConverter
-    {
-        public object Convert(object value, Type targetType, object parameter, string language)
-        {
-            int count = int.Parse(value.ToString());
-            SolidColorBrush brush;
-            if (count >= 0 && count <= 40)
-            {
-                brush = new SolidColorBrush(Colors.DarkGreen);
-            }
-            else if (count >= 41 && count <= 70)
-            {
-                brush = new SolidColorBrush(Colors.DarkOrange);
-            }
-            else if (count >= 71 && count <= 90)
-            {
-                brush = new SolidColorBrush(Colors.DarkRed);
-            }
-            else
-            {
-                brush = new SolidColorBrush(Colors.Transparent);
-            }
-            Logging.Write($"Converting count {count} to progress background color", 0);
-            return brush;
-        }
-
-        public object ConvertBack(object value, Type targetType, object parameter, string language)
-        {
-            throw new NotImplementedException();
-        }
-    }
-
-    public class CountToProgressWidthConverter : IValueConverter
-    {
-        public object Convert(object value, Type targetType, object parameter, string language)
-        {
-            // 获取 Count 的值
-            int count = int.Parse((string)value);
-
-            // 定义最大宽度
-            double maxWidth = 290;
-            double width = (count / (double)SharedDatas.Gacha.FiveStarPity) * maxWidth;
-            Logging.Write($"Converting count {count} to progress width {width}", 0);
-            return Math.Min(width, maxWidth);
-        }
-
-        public object ConvertBack(object value, Type targetType, object parameter, string language)
-        {
-            throw new NotImplementedException();
-        }
-    }
-
 }

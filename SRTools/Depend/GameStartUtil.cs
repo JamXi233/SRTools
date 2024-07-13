@@ -46,17 +46,5 @@ namespace SRTools.Depend
             // 启动程序
             Process.Start(processInfo);
         }
-
-
-        public void StartLauncher()
-        {
-            string gamePath = localSettings.Values["Config_GamePath"] as string;
-            var processInfo = new ProcessStartInfo(gamePath.Replace("StarRail.exe", "..\\launcher.exe"));
-
-            //启动程序
-            processInfo.UseShellExecute = true;
-            processInfo.Verb = "runas";
-            Process.Start(processInfo);
-        }
     }
 }

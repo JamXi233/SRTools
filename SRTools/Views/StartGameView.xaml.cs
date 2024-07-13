@@ -241,17 +241,12 @@ namespace SRTools.Views
 
         private async void SelectGame(object sender, RoutedEventArgs e)
         {
-            var picker = new FileOpenPicker();
-            picker.FileTypeFilter.Add(".exe");
-            var window = new Window();
-            var hwnd = WinRT.Interop.WindowNative.GetWindowHandle(window);
-            WinRT.Interop.InitializeWithWindow.Initialize(picker, hwnd);
             await AnsiConsole.Status().StartAsync("等待选择文件...", async ctx =>
             {
-                var file = await picker.PickSingleFileAsync();
-                if (file != null && file.Name == "StarRail.exe")
+                string filePath = await CommonHelpers.FileHelpers.OpenFile(".exe");
+                if (filePath != null && filePath.Contains("StarRail.exe"))
                 {
-                    AppDataController.SetGamePath(@file.Path);
+                    AppDataController.SetGamePath(filePath);
                     LoadDataAsync();
                     await Depend.Region.GetRegion(true);
                 }

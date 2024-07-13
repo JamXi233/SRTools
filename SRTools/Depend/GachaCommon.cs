@@ -124,7 +124,7 @@ namespace SRTools.Depend
                     if (infoData.ContainsKey("uid"))
                     {
                         string updatesrgfuid = infoData["uid"].ToString();
-                        SharedData.UpdateSRGFUID = updatesrgfuid;
+                        SharedDatas.UpdateSRGF.UpdateSRGFUID = updatesrgfuid;
                     }
                     return 2;
                 }

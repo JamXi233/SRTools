@@ -342,31 +342,25 @@ namespace SRTools.Views
             DateTime now = DateTime.Now;
             string formattedDate = now.ToString("yyyy_MM_dd_HH_mm_ss");
             string userDocumentsFolderPath = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
-            var savePicker = new FileSavePicker();
-            savePicker.FileTypeChoices.Add("Zip Archive", new List<string>() { ".SRToolsBackup" });
-            savePicker.SuggestedStartLocation = PickerLocationId.DocumentsLibrary;
-            savePicker.SuggestedFileName = "SRTools_Backup_" + formattedDate;
-            var window = new Window();
-            var hwnd = WinRT.Interop.WindowNative.GetWindowHandle(window);
-            WinRT.Interop.InitializeWithWindow.Initialize(savePicker, hwnd);
-            try
+            var suggestFileName = "SRTools_Backup_" + formattedDate;
+            var fileTypeChoices = new Dictionary<string, List<string>>
             {
-                StorageFile file = await savePicker.PickSaveFileAsync();
-                if (file != null)
+                { "Zip Archive", new List<string> { ".json" } }
+            };
+            var defaultExtension = ".SRToolsBackup";
+
+            string filePath = await CommonHelpers.FileHelpers.SaveFile(suggestFileName, fileTypeChoices, defaultExtension);
+
+            if (filePath != null)
+            {
+                string startPath = userDocumentsFolderPath + @"\JSG-LLC\SRTools";
+                string zipPath = filePath;
+                if (File.Exists(zipPath))
                 {
-                    string startPath = userDocumentsFolderPath + @"\JSG-LLC\SRTools";
-                    string zipPath = file.Path;
-                    if (File.Exists(zipPath))
-                    {
-                        File.Delete(zipPath);
-                    }
-                    ZipFile.CreateFromDirectory(startPath, zipPath);
-                    NotificationManager.RaiseNotification("备份完成", null, InfoBarSeverity.Success, true, 1);
+                    File.Delete(zipPath);
                 }
-            }
-            finally
-            {
-                window.Close();
+                ZipFile.CreateFromDirectory(startPath, zipPath);
+                NotificationManager.RaiseNotification("备份完成", null, InfoBarSeverity.Success, true, 1);
             }
         }
 
@@ -378,27 +372,17 @@ namespace SRTools.Views
         private async void Restore_Data()
         {
             WaitOverlayManager.RaiseWaitOverlay(true, "等待选择还原文件", null, false);
-            var picker = new FileOpenPicker();
-            picker.FileTypeFilter.Add(".SRToolsBackup");
-            var window = new Window();
-            var hwnd = WinRT.Interop.WindowNative.GetWindowHandle(window);
-            WinRT.Interop.InitializeWithWindow.Initialize(picker, hwnd);
-            try
+
+            string filePath = await CommonHelpers.FileHelpers.OpenFile(".SRToolsBackup");
+
+            if (filePath != null)
             {
-                var file = await picker.PickSingleFileAsync();
-                if (file != null)
-                {
-                    string userDocumentsFolderPath = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
-                    Task.Run(() => Clear_AllData_NoClose(null, null)).Wait();
-                    Task.Run(() => ZipFile.ExtractToDirectory(file.Path, userDocumentsFolderPath + "\\JSG-LLC\\SRTools\\")).Wait();
-                    await ProcessRun.RestartApp();
-                }
-                else WaitOverlayManager.RaiseWaitOverlay(false);
+                string userDocumentsFolderPath = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+                Task.Run(() => Clear_AllData_NoClose(null, null)).Wait();
+                Task.Run(() => ZipFile.ExtractToDirectory(filePath, userDocumentsFolderPath + "\\JSG-LLC\\SRTools\\")).Wait();
+                await ProcessRun.RestartApp();
             }
-            finally
-            {
-                window.Close();
-            }
+            else WaitOverlayManager.RaiseWaitOverlay(false);
         }
 
         private async void Install_Font_Click(object sender, RoutedEventArgs e)

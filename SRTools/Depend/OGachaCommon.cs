@@ -157,12 +157,12 @@ namespace SRTools.Depend
 
         public async Task ImportSRGF()
         {
-            string jsonData = await File.ReadAllTextAsync(SharedData.UpdateSRGFFilePath);
+            string jsonData = await File.ReadAllTextAsync(SharedDatas.UpdateSRGF.UpdateSRGFFilePath);
             var srgfData = JsonSerializer.Deserialize<OGachaCommon>(jsonData);
 
             // 获取 uid
             var uid = srgfData.info?.uid;
-            SharedData.UpdateSRGFUID = uid;
+            SharedDatas.UpdateSRGF.UpdateSRGFUID = uid;
 
             // 创建四个不同的列表
             List<OItem> gachaCharacterList = new List<OItem>();

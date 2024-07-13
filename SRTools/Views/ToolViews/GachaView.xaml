@@ -10,7 +10,7 @@
 
     <Grid HorizontalAlignment="Stretch" Margin="24">
         <Grid.RowDefinitions>
-            <RowDefinition Height="1*"/>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="6*"/>
         </Grid.RowDefinitions>
 
@@ -38,6 +38,7 @@
               Width="120" Margin="8,0,0,8"
               SelectionChanged="GachaRecordsUID_SelectionChanged">
                 </ComboBox>
+                <Button x:Name="CreateCapture" Content="创建截图" Click="CreateCapture_Click" Margin="8 0 0 8"/>
             </StackPanel>
             <StackPanel HorizontalAlignment="Stretch" Orientation="Horizontal">
                 <TextBlock Text="状态:" />
@@ -58,10 +59,10 @@
                     <TextBlock Visibility="Visible" Text="无跃迁记录" Margin="0 12 0 0"/>
                 </StackPanel>
             </Grid>
-            <StackPanel x:Name="gachaView" Grid.Column="0" Visibility="Collapsed">
+            <StackPanel x:Name="gachaView" Visibility="Collapsed">
                 <SelectorBar x:Name="gachaNav">
                 </SelectorBar>
-                <Frame x:Name="gachaFrame" Margin="12"/>
+                <Frame x:Name="gachaFrame" Margin="12" />
             </StackPanel>
         </Grid>
 
