@@ -340,8 +340,12 @@ namespace SRTools.Views.ToolViews
             }
         }
 
-
         private async void ExportUIGF_Click(object sender, RoutedEventArgs e)
+        {
+            DialogManager.RaiseDialog(XamlRoot, "导出记录", "目前导出记录仅支持UIGF4.0\nUIGF4.0目前为实验性支持\n不保证未来正式版可以正常导入", true, "仍要导出", ExportUIGF_Run);
+        }
+
+        private async void ExportUIGF_Run()
         {
             string recordsBasePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), @"JSG-LLC\SRTools\GachaRecords");
             DateTime now = DateTime.Now;
@@ -362,6 +366,11 @@ namespace SRTools.Views.ToolViews
         }
 
         private async void ImportUIGF_Click(object sender, RoutedEventArgs e)
+        {
+            DialogManager.RaiseDialog(XamlRoot, "导入记录", "目前导入记录支持UIGF4.0及SRGF1.0\nUIGF4.0目前为实验性支持", true, "选择文件", ImportUIGF_Run);
+        }
+
+        private async void ImportUIGF_Run()
         {
             string filePath = await CommonHelpers.FileHelpers.OpenFile(".json");
 
