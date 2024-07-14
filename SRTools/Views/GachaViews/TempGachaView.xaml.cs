@@ -469,7 +469,7 @@ namespace SRTools.Views.GachaViews
             int count = int.Parse((string)value);
 
             // 定义最大宽度
-            double maxWidth = 290;
+            double maxWidth = 294;
             double width = (count / (double)SharedDatas.Gacha.FiveStarPity) * maxWidth;
             Logging.Write($"Converting count {count} to progress width {width}", 0);
             return Math.Min(width, maxWidth);
