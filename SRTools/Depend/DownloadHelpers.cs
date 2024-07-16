@@ -8,7 +8,7 @@ using System.IO.Compression;
 namespace SRTools.Depend
 {
     // 全局状态管理器
-    public class DownloadManager
+    public class DownloadHelpers
     {
         public static double CurrentProgress { get; set; }
         public static string CurrentSpeed { get; set; }

@@ -15,6 +15,7 @@ using Microsoft.UI.Xaml.Navigation;
 using System.IO;
 using System.IO.Compression;
 using System.Runtime.InteropServices;
+using Microsoft.WindowsAPICodePack.Taskbar;
 
 namespace SRTools.Views
 {
@@ -25,6 +26,8 @@ namespace SRTools.Views
         private DispatcherQueueTimer dispatcherTimer_Game;
         public static string GS = null;
         public static bool isUserTap = true;
+        bool isGameUpdateRequire = false;
+
         [DllImport("User32.dll")]
         public static extern short GetAsyncKeyState(int vKey);
         public StartGameView()
@@ -33,6 +36,8 @@ namespace SRTools.Views
             Logging.Write("Switch to StartGameView", 0);
             this.Loaded += StartGameView_Loaded;
             this.Unloaded += OnUnloaded;
+
+            GameUpdate.OnLoadData += LoadDataAsync;
 
             InitializeDispatcherQueue();
             InitializeTimers();
@@ -45,7 +50,7 @@ namespace SRTools.Views
 
         private void InitializeTimers()
         {
-            DownloadManager.DownloadProgressChanged += UpdateProgressChanged;
+            DownloadHelpers.DownloadProgressChanged += UpdateProgressChanged;
             dispatcherTimer_Game = CreateTimer(TimeSpan.FromSeconds(0.2), CheckProcess_Game);
             dispatcherTimer_Game.Start();
         }
@@ -93,17 +98,8 @@ namespace SRTools.Views
                     {
                         serverSelect.Visibility = Visibility.Visible;
                         await GameUpdate.ExtractGameInfo();
-                        bool isGameUpdateRequire = await GameUpdate.CheckAndUpdateGame();
-                        if (isGameUpdateRequire)
-                        {
-                            if (DownloadManager.isPaused) startUpdate.Visibility = Visibility.Visible;
-                            else updateRunning.Visibility = Visibility.Visible;
-                        }
-                        else
-                        {
-                            startGame.Visibility = Visibility.Visible;
-                            updateRunning.Visibility = Visibility.Collapsed;
-                        }
+                        isGameUpdateRequire = await GameUpdate.CheckAndUpdateGame();
+                        UpdateUI();
                         if (GameRegion == "Bili")
                         {
                             Frame_AccountView_Disable.Visibility = Visibility.Visible;
@@ -171,7 +167,7 @@ namespace SRTools.Views
                 string extrasPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "JSG-LLC", "SRTools", "Extras", "ServerChange");
                 string dllFilePath = Path.Combine(extrasPath, "PCGameSDK.dll");
                 string sdkFilePath = Path.Combine(extrasPath, "sdk_pkg_version");
-                if (isShiftPressed) DialogManager.RaiseDialog(XamlRoot, "遇到问题了？", "重新额外的文件", true, "下载", async () => await DownloadManager.DownloadSDK(extrasPath));
+                if (isShiftPressed) DialogManager.RaiseDialog(XamlRoot, "遇到问题了？", "重新额外的文件", true, "下载", async () => await DownloadHelpers.DownloadSDK(extrasPath));
                 if (File.Exists(dllFilePath))
                 {
                     string gamePath = AppDataController.GetGamePathWithoutGameName();
@@ -197,7 +193,7 @@ namespace SRTools.Views
                 else
                 {
                     ReloadFrame(null,null);
-                    DialogManager.RaiseDialog(XamlRoot,"未找到Extra文件","您需要下载额外的文件来使用服务器切换",true,"下载", async () => await DownloadManager.DownloadSDK(extrasPath));
+                    DialogManager.RaiseDialog(XamlRoot,"未找到Extra文件","您需要下载额外的文件来使用服务器切换",true,"下载", async () => await DownloadHelpers.DownloadSDK(extrasPath));
                 }
             }
         }
@@ -274,33 +270,46 @@ namespace SRTools.Views
             StartGame();
         }
 
-        private void MultiStartGame_Click(object sender, RoutedEventArgs e)
-        {
-            DialogManager.RaiseDialog(this.XamlRoot, "游戏多开", "⚠️注意⚠️\n一次性只可以启动两个游戏\n否则会被检测到多开后强制关闭游戏", true, "启动游戏", StartGame, true, "关闭游戏", ProcessRun.StopSRProcess);
-        }
-
         private async void StartUpdate_Click(object sender, RoutedEventArgs e)
         {
-            bool updateSuccessful = false;
-            if (DownloadManager.isDownloading)
+            if (!DownloadHelpers.isDownloading && !DownloadHelpers.isPaused)
             {
-                updateSuccessful = await GameUpdate.StartDownload(UpdateProgressChanged);
+                // 开始新的下载任务
+                await StartDownloadAndCheckStatus();
             }
-            else if (DownloadManager.isPaused)
+            else if (DownloadHelpers.isPaused)
             {
+                // 恢复下载任务
                 GameUpdate.ResumeDownload(UpdateProgressChanged);
+                DownloadHelpers.isPaused = false;
+                UpdateUI();
             }
-            await CheckDownloadStatus();
         }
 
         private void PauseUpdate_Click(object sender, RoutedEventArgs e)
         {
-            GameUpdate.PauseDownload();
+            if (DownloadHelpers.isDownloading)
+            {
+                GameUpdate.PauseDownload();
+                DownloadHelpers.isPaused = true;
+                CommonHelpers.TaskbarHelper.SetProgressState(TaskbarProgressBarState.Paused);
+                UpdateUI();
+            }
+        }
+
+        private async Task StartDownloadAndCheckStatus()
+        {
+            UpdateUI();
+            bool updateSuccessful = await GameUpdate.StartDownload(UpdateProgressChanged);
+            if (updateSuccessful)
+            {
+                await LoadDataAsync(); // 下载和解压完成后加载数据
+            }
+            await CheckDownloadStatus();
         }
 
         private void UpdateProgressChanged(double progress, string speed, string size)
         {
-            CheckDownloadStatus();
             DispatcherQueue.TryEnqueue(() =>
             {
                 downloadProgressBar.Value = progress;
@@ -312,28 +321,49 @@ namespace SRTools.Views
 
         private async Task CheckDownloadStatus()
         {
-            while (DownloadManager.isDownloading)
+            while (DownloadHelpers.isDownloading)
             {
-                if (!DownloadManager.isPaused)
+                UpdateUI();
+                await Task.Delay(100);
+            }
+
+            // 下载结束后的处理
+            DownloadHelpers.DownloadProgressChanged -= UpdateProgressChanged;
+            startUpdate.Visibility = Visibility.Collapsed;
+            updateRunning.Visibility = Visibility.Collapsed;
+            startGame.Visibility = Visibility.Visible;
+            await LoadDataAsync(); // 确保异步方法被正确等待
+        }
+
+        private void UpdateUI()
+        {
+            if (isGameUpdateRequire)
+            {
+                startGame_Panel.Visibility = Visibility.Collapsed;
+                if (DownloadHelpers.isDownloading)
                 {
-                    startUpdate.Visibility = Visibility.Collapsed;
-                    updateRunning.Visibility = Visibility.Visible;
+                    if (DownloadHelpers.isPaused)
+                    {
+                        startUpdate.Visibility = Visibility.Visible;
+                        updateRunning.Visibility = Visibility.Collapsed;
+                    }
+                    else
+                    {
+                        startUpdate.Visibility = Visibility.Collapsed;
+                        updateRunning.Visibility = Visibility.Visible;
+                    }
                 }
                 else
                 {
                     startUpdate.Visibility = Visibility.Visible;
                     updateRunning.Visibility = Visibility.Collapsed;
                 }
-                await Task.Delay(100);
             }
-
-            if (!DownloadManager.isDownloading)
+            else
             {
-                DownloadManager.DownloadProgressChanged -= UpdateProgressChanged;
                 startUpdate.Visibility = Visibility.Collapsed;
                 updateRunning.Visibility = Visibility.Collapsed;
-                startGame.Visibility = Visibility.Visible;
-                LoadDataAsync();
+                startGame_Panel.Visibility = Visibility.Visible;
             }
         }
 
@@ -467,18 +497,18 @@ namespace SRTools.Views
         private void OnUnloaded(object sender, RoutedEventArgs e)
         {
             dispatcherTimer_Game.Stop();
-            DownloadManager.DownloadProgressChanged -= UpdateProgressChanged;
+            DownloadHelpers.DownloadProgressChanged -= UpdateProgressChanged;
             Logging.Write("Timer Stopped", 0);
         }
 
         protected override void OnNavigatedTo(NavigationEventArgs e)
         {
-            if(DownloadManager.isDownloading == true) UpdateProgressChanged(DownloadManager.CurrentProgress, DownloadManager.CurrentSpeed, DownloadManager.CurrentSize);
+            if(DownloadHelpers.isDownloading == true) UpdateProgressChanged(DownloadHelpers.CurrentProgress, DownloadHelpers.CurrentSpeed, DownloadHelpers.CurrentSize);
         }
 
         protected override void OnNavigatedFrom(NavigationEventArgs e)
         {
-            DownloadManager.DownloadProgressChanged -= UpdateProgressChanged;
+            DownloadHelpers.DownloadProgressChanged -= UpdateProgressChanged;
         }
     }
 }

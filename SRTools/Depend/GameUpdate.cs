@@ -1,8 +1,13 @@
 ﻿using Microsoft.UI.Xaml.Controls;
+using Microsoft.WindowsAPICodePack.Taskbar;
+using SharpCompress.Archives;
+using SharpCompress.Common;
+using SharpCompress.Readers;
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.IO.Compression;
+using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Security.Cryptography;
@@ -16,6 +21,8 @@ namespace SRTools.Depend
 {
     public static class GameUpdate
     {
+        public delegate Task LoadDataDelegate(string mode = "?");
+        public static event LoadDataDelegate OnLoadData;
         public static HttpClient client = new HttpClient();
         private static CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
         private const string ApiUrl = "https://hyp-api.mihoyo.com/hyp/hyp-connect/api/getGamePackages?game_ids[]=osvnlOc0S8&game_ids[]=64kMb5iAWu&game_ids[]=1Z8W5NHUQb&launcher_id=jGHBHlcOq1";
@@ -27,63 +34,51 @@ namespace SRTools.Depend
             {
                 if (GameUpdateModel.LatestVersion != localGameVersion)
                 {
-                    if (!DownloadManager.isDownloading)
-                    {
-                        Logging.Write("发现新版本游戏，请更新.");
-                        NotificationManager.RaiseNotification("发现新版本游戏", "当前版本:" + localGameVersion + "\n最新版本:" + GameUpdateModel.LatestVersion + "\n请及时更新游戏本体", InfoBarSeverity.Warning, true, 3);
-                    }
+                    Logging.Write("发现新版本游戏，请更新.", 3, "GameUpdate");
+                    NotificationManager.RaiseNotification("发现新版本游戏", $"当前版本: {localGameVersion}\n最新版本: {GameUpdateModel.LatestVersion}\n请及时更新游戏本体", InfoBarSeverity.Warning, true, 3);
                     return true;
                 }
-                else
-                {
-                    Logging.Write("游戏已是最新版本.");
-                    return false;
-                }
-            }
-            else
-            {
-                Logging.Write("无法获取本地游戏版本.");
+                Logging.Write("游戏已是最新版本.", 3, "GameUpdate");
                 return false;
             }
+            Logging.Write("无法获取本地游戏版本.", 3, "GameUpdate");
+            return false;
         }
 
         public static async Task<JsonDocument> GetGameInfo()
         {
-            using (var response = await client.GetAsync(ApiUrl))
+            var response = await client.GetAsync(ApiUrl);
+            if (response.IsSuccessStatusCode)
             {
-                if (response.IsSuccessStatusCode)
-                {
-                    string jsonResponse = await response.Content.ReadAsStringAsync();
-                    return JsonDocument.Parse(jsonResponse);
-                }
-                return null;
+                var jsonResponse = await response.Content.ReadAsStringAsync();
+                return JsonDocument.Parse(jsonResponse);
             }
+            return null;
         }
 
         public static async Task ExtractGameInfo()
         {
-            JsonDocument gameData = await GetGameInfo();
+            var gameData = await GetGameInfo();
             if (gameData != null)
             {
-                JsonElement root = gameData.RootElement;
-                JsonElement gamePackages = root.GetProperty("data").GetProperty("game_packages");
+                var root = gameData.RootElement;
+                var gamePackages = root.GetProperty("data").GetProperty("game_packages");
 
-                foreach (JsonElement gamePackage in gamePackages.EnumerateArray())
+                foreach (var gamePackage in gamePackages.EnumerateArray())
                 {
-                    JsonElement game = gamePackage.GetProperty("game");
+                    var game = gamePackage.GetProperty("game");
                     if (game.GetProperty("biz").GetString() == "hkrpg_cn")
                     {
-                        JsonElement main = gamePackage.GetProperty("main");
-                        JsonElement major = main.GetProperty("major");
+                        var main = gamePackage.GetProperty("main");
+                        var major = main.GetProperty("major");
 
                         GameUpdateModel.LatestVersion = major.GetProperty("version").GetString();
-                        JsonElement gamePkg = major.GetProperty("game_pkgs")[0];
-                        GameUpdateModel.LatestPath = gamePkg.GetProperty("url").GetString();
-                        GameUpdateModel.LatestSize = gamePkg.GetProperty("size").GetString();
-                        GameUpdateModel.LatestMD5 = gamePkg.GetProperty("md5").GetString();
+                        GameUpdateModel.LatestPaths = major.GetProperty("game_pkgs").EnumerateArray().Select(pkg => pkg.GetProperty("url").GetString()).ToList();
+                        GameUpdateModel.LatestSizes = major.GetProperty("game_pkgs").EnumerateArray().Select(pkg => pkg.GetProperty("size").GetString()).ToList();
+                        GameUpdateModel.LatestMD5s = major.GetProperty("game_pkgs").EnumerateArray().Select(pkg => pkg.GetProperty("md5").GetString()).ToList();
 
-                        JsonElement audioPkgs = major.GetProperty("audio_pkgs");
-                        foreach (JsonElement audioPkg in audioPkgs.EnumerateArray())
+                        var audioPkgs = major.GetProperty("audio_pkgs");
+                        foreach (var audioPkg in audioPkgs.EnumerateArray())
                         {
                             if (audioPkg.GetProperty("language").GetString() == "zh-cn")
                             {
@@ -94,20 +89,19 @@ namespace SRTools.Depend
                             }
                         }
 
-                        // 获取本地版本号
-                        string localVersion = await GetLocalGameVersion();
-                        JsonElement patches = main.GetProperty("patches");
-                        foreach (JsonElement patch in patches.EnumerateArray())
+                        var localVersion = await GetLocalGameVersion();
+                        var patches = main.GetProperty("patches");
+                        foreach (var patch in patches.EnumerateArray())
                         {
                             if (patch.GetProperty("version").GetString() == localVersion)
                             {
-                                JsonElement patchPkg = patch.GetProperty("game_pkgs")[0];
+                                var patchPkg = patch.GetProperty("game_pkgs")[0];
                                 GameUpdateModel.DiffsPath = patchPkg.GetProperty("url").GetString();
                                 GameUpdateModel.DiffsSize = patchPkg.GetProperty("size").GetString();
                                 GameUpdateModel.DiffsMD5 = patchPkg.GetProperty("md5").GetString();
 
-                                JsonElement patchAudioPkgs = patch.GetProperty("audio_pkgs");
-                                foreach (JsonElement patchAudioPkg in patchAudioPkgs.EnumerateArray())
+                                var patchAudioPkgs = patch.GetProperty("audio_pkgs");
+                                foreach (var patchAudioPkg in patchAudioPkgs.EnumerateArray())
                                 {
                                     if (patchAudioPkg.GetProperty("language").GetString() == "zh-cn")
                                     {
@@ -137,20 +131,18 @@ namespace SRTools.Depend
                 var gameDirectory = await GetGameDirectory();
                 if (gameDirectory != null)
                 {
-                    string configFilePath = Path.Combine(gameDirectory, "config.ini");
-
+                    var configFilePath = Path.Combine(gameDirectory, "config.ini");
                     if (File.Exists(configFilePath))
                     {
-                        string[] lines = await File.ReadAllLinesAsync(configFilePath);
-
-                        foreach (string line in lines)
+                        var lines = await File.ReadAllLinesAsync(configFilePath);
+                        foreach (var line in lines)
                         {
                             if (line.StartsWith("game_version="))
                             {
-                                Match match = Regex.Match(line, @"\d+(\.\d+)+");
+                                var match = Regex.Match(line, @"\d+(\.\d+)+");
                                 if (match.Success)
                                 {
-                                    Logging.Write($"StarRail Current Version: {match.Value}");
+                                    Logging.Write($"ZenlessZoneZero Current Version: {match.Value}", 3, "GameUpdate");
                                     return match.Value;
                                 }
                             }
@@ -158,19 +150,18 @@ namespace SRTools.Depend
                     }
                     else
                     {
-                        Logging.Write("config.ini 文件不存在.");
+                        Logging.Write("config.ini 文件不存在.", 3, "GameUpdate");
                     }
                 }
                 else
                 {
-                    Logging.Write("无法获取游戏目录.");
+                    Logging.Write("无法获取游戏目录.", 3, "GameUpdate");
                 }
             }
             catch (Exception ex)
             {
                 Logging.Write($"获取游戏版本时出现错误: {ex.Message}");
             }
-
             return null;
         }
 
@@ -181,86 +172,116 @@ namespace SRTools.Depend
 
         public static async Task<bool> StartDownload(Action<double, string, string> progressChanged)
         {
-            DownloadManager.isDownloading = true;
-            DownloadManager.isPaused = false;
-            string downloadUrl = GameUpdateModel.DiffsPath ?? GameUpdateModel.LatestPath;
-            string filePath = AppDataController.GetGamePathWithoutGameName() + "game.zip";
-            Stopwatch stopwatch = new Stopwatch();
+            DownloadHelpers.isDownloading = true;
+            DownloadHelpers.isPaused = false;
+            var downloadUrls = GameUpdateModel.DiffsPath != null ? new List<string> { GameUpdateModel.DiffsPath } : GameUpdateModel.LatestPaths;
+            var filePaths = downloadUrls.Select(url => Path.Combine(AppDataController.GetGamePathWithoutGameName(), Path.GetFileName(url))).ToList();
+            var stopwatch = new Stopwatch();
 
             try
             {
                 cancellationTokenSource = new CancellationTokenSource();
-                long existingLength = 0;
-                if (File.Exists(filePath))
+                var totalSize = GameUpdateModel.LatestSizes.Select(long.Parse).Sum();
+                var totalRead = 0L;
+
+                foreach (var filePath in filePaths)
                 {
-                    existingLength = new FileInfo(filePath).Length;
+                    if (File.Exists(filePath))
+                    {
+                        totalRead += new FileInfo(filePath).Length;
+                    }
                 }
 
-                using (var request = new HttpRequestMessage(HttpMethod.Get, downloadUrl))
+                foreach (var (downloadUrl, filePath) in downloadUrls.Zip(filePaths, Tuple.Create))
                 {
-                    request.Headers.Range = new RangeHeaderValue(existingLength, null);
-                    using (var response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationTokenSource.Token))
+                    if (DownloadHelpers.isPaused) break;
+
+                    var existingLength = File.Exists(filePath) ? new FileInfo(filePath).Length : 0;
+
+                    using (var request = new HttpRequestMessage(HttpMethod.Get, downloadUrl))
                     {
-                        if (!response.IsSuccessStatusCode)
+                        request.Headers.Range = new RangeHeaderValue(existingLength, null);
+                        using (var response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationTokenSource.Token))
                         {
-                            if (response.StatusCode == System.Net.HttpStatusCode.RequestedRangeNotSatisfiable)
+                            if (!response.IsSuccessStatusCode)
                             {
-                                return await DownloadFinishedAsync();
-                            }
-                            else
-                            {
+                                if (response.StatusCode == System.Net.HttpStatusCode.RequestedRangeNotSatisfiable)
+                                {
+                                    continue;
+                                }
                                 Logging.Write("下载失败，状态码：" + response.StatusCode);
                                 return false;
                             }
-                        }
 
-                        DateTime downloadStartTime = DateTime.Now;
-                        long initialDownloadedBytes = existingLength;
-                        var totalBytes = (response.Content.Headers.ContentLength ?? 0) + existingLength;
-                        var totalRead = existingLength;
-                        var buffer = new byte[81920];
-                        var isMoreToRead = true;
+                            var totalBytes = (response.Content.Headers.ContentLength ?? 0) + existingLength;
+                            var buffer = new byte[81920];
+                            var isMoreToRead = true;
+                            var initialTotalRead = totalRead;
+                            stopwatch.Start();
 
-                        stopwatch.Start();
-                        using (var fileStream = new FileStream(filePath, FileMode.Append, FileAccess.Write, FileShare.None, 81920, true))
-                        using (var stream = await response.Content.ReadAsStreamAsync())
-                        {
-                            DateTime lastUpdateTime = DateTime.Now;
-                            do
+                            using (var fileStream = new FileStream(filePath, FileMode.Append, FileAccess.Write, FileShare.None, buffer.Length, true))
+                            using (var stream = await response.Content.ReadAsStreamAsync())
                             {
-                                var read = await stream.ReadAsync(buffer, 0, buffer.Length, cancellationTokenSource.Token);
-                                if (read == 0)
-                                {
-                                    isMoreToRead = false;
-                                }
-                                else
-                                {
-                                    await fileStream.WriteAsync(buffer, 0, read, cancellationTokenSource.Token);
-                                    totalRead += read;
+                                var lastUpdateTime = DateTime.Now;
+                                var downloadStartTime = DateTime.Now;
+                                var initialDownloadedBytes = existingLength;
+                                var totalBytesWritten = 0L;
+                                const long chunkSize = 100 * 1024 * 1024;
 
-                                    var totalElapsedTime = (DateTime.Now - downloadStartTime).TotalSeconds;
-                                    var speed = (totalRead - initialDownloadedBytes) / totalElapsedTime;
-                                    var speedMb = speed / (1024 * 1024);
-                                    var sizeMb = totalRead / (1024 * 1024);
-                                    var totalSizeMb = totalBytes / (1024 * 1024);
+                                do
+                                {
+                                    if (DownloadHelpers.isPaused) break;
 
-                                    if ((DateTime.Now - lastUpdateTime).TotalSeconds >= 0.05)
+                                    var read = await stream.ReadAsync(buffer, 0, buffer.Length, cancellationTokenSource.Token);
+                                    if (read == 0)
                                     {
-                                        var percentage = (double)totalRead / totalBytes * 100;
-                                        progressChanged?.Invoke(percentage, $"{speedMb:F2}MB/s", $"{sizeMb:F2}MB/{totalSizeMb:F2}MB");
-                                        DownloadManager.UpdateProgress(percentage, $"{speedMb:F2}MB/s", $"{sizeMb:F2}MB/{totalSizeMb:F2}MB");
-                                        lastUpdateTime = DateTime.Now;
+                                        isMoreToRead = false;
                                     }
-                                }
-                            } while (isMoreToRead);
+                                    else
+                                    {
+                                        await fileStream.WriteAsync(buffer, 0, read, cancellationTokenSource.Token);
+                                        totalRead += read;
+                                        totalBytesWritten += read;
+
+                                        if (totalBytesWritten >= chunkSize)
+                                        {
+                                            await fileStream.FlushAsync(cancellationTokenSource.Token);
+                                            totalBytesWritten = 0;
+                                        }
+
+                                        var totalElapsedTime = (DateTime.Now - downloadStartTime).TotalSeconds;
+                                        var speed = (totalRead - initialTotalRead) / totalElapsedTime;
+                                        var speedMb = speed / (1024 * 1024);
+                                        var sizeMb = totalRead / (1024 * 1024);
+                                        var totalSizeMb = totalSize / (1024 * 1024);
+
+                                        if ((DateTime.Now - lastUpdateTime).TotalSeconds >= 1)
+                                        {
+                                            var percentage = (double)totalRead / totalSize * 100;
+                                            progressChanged?.Invoke(percentage, $"{speedMb:F2}MB/s", $"{sizeMb:F2}MB/{totalSizeMb:F2}MB");
+                                            DownloadHelpers.UpdateProgress(percentage, $"{speedMb:F2}MB/s", $"{sizeMb:F2}MB/{totalSizeMb:F2}MB");
+                                            lastUpdateTime = DateTime.Now;
+                                            CommonHelpers.TaskbarHelper.SetProgressState(TaskbarProgressBarState.Normal);
+                                            CommonHelpers.TaskbarHelper.SetProgressValue((int)percentage, 100);
+                                        }
+                                    }
+                                } while (isMoreToRead);
+
+                                await fileStream.FlushAsync(cancellationTokenSource.Token);
+                            }
+                            stopwatch.Stop();
                         }
-                        stopwatch.Stop();
                     }
+                }
+
+                if (!DownloadHelpers.isPaused)
+                {
+                    return await DownloadFinishedAsync();
                 }
             }
             catch (OperationCanceledException)
             {
-                Logging.Write("下载已暂停");
+                Logging.Write("下载已暂停", 3, "GameUpdate");
             }
             catch (Exception ex)
             {
@@ -271,56 +292,95 @@ namespace SRTools.Depend
 
         public static void PauseDownload()
         {
+            Logging.Write("暂停下载", 3, "GameUpdate");
             cancellationTokenSource?.Cancel();
-            DownloadManager.isDownloading = true;
-            DownloadManager.isPaused = true;
+            DownloadHelpers.isDownloading = false;
+            DownloadHelpers.isPaused = true;
         }
 
         public static void ResumeDownload(Action<double, string, string> progressChanged)
         {
+            Logging.Write("恢复下载", 3, "GameUpdate");
             StartDownload(progressChanged);
         }
 
         public static async Task<bool> DownloadFinishedAsync()
         {
-            string zipPath = Path.Combine(AppDataController.GetGamePathWithoutGameName(), "game.zip");
+            List<string> filePaths = new List<string>();
+            List<string> md5s = new List<string>();
+            if (GameUpdateModel.DiffsPath != null)
+            {
+                // 处理增量更新包路径
+                string fileName = Path.GetFileName(GameUpdateModel.DiffsPath);
+                string localPath = Path.Combine(AppDataController.GetGamePathWithoutGameName(), fileName);
+                filePaths.Add(localPath);
+                md5s.Add(GameUpdateModel.DiffsMD5);
+            }
+            else
+            {
+                // 处理最新包路径
+                foreach (var url in GameUpdateModel.LatestPaths)
+                {
+                    string fileName = Path.GetFileName(url);
+                    string localPath = Path.Combine(AppDataController.GetGamePathWithoutGameName(), fileName);
+                    filePaths.Add(localPath);
+                }
+                md5s = GameUpdateModel.LatestMD5s;
+            }
+
             string extractPath = AppDataController.GetGamePathWithoutGameName();
+
             try
             {
                 NotificationManager.RaiseNotification("下载完成", "", InfoBarSeverity.Success, true, 2);
-                DownloadManager.isPaused = true;
-                var progress = new Progress<int>(async percent =>
-                {
-                    WaitOverlayManager.RaiseWaitOverlay(true, "正在校验MD5", "请稍等", true, percent);
-                    await Task.Delay(100);
-                });
+                DownloadHelpers.isPaused = true;
 
-                bool md5Verified = await Task.Run(() => VerifyFileMD5Async(zipPath, GameUpdateModel.DiffsMD5 ?? GameUpdateModel.LatestMD5, progress));
-                if (!md5Verified)
+                for (int i = 0; i < filePaths.Count; i++)
                 {
-                    throw new Exception("MD5 校验失败，文件可能已损坏。");
+                    var progress = new Progress<int>(percent =>
+                    {
+                        WaitOverlayManager.RaiseWaitOverlay(true, "正在校验MD5", $"分卷{i + 1}/{filePaths.Count}", true, percent);
+                        CommonHelpers.TaskbarHelper.SetProgressValue(percent, 100);
+                        CommonHelpers.TaskbarHelper.SetProgressState(TaskbarProgressBarState.Normal);
+                    });
+                    var md5Verified = await VerifyFileMD5Async(filePaths[i], md5s[i], progress);
+                    if (!md5Verified)
+                    {
+                        throw new Exception($"MD5 校验失败，文件可能已损坏。 文件: {filePaths[i]}");
+                    }
                 }
 
                 cancellationTokenSource?.Cancel();
 
-                progress = new Progress<int>(async percent =>
+                var extractProgress = new Progress<int>(percent =>
                 {
                     WaitOverlayManager.RaiseWaitOverlay(true, "正在解压", "请稍等", true, percent);
-                    await Task.Delay(100);
+                    CommonHelpers.TaskbarHelper.SetProgressValue(percent, 100);
+                    CommonHelpers.TaskbarHelper.SetProgressState(TaskbarProgressBarState.Normal);
                 });
 
-                await Task.Run(() => ExtractZipWithProgress(zipPath, extractPath, progress));
+                // 确定是单个ZIP文件还是分卷ZIP文件
+                if (filePaths.Count == 1)
+                {
+                    await ExtractSingleArchiveAsync(filePaths[0], extractPath, extractProgress);
+                }
+                else
+                {
+                    await ExtractSplitArchiveAsync(filePaths[0], extractPath, extractProgress);
+                }
 
                 WaitOverlayManager.RaiseWaitOverlay(false);
                 NotificationManager.RaiseNotification("解压完成", "游戏文件已成功解压。", InfoBarSeverity.Success, true, 2);
 
                 await UpdateConfigVersion(GameUpdateModel.LatestVersion);
                 NotificationManager.RaiseNotification("更新完成", $"游戏已更新到{GameUpdateModel.LatestVersion}。", InfoBarSeverity.Success, true, 2);
+                CommonHelpers.TaskbarHelper.SetProgressState(TaskbarProgressBarState.NoProgress);
 
-                // 重置下载管理器的变量
-                ResetDownloadManagerVariables();
-                DownloadManager.isDownloading = false;
-                
+                ResetDownloadHelpersVariables();
+                if (OnLoadData != null)
+                {
+                    await OnLoadData.Invoke();
+                }
                 return true;
             }
             catch (OperationCanceledException)
@@ -336,29 +396,30 @@ namespace SRTools.Depend
             return false;
         }
 
-        private static void ExtractZipWithProgress(string zipPath, string extractPath, IProgress<int> progress)
+
+        private static async Task<bool> VerifyFileMD5Async(string filePath, string expectedMD5, IProgress<int> progress)
         {
-            using (var archive = ZipFile.OpenRead(zipPath))
+            using (var md5 = MD5.Create())
             {
-                int totalEntries = archive.Entries.Count;
-                int processedEntries = 0;
-
-                foreach (var entry in archive.Entries)
+                using (var stream = File.OpenRead(filePath))
                 {
-                    string destinationPath = Path.Combine(extractPath, entry.FullName);
+                    var fileLength = stream.Length;
+                    var totalRead = 0L;
+                    var buffer = new byte[81920];
+                    int read;
 
-                    if (string.IsNullOrEmpty(entry.Name))
+                    while ((read = await stream.ReadAsync(buffer, 0, buffer.Length)) > 0)
                     {
-                        Directory.CreateDirectory(destinationPath);
+                        md5.TransformBlock(buffer, 0, read, buffer, 0);
+                        totalRead += read;
+                        var percentComplete = (int)((double)totalRead / fileLength * 100);
+                        progress.Report(percentComplete);
                     }
-                    else
-                    {
-                        entry.ExtractToFile(destinationPath, overwrite: true);
-                    }
+                    md5.TransformFinalBlock(buffer, 0, 0);
 
-                    processedEntries++;
-                    int percentComplete = (int)((double)processedEntries / totalEntries * 100);
-                    progress.Report(percentComplete);
+                    var hash = md5.Hash;
+                    var md5String = BitConverter.ToString(hash).Replace("-", "").ToLowerInvariant();
+                    return md5String == expectedMD5.ToLowerInvariant();
                 }
             }
         }
@@ -370,8 +431,7 @@ namespace SRTools.Depend
                 var gameDirectory = await GetGameDirectory();
                 if (gameDirectory != null)
                 {
-                    string configFilePath = Path.Combine(gameDirectory, "config.ini");
-
+                    var configFilePath = Path.Combine(gameDirectory, "config.ini");
                     if (File.Exists(configFilePath))
                     {
                         var lines = await File.ReadAllLinesAsync(configFilePath);
@@ -384,16 +444,16 @@ namespace SRTools.Depend
                             }
                         }
                         await File.WriteAllLinesAsync(configFilePath, lines);
-                        Logging.Write("Config版本号已更新.");
+                        Logging.Write("Config版本号已更新.", 3, "GameUpdate");
                     }
                     else
                     {
-                        Logging.Write("Config文件不存在.");
+                        Logging.Write("Config文件不存在.", 3, "GameUpdate");
                     }
                 }
                 else
                 {
-                    Logging.Write("无法获取游戏目录.");
+                    Logging.Write("无法获取游戏目录.", 3, "GameUpdate");
                 }
             }
             catch (Exception ex)
@@ -402,41 +462,157 @@ namespace SRTools.Depend
             }
         }
 
-        private static async Task<bool> VerifyFileMD5Async(string filePath, string expectedMD5, IProgress<int> progress)
+        private static void ResetDownloadHelpersVariables()
         {
-            using (var md5 = MD5.Create())
+            DownloadHelpers.CurrentProgress = 0;
+            DownloadHelpers.CurrentSpeed = string.Empty;
+            DownloadHelpers.CurrentSize = string.Empty;
+            DownloadHelpers.isDownloading = false;
+            DownloadHelpers.isPaused = true;
+            DownloadHelpers.isFinished = false;
+        }
+
+        public static async Task ExtractSingleArchiveAsync(string filePath, string destPath, IProgress<int> progress)
+        {
+            await Task.Run(() =>
             {
                 using (var stream = File.OpenRead(filePath))
+                using (var archive = ArchiveFactory.Open(stream))
                 {
-                    long fileLength = stream.Length;
-                    long totalRead = 0;
-                    var buffer = new byte[81920];
-                    int read;
+                    var totalEntries = archive.Entries.Count();
+                    int processedEntries = 0;
 
-                    while ((read = await stream.ReadAsync(buffer, 0, buffer.Length)) > 0)
+                    foreach (var entry in archive.Entries)
                     {
-                        md5.TransformBlock(buffer, 0, read, buffer, 0);
-                        totalRead += read;
-                        int percentComplete = (int)((double)totalRead / fileLength * 100);
+                        if (!entry.IsDirectory)
+                        {
+                            entry.WriteToDirectory(destPath, new ExtractionOptions()
+                            {
+                                ExtractFullPath = true,
+                                Overwrite = true
+                            });
+                        }
+
+                        processedEntries++;
+                        int percentComplete = (int)((double)processedEntries / totalEntries * 100);
                         progress.Report(percentComplete);
                     }
-                    md5.TransformFinalBlock(buffer, 0, 0);
-
-                    var hash = md5.Hash;
-                    var md5String = BitConverter.ToString(hash).Replace("-", "").ToLowerInvariant();
-                    return md5String == expectedMD5;
                 }
-            }
+            });
         }
 
-        private static void ResetDownloadManagerVariables()
+
+
+        public static async Task ExtractSplitArchiveAsync(string firstVolumePath, string destPath, IProgress<int> progress)
         {
-            DownloadManager.CurrentProgress = 0;
-            DownloadManager.CurrentSpeed = string.Empty;
-            DownloadManager.CurrentSize = string.Empty;
-            DownloadManager.isDownloading = false;
-            DownloadManager.isPaused = true;
-            DownloadManager.isFinished = false;
+            await Task.Run(() =>
+            {
+                var archive = ArchiveFactory.Open(firstVolumePath);
+                var totalEntries = archive.Entries.Count();
+                var processedEntries = 0;
+
+                foreach (var entry in archive.Entries)
+                {
+                    if (!entry.IsDirectory)
+                    {
+                        entry.WriteToDirectory(destPath, new ExtractionOptions()
+                        {
+                            ExtractFullPath = true,
+                            Overwrite = true
+                        });
+                    }
+
+                    processedEntries++;
+                    var percentComplete = (int)((double)processedEntries / totalEntries * 100);
+                    progress.Report(percentComplete);
+                }
+            });
         }
+
+
+        public class MultiVolumeStream : Stream
+        {
+            private readonly List<Stream> _streams;
+            private int _currentStreamIndex;
+            private long _position;
+
+            public MultiVolumeStream(List<string> filePaths)
+            {
+                _streams = filePaths.Select(path => (Stream)File.OpenRead(path)).ToList();
+                _currentStreamIndex = 0;
+                _position = 0;
+            }
+
+            public override bool CanRead => true;
+            public override bool CanSeek => true;
+            public override bool CanWrite => false;
+            public override long Length => _streams.Sum(s => s.Length);
+            public override long Position
+            {
+                get => _position;
+                set => Seek(value, SeekOrigin.Begin);
+            }
+
+            public override void Flush() => _streams[_currentStreamIndex].Flush();
+
+            public override int Read(byte[] buffer, int offset, int count)
+            {
+                int bytesRead = 0;
+                while (count > 0 && _currentStreamIndex < _streams.Count)
+                {
+                    int read = _streams[_currentStreamIndex].Read(buffer, offset, count);
+                    if (read == 0)
+                    {
+                        _currentStreamIndex++;
+                    }
+                    else
+                    {
+                        bytesRead += read;
+                        offset += read;
+                        count -= read;
+                        _position += read;
+                    }
+                }
+                return bytesRead;
+            }
+
+            public override long Seek(long offset, SeekOrigin origin)
+            {
+                if (origin == SeekOrigin.Begin)
+                {
+                    _position = offset;
+                }
+                else if (origin == SeekOrigin.Current)
+                {
+                    _position += offset;
+                }
+                else if (origin == SeekOrigin.End)
+                {
+                    _position = Length + offset;
+                }
+
+                long remainingOffset = _position;
+                for (int i = 0; i < _streams.Count; i++)
+                {
+                    if (remainingOffset < _streams[i].Length)
+                    {
+                        _currentStreamIndex = i;
+                        _streams[i].Seek(remainingOffset, SeekOrigin.Begin);
+                        return _position;
+                    }
+                    remainingOffset -= _streams[i].Length;
+                }
+
+                throw new ArgumentOutOfRangeException();
+            }
+
+            public override void SetLength(long value) => throw new NotSupportedException();
+            public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
+        }
+
+
+
+
+
     }
 }
