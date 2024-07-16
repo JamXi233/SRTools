@@ -35,7 +35,6 @@
                 </Grid.RowDefinitions>
 
                 <StackPanel Orientation="Horizontal" Spacing="4" Grid.Row="0">
-                    
                     <TextBlock Text="记录详情" FontSize="18" FontWeight="Bold"/>
                     <TextBlock x:Name="Gacha_UID" Text="UID" Foreground="Gray" VerticalAlignment="Bottom"/>
                 </StackPanel>
@@ -127,6 +126,7 @@
             </Grid>
 
         </Grid>
-
+        
+        <TextBlock x:Name="mark" HorizontalAlignment="Right" VerticalAlignment="Top" Text="SRTools" Foreground="Gray"/>
     </Grid>
 </Page>

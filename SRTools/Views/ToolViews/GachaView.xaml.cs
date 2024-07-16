@@ -44,6 +44,7 @@ using SRTools.Views.GachaViews;
 using Microsoft.UI.Windowing;
 using Microsoft.UI;
 using Windows.Graphics;
+using Vanara.PInvoke;
 
 
 namespace SRTools.Views.ToolViews
@@ -627,9 +628,10 @@ namespace SRTools.Views.ToolViews
                 presenter.IsMaximizable = false;
             }
 
+            float scale = (float)User32.GetDpiForWindow(hWnd) / 96;
 
-            if (isShowRecords) appWindow.Resize(new SizeInt32(904, 580));
-            else appWindow.Resize(new SizeInt32(520, 580));
+            if (isShowRecords) appWindow.Resize(new SizeInt32((int)(904 * scale), (int)(580 * scale)));
+            else appWindow.Resize(new SizeInt32((int)(520 * scale), (int)(580 * scale)));
             window.Activate();
             if (ScreenShotGacha.isScreenShotSelf) appWindow.Hide();
 

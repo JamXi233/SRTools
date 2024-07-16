@@ -36,6 +36,7 @@ using SRTools.Views.ToolViews;
 using static SRTools.App;
 using Windows.Graphics.Imaging;
 using Windows.Storage.Streams;
+using Windows.ApplicationModel;
 
 namespace SRTools.Views.GachaViews
 {
@@ -85,6 +86,9 @@ namespace SRTools.Views.GachaViews
                 return;
             }
 
+            app_name.Text = Package.Current.DisplayName;
+            app_version.Text = $"{Package.Current.Id.Version.Major}.{Package.Current.Id.Version.Minor}.{Package.Current.Id.Version.Build}.{Package.Current.Id.Version.Revision}";
+
             Logging.Write("Reading file content", 0);
             string jsonContent = await File.ReadAllTextAsync(filePath);
             Logging.Write("Deserializing JSON content", 0);
@@ -128,12 +132,12 @@ namespace SRTools.Views.GachaViews
         {
             isFinished = true;
             TaskCompletionSource?.SetResult(isScreenShotSelf);
-            CurrentWindow?.Close(); // 使用保存的窗口实例关闭窗口
+            CurrentWindow?.Close();
         }
 
         private string MaskUID(string uid)
         {
-            if (uid.Length < 1) return uid; // 防止UID长度不足
+            if (uid.Length < 1) return uid;
 
             char lastChar = uid[uid.Length - 1];
             return new string('●', uid.Length - 1) + lastChar;
@@ -144,35 +148,22 @@ namespace SRTools.Views.GachaViews
         {
             try
             {
-                // 渲染 UIElement 到 RenderTargetBitmap
                 var renderTargetBitmap = new RenderTargetBitmap();
                 await renderTargetBitmap.RenderAsync(element);
-
-                // 获取像素数据
                 var pixelBuffer = await renderTargetBitmap.GetPixelsAsync();
-
-                // 使用 DataReader 将 IBuffer 转换为字节数组
                 byte[] pixels;
                 using (var reader = DataReader.FromBuffer(pixelBuffer))
                 {
                     pixels = new byte[pixelBuffer.Length];
                     reader.ReadBytes(pixels);
                 }
-
-                // 获取文档文件夹路径并创建子文件夹
                 string documentsPath = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
                 string jsgFolderPath = Path.Combine(documentsPath, "JSG-LLC");
                 string SRToolsFolderPath = Path.Combine(jsgFolderPath, "SRTools");
                 string gachaScreenshotsFolderPath = Path.Combine(SRToolsFolderPath, "GachaScreenshots");
-
-                // 创建子文件夹
                 Directory.CreateDirectory(gachaScreenshotsFolderPath);
-
                 var now = DateTime.Now.ToString("yyyy-MM-dd-HH-mm-ss");
-                // 创建文件路径
                 string filePath = Path.Combine(gachaScreenshotsFolderPath, "GachaScreenShot_" + GachaView.selectedUid + "_" + now + ".png");
-
-                // 使用 System.IO 创建文件并保存像素数据
                 using (var fileStream = new FileStream(filePath, FileMode.Create, FileAccess.Write))
                 {
                     var encoder = await BitmapEncoder.CreateAsync(BitmapEncoder.PngEncoderId, fileStream.AsRandomAccessStream());
@@ -204,8 +195,6 @@ namespace SRTools.Views.GachaViews
                 await dialog.ShowAsync();
             }
         }
-
-
 
         private async Task DisplayGachaRecords(List<GachaModel.GachaRecord> records)
         {
