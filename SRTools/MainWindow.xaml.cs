@@ -408,6 +408,7 @@ namespace SRTools
         {
             PackageVersion packageVersion = Package.Current.Id.Version;
             string currentVersion = $"{packageVersion.Major}.{packageVersion.Minor}.{packageVersion.Build}.{packageVersion.Revision}";
+            AppTitleBar_Status.Text = currentVersion; 
             AppTitleBar_Status.Visibility = Visibility.Visible;
             if (AppDataController.GetAdminMode() == 1)
             {
@@ -419,7 +420,6 @@ namespace SRTools
                 else AppTitleBar_Status.Text = "Privileged";
             }
             if (Debugger.IsAttached || App.SDebugMode) AppTitleBar_Status.Text = "Debugging";
-            else AppTitleBar_Status.Text = currentVersion;
         }
 
         private void NavView_SelectionChanged(NavigationView sender, NavigationViewSelectionChangedEventArgs args)
