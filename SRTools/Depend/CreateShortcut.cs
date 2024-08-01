@@ -20,6 +20,7 @@
 
 using System;
 using System.IO;
+using static SRTools.App;
 
 namespace SRTools.Depend
 {
@@ -27,12 +28,13 @@ namespace SRTools.Depend
     {
         public static async void CreateDesktopShortcut()
         {
-            string shortcutPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "SRTools(星轨工具箱).url");
+            string shortcutPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "星轨工具箱.url");
             using (StreamWriter writer = new StreamWriter(shortcutPath))
             {
                 writer.WriteLine("[InternetShortcut]");
                 writer.WriteLine("URL=SRTools:///");
             }
+            NotificationManager.RaiseNotification("创建桌面快捷方式", "星轨工具箱桌面快捷方式已创建。", Microsoft.UI.Xaml.Controls.InfoBarSeverity.Success, true, 2);
         }
     }
 }
