@@ -35,7 +35,8 @@
                         <ToggleButton x:Name="terminalToggle" Click="TerminalMode_Toggle" Content="𝑻𝒆𝒓𝒎𝒊𝒏𝒂𝒍模式" Margin="0 0 0 10"/>
                         <ToggleButton x:Name="autoCheckUpdateToggle" Click="Auto_Check_Update_Toggle" Content="自动检查更新" Margin="0 0 0 10"/>
                         <Button x:Name="checkUpdate" Click="Check_Update" Content="检查更新" Margin="0 0 0 10"/>
-                        <Button x:Name="checkDependUpdate" Click="Check_Depend_Update" Content="检查依赖更新" Margin="0 0 0 10"/>
+						<Button x:Name="checkDependUpdate" Click="Check_Depend_Update" Content="检查依赖更新" Margin="0 0 0 10"/>
+						<Button x:Name="createShortcut" Click="Create_Desktop_Shortcut" Content="创建桌面快捷方式" Margin="0 0 0 10"/>
                         <RadioButtons x:Name="userviceRadio" Header="更新渠道" FontSize="16" FontWeight="Bold" Margin="0 12 0 0">
                             <RadioButton x:Name="uservice_JSG" Content="JSG-LLC(JSG-DS)" Checked="uservice_JSG_Choose"/>
                             <RadioButton x:Name="uservice_Github" Content="Github" Checked="uservice_Github_Choose"/>

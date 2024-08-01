@@ -22,53 +22,113 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using SRTools.Depend;
 using System;
+using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using Windows.Storage;
-
+using Windows.ApplicationModel.Resources.Core;
+using System.Diagnostics;
 
 namespace SRTools
 {
     public partial class App : Application
     {
+        private const string MutexName = "SRToolsSingletonMutex";
+        private static Mutex _mutex;
+
         public static MainWindow MainWindow { get; private set; }
         public static ApplicationTheme CurrentTheme { get; private set; }
         public static bool SDebugMode { get; set; }
-        // 导入 AllocConsole 和 FreeConsole 函数
+
         [DllImport("kernel32.dll", SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
         private static extern bool AllocConsole();
         [DllImport("kernel32.dll", SetLastError = true)]
         private static extern bool FreeConsole();
-        // 导入 GetAsyncKeyState 函数
         [DllImport("User32.dll")]
         public static extern short GetAsyncKeyState(int vKey);
-        internal Window m_window;
+
+        [DllImport("user32.dll")]
+        private static extern bool SetForegroundWindow(IntPtr hWnd);
+
+        [DllImport("user32.dll")]
+        private static extern bool IsIconic(IntPtr hWnd);
+
+        [DllImport("user32.dll")]
+        private static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
+
+        private const int SW_RESTORE = 9;
+
         public static bool IsRequireReboot { get; set; } = false;
         public static bool IsSRToolsRequireUpdate { get; set; } = false;
         public static bool IsSRToolsHelperRequireUpdate { get; set; } = false;
 
         public App()
         {
-            InitializeComponent();
-            Init();
-            InitAppData();
-            SetupTheme();
-            InitAdminMode();
+            bool createdNew;
+            _mutex = new Mutex(true, MutexName, out createdNew);
+            if (!createdNew)
+            {
+                BringExistingInstanceToForeground();
+                Environment.Exit(1);
+            }
+            else
+            {
+                SetLanguage("en-US");
+                InitializeComponent();
+                Init();
+                InitAppData();
+                SetupTheme();
+                InitAdminMode();
+            }
+
+        }
+
+        private void BringExistingInstanceToForeground()
+        {
+            var currentProcess = System.Diagnostics.Process.GetCurrentProcess();
+            foreach (var process in System.Diagnostics.Process.GetProcessesByName(currentProcess.ProcessName))
+            {
+                if (process.Id != currentProcess.Id)
+                {
+                    IntPtr hWnd = process.MainWindowHandle;
+                    if (IsIconic(hWnd))
+                    {
+                        ShowWindow(hWnd, SW_RESTORE);
+                    }
+                    SetForegroundWindow(hWnd);
+                    break;
+                }
+            }
         }
 
         protected override async void OnLaunched(LaunchActivatedEventArgs args)
         {
             if (AppDataController.GetTerminalMode() == -1 || AppDataController.GetTerminalMode() == 0)
             {
-                m_window = new MainWindow();
-                m_window.Activate();
+                MainWindow = new MainWindow();
+                MainWindow.Activate();
+
+                // 获取当前语言环境
+                string language = ResourceManager.Current.DefaultContext.QualifierValues["Language"];
+                Debug.WriteLine($"当前语言: {language}");
             }
             else await InitTerminalModeAsync(AppDataController.GetTerminalMode());
         }
 
-        private void InitAppData() 
+        public static void SetLanguage(string language)
+        {
+            var context = ResourceContext.GetForViewIndependentUse();
+            context.Reset();
+            var languages = new List<string> { language };
+            context.Languages = languages;
+
+            ResourceManager.Current.DefaultContext.QualifierValues["Language"] = language;
+        }
+
+        private void InitAppData()
         {
             ApplicationDataContainer localSettings = ApplicationData.Current.LocalSettings;
             if (localSettings.Values["Config_FirstRun"] == null)
@@ -100,23 +160,22 @@ namespace SRTools
                     this.RequestedTheme = ApplicationTheme.Dark;
                 }
             }
-            catch (Exception ex) 
+            catch (Exception ex)
             {
                 Logging.Write(ex.StackTrace);
                 NotificationManager.RaiseNotification("主题切换失败", ex.Message, InfoBarSeverity.Error, true, 5);
             }
-            
         }
 
-        public async Task InitTerminalModeAsync(int Mode) 
+        public async Task InitTerminalModeAsync(int Mode)
         {
             TerminalMode.ShowConsole();
             TerminalMode terminalMode = new TerminalMode();
             bool response = await terminalMode.Init(Mode);
             if (response)
             {
-                m_window = new MainWindow();
-                m_window.Activate();
+                MainWindow = new MainWindow();
+                MainWindow.Activate();
             }
         }
 
@@ -129,10 +188,10 @@ namespace SRTools
             Console.SetBufferSize(60, 25);
             TerminalMode.HideConsole();
             bool isDebug = false;
-            #if DEBUG
+#if DEBUG
             isDebug = true;
-            #else
-            #endif
+#else
+#endif
 
             if (isDebug)
             {
@@ -143,7 +202,8 @@ namespace SRTools
                 Logging.Write("Release Mode", 1);
             }
             ApplicationDataContainer localSettings = ApplicationData.Current.LocalSettings;
-            if (localSettings.Values["Config_FirstRun"] != null) { 
+            if (localSettings.Values["Config_FirstRun"] != null)
+            {
                 switch (AppDataController.GetConsoleMode())
                 {
                     case 0:
@@ -173,7 +233,6 @@ namespace SRTools
                 int Mode = (int)localSettings.Values["Config_TerminalMode"];
                 TerminalMode terminalMode = new TerminalMode();
             }
-
         }
 
         public static class NotificationManager
@@ -214,6 +273,5 @@ namespace SRTools
                 OnDialogRequested?.Invoke(xamlRoot, title, content, isPrimaryButtonEnabled, primaryButtonContent, primaryButtonAction, isSecondaryButtonEnabled, secondaryButtonContent, secondaryButtonAction);
             }
         }
-
     }
 }

@@ -293,6 +293,11 @@ namespace SRTools.Views
             WaitOverlayManager.RaiseWaitOverlay(false);
         }
 
+        private void Create_Desktop_Shortcut(object sender, RoutedEventArgs e)
+        {
+            CreateShortcut.CreateDesktopShortcut();
+        }
+
         private string GetChannelArgument()
         {
             int channel = AppDataController.GetUpdateService();

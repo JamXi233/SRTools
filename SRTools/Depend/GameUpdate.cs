@@ -1,4 +1,24 @@
-﻿using Microsoft.UI.Xaml.Controls;
+﻿// Copyright (c) 2021-2024, JamXi JSG-LLC.
+// All rights reserved.
+
+// This file is part of SRTools.
+
+// SRTools is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+
+// SRTools is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+
+// You should have received a copy of the GNU General Public License
+// along with SRTools.  If not, see <http://www.gnu.org/licenses/>.
+
+// For more information, please refer to <https://www.gnu.org/licenses/gpl-3.0.html>
+
+using Microsoft.UI.Xaml.Controls;
 using Microsoft.WindowsAPICodePack.Taskbar;
 using SharpCompress.Archives;
 using SharpCompress.Common;
@@ -39,6 +59,7 @@ namespace SRTools.Depend
                     return true;
                 }
                 Logging.Write("游戏已是最新版本.", 3, "GameUpdate");
+                await CheckResidualFiles();
                 return false;
             }
             Logging.Write("无法获取本地游戏版本.", 3, "GameUpdate");
@@ -93,27 +114,25 @@ namespace SRTools.Depend
                         var patches = main.GetProperty("patches");
                         foreach (var patch in patches.EnumerateArray())
                         {
-                            if (patch.GetProperty("version").GetString() == localVersion)
-                            {
-                                var patchPkg = patch.GetProperty("game_pkgs")[0];
-                                GameUpdateModel.DiffsPath = patchPkg.GetProperty("url").GetString();
-                                GameUpdateModel.DiffsSize = patchPkg.GetProperty("size").GetString();
-                                GameUpdateModel.DiffsMD5 = patchPkg.GetProperty("md5").GetString();
+                            GameUpdateModel.DiffsVersion = patch.GetProperty("version").GetString();
+                            var patchPkg = patch.GetProperty("game_pkgs")[0];
+                            GameUpdateModel.DiffsPath = patchPkg.GetProperty("url").GetString();
+                            GameUpdateModel.DiffsSize = patchPkg.GetProperty("size").GetString();
+                            GameUpdateModel.DiffsMD5 = patchPkg.GetProperty("md5").GetString();
 
-                                var patchAudioPkgs = patch.GetProperty("audio_pkgs");
-                                foreach (var patchAudioPkg in patchAudioPkgs.EnumerateArray())
+                            var patchAudioPkgs = patch.GetProperty("audio_pkgs");
+                            foreach (var patchAudioPkg in patchAudioPkgs.EnumerateArray())
+                            {
+                                if (patchAudioPkg.GetProperty("language").GetString() == "zh-cn")
                                 {
-                                    if (patchAudioPkg.GetProperty("language").GetString() == "zh-cn")
-                                    {
-                                        GameUpdateModel.DiffsVoicePacksPath = patchAudioPkg.GetProperty("url").GetString();
-                                        GameUpdateModel.DiffsVoicePacksSize = patchAudioPkg.GetProperty("size").GetString();
-                                        GameUpdateModel.DiffsVoicePacksMD5 = patchAudioPkg.GetProperty("md5").GetString();
-                                        GameUpdateModel.isGetUpdateInfo = true;
-                                        break;
-                                    }
+                                    GameUpdateModel.DiffsVoicePacksPath = patchAudioPkg.GetProperty("url").GetString();
+                                    GameUpdateModel.DiffsVoicePacksSize = patchAudioPkg.GetProperty("size").GetString();
+                                    GameUpdateModel.DiffsVoicePacksMD5 = patchAudioPkg.GetProperty("md5").GetString();
+                                    GameUpdateModel.isGetUpdateInfo = true;
+                                    break;
                                 }
-                                break;
                             }
+                            break;
                         }
                     }
                 }
@@ -165,6 +184,76 @@ namespace SRTools.Depend
             return null;
         }
 
+        private static async Task<bool> CheckResidualFiles()
+        {
+            var gameDirectory = await GetGameDirectory();
+            if (gameDirectory != null)
+            {
+                var fileNames = new List<string>();
+                fileNames.AddRange(GameUpdateModel.LatestPaths.Select(Path.GetFileName));
+                if (!string.IsNullOrEmpty(GameUpdateModel.LatestVoicePacksPath))
+                {
+                    fileNames.Add(Path.GetFileName(GameUpdateModel.LatestVoicePacksPath));
+                }
+                if (!string.IsNullOrEmpty(GameUpdateModel.DiffsPath))
+                {
+                    fileNames.Add(Path.GetFileName(GameUpdateModel.DiffsPath));
+                }
+                foreach (var fileName in fileNames)
+                {
+                    var filePath = Path.Combine(gameDirectory, fileName);
+                    if (File.Exists(filePath))
+                    {
+                        File.Delete(filePath);
+                        Logging.Write($"删除残留文件: {filePath}", 3, "GameUpdate");
+                    }
+                }
+
+                // 删除 deletefiles.txt 和 hdifffiles.txt
+                var deleteFilesPath = Path.Combine(gameDirectory, "deletefiles.txt");
+                var hdiffFilesPath = Path.Combine(gameDirectory, "hdifffiles.txt");
+
+                if (File.Exists(deleteFilesPath))
+                {
+                    File.Delete(deleteFilesPath);
+                    Logging.Write($"删除文件: {deleteFilesPath}", 3, "GameUpdate");
+                }
+
+                if (File.Exists(hdiffFilesPath))
+                {
+                    File.Delete(hdiffFilesPath);
+                    Logging.Write($"删除文件: {hdiffFilesPath}", 3, "GameUpdate");
+                }
+
+                await DeleteFiles();
+                return true;
+            }
+            return false;
+        }
+
+        private static async Task<bool> DeleteFiles()
+        {
+            var gameDirectory = await GetGameDirectory();
+            if (gameDirectory != null)
+            {
+                var deleteFilesPath = Path.Combine(gameDirectory, "deletefiles.txt");
+                if (File.Exists(deleteFilesPath))
+                {
+                    var filesToDelete = await File.ReadAllLinesAsync(deleteFilesPath);
+                    foreach (var file in filesToDelete)
+                    {
+                        var filePath = Path.Combine(gameDirectory, file);
+                        if (File.Exists(filePath))
+                        {
+                            File.Delete(filePath);
+                        }
+                    }
+                    return true;
+                }
+            }
+            return false;
+        }
+
         private static async Task<string> GetGameDirectory()
         {
             return AppDataController.GetGamePathWithoutGameName();
@@ -174,14 +263,18 @@ namespace SRTools.Depend
         {
             DownloadHelpers.isDownloading = true;
             DownloadHelpers.isPaused = false;
-            var downloadUrls = GameUpdateModel.DiffsPath != null ? new List<string> { GameUpdateModel.DiffsPath } : GameUpdateModel.LatestPaths;
+            var downloadUrls = GameUpdateModel.LatestPaths;
+            if (GameUpdateModel.DiffsVersion == await GetLocalGameVersion())
+            {
+                downloadUrls = new List<string> { GameUpdateModel.DiffsPath };
+            }
             var filePaths = downloadUrls.Select(url => Path.Combine(AppDataController.GetGamePathWithoutGameName(), Path.GetFileName(url))).ToList();
             var stopwatch = new Stopwatch();
 
             try
             {
                 cancellationTokenSource = new CancellationTokenSource();
-                var totalSize = GameUpdateModel.LatestSizes.Select(long.Parse).Sum();
+                var totalSize = downloadUrls.Select(url => GetFileSize(url)).Sum(); // 动态获取总大小
                 var totalRead = 0L;
 
                 foreach (var filePath in filePaths)
@@ -288,6 +381,13 @@ namespace SRTools.Depend
                 Logging.Write("下载异常：" + ex.Message);
             }
             return false;
+        }
+
+        private static long GetFileSize(string url)
+        {
+            var request = new HttpRequestMessage(HttpMethod.Head, url);
+            var response = client.SendAsync(request).Result;
+            return response.Content.Headers.ContentLength ?? 0;
         }
 
         public static void PauseDownload()

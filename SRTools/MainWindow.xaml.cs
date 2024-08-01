@@ -43,17 +43,26 @@ using Microsoft.UI.Xaml.Media;
 using System.ComponentModel.Design;
 using Windows.ApplicationModel;
 
+using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Controls;
+using Windows.ApplicationModel.Resources;
+using Windows.ApplicationModel.Resources.Core;
+using System.Diagnostics;
+using static System.Windows.Forms.VisualStyles.VisualStyleElement.TrayNotify;
+
 namespace SRTools
 {
     public partial class MainWindow : Window
     {
+        private ResourceLoader resourceLoader;
+
         private static readonly HttpClient httpClient = new HttpClient();
         private IntPtr hwnd = IntPtr.Zero;
         private OverlappedPresenter presenter;
         private AppWindow appWindow = null;
         private AppWindowTitleBar titleBar;
         string ExpectionFileName;
-        string backgroundUrl = "";
+        public ImageBrush BackgroundBrush => Background;
 
         private const int GWL_STYLE = -16;
         private const int WS_MAXIMIZEBOX = 0x00010000;
@@ -130,14 +139,21 @@ namespace SRTools
         {
             // 确保初始化代码只执行一次
             this.Activated -= MainWindow_Activated;
+            LoadResources();
             await InitializeAppDataAsync();
-            await BackgroundImageAsync();
             InitStatus();
             CleanUpdate();
             if (AppDataController.GetAutoCheckUpdate() == 1)
             {
                 await AutoGetUpdate();
             }
+        }
+
+        private void LoadResources()
+        {
+            // 获取当前语言环境
+            string language = ResourceManager.Current.DefaultContext.QualifierValues["Language"];
+            Debug.WriteLine($"当前语言: {language}");
         }
 
         private void InitShiftPress()
@@ -365,43 +381,6 @@ namespace SRTools
             // Remove the WS_SIZEBOX style to disable resizing
             style &= ~NativeMethods.WS_SIZEBOX;
             NativeMethods.SetWindowLong(hwnd, NativeMethods.GWL_STYLE, style);
-        }
-
-        private async Task BackgroundImageAsync()
-        {
-            string apiUrl = "https://hyp-api.mihoyo.com/hyp/hyp-connect/api/getGames?launcher_id=jGHBHlcOq1&language=zh-cn";
-            string responseBody = await FetchData(apiUrl);
-            using (JsonDocument doc = JsonDocument.Parse(responseBody))
-            {
-                JsonElement root = doc.RootElement;
-                JsonElement games = root.GetProperty("data").GetProperty("games");
-
-                foreach (JsonElement game in games.EnumerateArray())
-                {
-                    if (game.GetProperty("biz").GetString() == "hkrpg_cn")
-                    {
-                        backgroundUrl = game.GetProperty("display").GetProperty("background").GetProperty("url").GetString();
-                        break;
-                    }
-                }
-            }
-
-            if (!string.IsNullOrEmpty(backgroundUrl))
-            {
-                BitmapImage backgroundImage = new BitmapImage();
-                backgroundImage.UriSource = new Uri(backgroundUrl);
-                Background.ImageSource = backgroundImage;
-            }
-            if (AppDataController.GetAdminMode() == 1)
-            {
-                if (!ProcessRun.IsRunAsAdmin()) 
-                {
-                    NotificationManager.RaiseNotification("获取管理员权限时出现问题", "您在设置中开启了\n[使用管理员身份运行]\n\n但SRTools并没有正确获取到管理员权限", InfoBarSeverity.Warning); 
-                    AppTitleBar_Status.Text = "Refusal"; 
-                }
-                else AppTitleBar_Status.Text = "Privileged";
-            }
-            if (Debugger.IsAttached || App.SDebugMode) AppTitleBar_Status.Text = "Debugging";
         }
 
         private void InitStatus()
