@@ -78,8 +78,9 @@ namespace SRTools.Depend
             }
             catch (CryptographicException ex)
             {
-                if (isFirst) NotificationManager.RaiseNotification("游戏路径读取完成", "检测区服失败", InfoBarSeverity.Warning, true, 5);
-                Logging.Write($"{ex.Message}", 2);
+                if (isFirst) NotificationManager.RaiseNotification("游戏路径读取完成", "检测区服失败，已默认设为国服", InfoBarSeverity.Warning, true, 5);
+                Logging.Write($"证书读取失败: {ex.Message}", 2);
+                StartGameView.GameRegion = "CN";
             }
         }
 
