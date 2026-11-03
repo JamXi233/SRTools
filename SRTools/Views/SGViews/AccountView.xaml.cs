@@ -32,6 +32,8 @@ namespace SRTools.Views.SGViews
 {
     public sealed partial class AccountView : Page
     {
+        private string _pendingSaveUID = null;
+
         public AccountView()
         {
             this.InitializeComponent();
@@ -190,6 +192,7 @@ namespace SRTools.Views.SGViews
                 }
                 else
                 {
+                    _pendingSaveUID = CurrentLoginUID;
                     saveAccountUID.Text = $"将要保存的UID为: {CurrentLoginUID}";
                     saveAccountName.IsOpen = true;
                 }
@@ -211,9 +214,15 @@ namespace SRTools.Views.SGViews
 
                 if (!string.IsNullOrEmpty(currentName))
                 {
-                    string backupResult = await ProcessRun.SRToolsHelperAsync($"/BackupNUser {StartGameView.GameRegion} {currentName}");
-                    NotificationManager.RaiseNotification("覆盖保存成功", $"成功保存 UID: {CurrentLoginUID}", InfoBarSeverity.Success, false, 3);
-                    Console.WriteLine(backupResult);
+                    string backupResult = await ProcessRun.SRToolsHelperAsync($"/BackupNUser {StartGameView.GameRegion} \"{currentName}\"");
+                    if (backupResult.Contains("失败") || string.IsNullOrEmpty(backupResult))
+                    {
+                        NotificationManager.RaiseNotification("覆盖保存失败", backupResult, InfoBarSeverity.Error, false, 5);
+                    }
+                    else
+                    {
+                        NotificationManager.RaiseNotification("覆盖保存成功", $"成功保存 UID: {CurrentLoginUID}", InfoBarSeverity.Success, false, 3);
+                    }
                 }
                 else
                 {
@@ -237,13 +246,27 @@ namespace SRTools.Views.SGViews
         private async void SaveAccount_C(object sender, RoutedEventArgs e)
         {
             saveAccountName.IsOpen = false;
-            var result = await ProcessRun.SRToolsHelperAsync($"/BackupNUser {StartGameView.GameRegion} " + saveAccountNameInput.Text);
-            NotificationManager.RaiseNotification("保存账户成功", result, InfoBarSeverity.Success, false, 3);
-            saveAccountSuccess.Subtitle = result;
-            saveAccountSuccess.IsOpen = true;
-            renameAccount.IsEnabled = true;
-            saveAccount.IsEnabled = true;
+            string alias = saveAccountNameInput.Text.Trim();
+            if (string.IsNullOrEmpty(alias))
+            {
+                NotificationManager.RaiseNotification("保存失败", "别名不能为空", InfoBarSeverity.Error, false, 3);
+                return;
+            }
+            var result = await ProcessRun.SRToolsHelperAsync($"/BackupNUser {StartGameView.GameRegion} {_pendingSaveUID} \"{alias}\"");
+            if (result.Contains("失败") || string.IsNullOrEmpty(result))
+            {
+                NotificationManager.RaiseNotification("保存账户失败", result, InfoBarSeverity.Error, false, 5);
+            }
+            else
+            {
+                NotificationManager.RaiseNotification("保存账户成功", $"UID: {_pendingSaveUID} 别名: {alias}", InfoBarSeverity.Success, false, 3);
+                saveAccountSuccess.Subtitle = result;
+                saveAccountSuccess.IsOpen = true;
+                renameAccount.IsEnabled = true;
+                saveAccount.IsEnabled = true;
+            }
             saveAccountNameInput.Text = "";
+            _pendingSaveUID = null;
             await InitData();
         }
 

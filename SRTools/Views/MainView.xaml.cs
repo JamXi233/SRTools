@@ -65,7 +65,19 @@ namespace SRTools.Views
         private async void MainView_Loaded(object sender, RoutedEventArgs e)
         {
             await LoadImageLinksAsync();
-            await CompareAndUpdateImageLinks();
+            try
+            {
+                await CompareAndUpdateImageLinks();
+            }
+            catch (Exception ex)
+            {
+                Logging.Write($"无法获取远程图片资源: {ex.Message}", 2);
+                // 网络请求失败时降级，使用本地缓存的图片（如有）
+                if (!string.IsNullOrEmpty(backgroundUrl) || !string.IsNullOrEmpty(iconUrl))
+                {
+                    LoadAdvertisementDataAsync();
+                }
+            }
             LoadPostAsync();
 
             try
